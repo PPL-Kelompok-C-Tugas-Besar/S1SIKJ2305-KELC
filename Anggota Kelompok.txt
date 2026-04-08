@@ -1,1 +1,11 @@
+<<<<<<< HEAD
 Nandito Maulana Yedikar
+=======
+Samuel
+Nandito
+Alif
+Aziel
+Nadya
+Seto
+Triztan
+>>>>>>> 83b3fecb8051904029b950d6adea80cd5527f130
