@@ -1,128 +1,62 @@
-# Samuel Armando Napitu — Modul Autentikasi & Keamanan
+# Gymbro - PPL Kelompok C
 
-**NIM:** 102042300060  
-**Branch:** Samuel_branch  
-**Epic:** Authentication & User Account Management
+# Panduan Kolaborasi Git - Proyek S1SIKJ2305-KELC
 
----
-
-## Status PBI
-
-| PBI | Judul | Sprint | Minggu | Status |
-|-----|-------|--------|--------|--------|
-| PBI-04 | Register & Login | Sprint 1 | Minggu 6 (6-12 Apr) | ✅ Selesai |
-| PBI-05 | JWT Authentication | Sprint 1 | Minggu 7-8 (13-26 Apr) | ✅ Selesai |
-| PBI-06 | Profile & Password | Sprint 2 | Minggu 13-14 (25 Mei - 7 Jun) | ⏳ Belum dimulai |
+Berikut adalah instruksi setup awal dan alur kerja harian untuk pengembangan proyek menggunakan Git.
 
 ---
 
-## PBI-04 — Register & Login
+## 1. Setup Awal (Lakukan Sekali)
 
-**User Story:** Sebagai pengguna, saya ingin mendaftar akun baru dan login ke sistem, sehingga saya dapat mengakses fitur aplikasi.
+Gunakan perintah ini saat pertama kali menyiapkan repositori di lokal:
 
-### Backend
-| Subtask | Status |
-|---------|--------|
-| `POST /auth/register` + bcrypt hashing | ✅ |
-| `POST /auth/login` + validasi kredensial | ✅ |
-| Error handling (email duplikat, password salah) | ✅ |
+```bash
+# Clone repositori ke mesin lokal
+git clone https://github.com/PPL-Kelompok-C-Tugas-Besar/S1SIKJ2305-KELC.git
 
-### Frontend
-| Subtask | Status |
-|---------|--------|
-| Screen Register — form full_name, email, password, confirm_password | ✅ |
-| Validasi client-side | ✅ |
-| Handling error response dari server | ✅ |
-| Screen Login — form email + password | ✅ |
-| Handling error response | ✅ |
+# Masuk ke direktori proyek
+cd S1SIKJ2305-KELC
 
----
+# Berpindah ke branch kerja masing-masing (Contoh: Samuel_branch)
+git checkout [branch_kalian]
 
-## PBI-05 — JWT Authentication
-
-**User Story:** Sebagai sistem, saya ingin menggunakan JWT untuk keamanan sesi pengguna, sehingga proses autentikasi lebih aman.
-
-### Backend
-| Subtask | Status |
-|---------|--------|
-| JWT signing saat login berhasil | ✅ |
-| Middleware verifikasi token di protected routes | ✅ |
-| Return HTTP 401/403 jika token invalid/expired | ✅ |
-
-### Frontend
-| Subtask | Status |
-|---------|--------|
-| Simpan token ke flutter_secure_storage | ✅ |
-| HTTP interceptor auto-attach Authorization header | ✅ |
-| Role-based routing (user → Home, admin → Admin Dashboard) | ✅ |
-| Auto-redirect ke Login jika token expired | ✅ |
-
----
-
-## PBI-06 — Profile & Password
-
-**User Story:** Sebagai pengguna, saya ingin melihat dan memperbarui profil serta kata sandi, sehingga data akun saya tetap akurat dan aman.
-
-### Backend
-| Subtask | Status |
-|---------|--------|
-| `GET /users/profile` | ⏳ |
-| `PUT /users/profile` (nama, berat badan) | ⏳ |
-| `PUT /users/password` (validasi password lama) | ⏳ |
-
-### Frontend
-| Subtask | Status |
-|---------|--------|
-| Screen Profile — tampilkan data user | ⏳ |
-| Form edit nama & berat badan | ⏳ |
-| Screen Change Password — form password lama + baru + konfirmasi | ⏳ |
-
----
-
-## File Structure
-
-```
-backend/src/
-├── controllers/
-│   └── authController.js     ← register + login logic
-├── middleware/
-│   └── authMiddleware.js      ← verifyToken + adminOnly
-├── routes/
-│   ├── authRoutes.js          ← POST /auth/register, POST /auth/login
-│   └── userRoutes.js          ← GET /users/profile (protected)
-
-frontend/lib/
-├── models/
-│   └── user_model.dart
-├── services/
-│   ├── api_constants.dart
-│   └── auth_service.dart      ← HTTP calls + token storage
-├── providers/
-│   └── auth_provider.dart     ← state management (Provider)
-├── screens/auth/
-│   ├── splash_screen.dart     ← auto-redirect logic
-│   ├── login_screen.dart
-│   ├── register_screen.dart
-│   └── placeholder_screens.dart
-└── main.dart
+# Sinkronisasi dengan source code terbaru dari branch develop
+git pull origin develop
 ```
 
 ---
 
-## API Endpoints
+## 2. Alur Kerja Harian
 
-| Method | Endpoint | Auth | Deskripsi |
-|--------|----------|------|-----------|
-| POST | `/auth/register` | ❌ | Register user baru |
-| POST | `/auth/login` | ❌ | Login, return JWT token |
-| GET | `/users/profile` | ✅ Bearer Token | Get profile user |
+Ikuti langkah-langkah ini setiap kali melakukan perubahan kode.
 
----
+### Langkah 1: Pengembangan
 
-## Catatan Teknis
+Pastikan Anda selalu bekerja di dalam branch masing-masing, **bukan** di branch `main` atau `develop`.
 
-- Password di-hash menggunakan **bcrypt** (saltRounds: 10)
-- Token disimpan di **flutter_secure_storage** — aman dari XSS
-- Middleware `verifyToken` bisa dipakai anggota lain untuk protect endpoint mereka dengan cara: `router.get('/endpoint', verifyToken, handler)`
-- Role-based routing: `role == 'admin'` → Admin Dashboard, selain itu → Home
-- Token expiry: **100d** (sesuai `.env`)
+### Langkah 2: Menyimpan Perubahan
+
+```bash
+# Menambahkan semua file yang diubah ke area staging
+git add .
+
+# Membuat snapshot perubahan dengan pesan commit
+# Gunakan prefix feat: atau fix: sesuai standar
+git commit -m "feat: [deskripsi singkat]"
+```
+
+### Langkah 3: Mengirim ke Repositori Remote
+
+```bash
+# Mengirim perubahan dari lokal ke GitHub
+git push origin [branch_kalian]
+```
+
+### Langkah 4: Penggabungan (Merge)
+
+1. Buka repositori di GitHub.
+2. Pilih menu **Pull Request (PR)**.
+3. Klik **New Pull Request**.
+4. Set **Base Branch** ke `develop` (**bukan** `main`).
+5. Set **Compare Branch** ke `[branch_kalian]`.
+6. Klik **Create Pull Request**.
