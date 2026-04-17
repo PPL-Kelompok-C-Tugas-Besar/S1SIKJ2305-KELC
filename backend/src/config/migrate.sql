@@ -1,0 +1,9 @@
+CREATE TABLE IF NOT EXISTS USERS (
+  id           VARCHAR(255) PRIMARY KEY,
+  full_name    VARCHAR(255) NOT NULL,
+  email        VARCHAR(255) NOT NULL UNIQUE,
+  password     VARCHAR(255) NOT NULL,
+  weight       FLOAT DEFAULT NULL,
+  role         VARCHAR(255) NOT NULL DEFAULT 'user',
+  date_created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
