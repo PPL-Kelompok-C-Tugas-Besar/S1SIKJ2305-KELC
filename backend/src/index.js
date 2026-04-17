@@ -1,11 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-
 const fs = require('fs');
 
 // 1. Hubungkan ke Database
-const { pool: db, testConnection } = require('./config/db'); 
+const { pool: db, testConnection } = require('./config/db');
+
+// Routes
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // 2. Media Tools
 const cloudinary = require('cloudinary').v2;
@@ -27,7 +30,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Endpoint utama
+app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Gymbro API is running 🚀' });
 });
@@ -93,6 +98,10 @@ app.post('/admin/exercises/:id/media', upload.single('media_file'), async (req, 
         if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
         res.status(500).json({ status: "gagal", pesan: error.message });
     }
+});
+
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: 'Endpoint tidak ditemukan' });
 });
 
 // Start server
