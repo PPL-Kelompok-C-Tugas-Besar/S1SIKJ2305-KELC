@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 class ExerciseExecutionPage extends StatelessWidget {
+  const ExerciseExecutionPage({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
