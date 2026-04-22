@@ -10,16 +10,32 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Shop Mockup',
+      title: 'Gymbro Shop',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.grey),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0A0A0A), // Very dark grey/black background
+        colorScheme: const ColorScheme.dark(
+          primary: Color(0xFFFF4500), // Neon Orange accent color
+          surface: Color(0xFF1A1A1A),
+        ),
         useMaterial3: true,
+        fontFamily: 'Roboto', 
       ),
       home: const ShopPage(),
     );
   }
 }
+
+// Sample data to make it look professional
+final List<Map<String, String>> products = [
+  {'name': 'Optimum Whey', 'image': 'assets/whey.png'},
+  {'name': 'Creatine Mono', 'image': 'assets/creatine.png'},
+  {'name': 'Pre-Workout', 'image': 'assets/whey.png'},
+  {'name': 'BCAA Plus', 'image': 'assets/creatine.png'},
+  {'name': 'Mass Gainer', 'image': 'assets/whey.png'},
+  {'name': 'Glutamine', 'image': 'assets/creatine.png'},
+];
 
 class ShopPage extends StatelessWidget {
   const ShopPage({super.key});
@@ -27,7 +43,6 @@ class ShopPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -37,41 +52,65 @@ class ShopPage extends StatelessWidget {
               Row(
                 children: [
                   const Text(
-                    'Shop',
+                    'SHOP',
                     style: TextStyle(
                       fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: SizedBox(
-                      height: 40,
+                      height: 44,
                       child: TextField(
+                        style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: 'Creatine',
+                          hintText: 'Search supplements...',
                           hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 8),
+                          prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFFFF4500)),
+                          filled: true,
+                          fillColor: const Color(0xFF1A1A1A),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(12.0),
+                            borderSide: BorderSide.none,
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(color: Colors.grey),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.0),
+                            borderSide: const BorderSide(color: Color(0xFFFF4500), width: 1.5),
                           ),
                         ),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ),
                   const SizedBox(width: 8),
-                  const Icon(Icons.shopping_cart_outlined, size: 28),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.sort_by_alpha, size: 28),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A1A1A),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.sort, color: Colors.white),
+                      onPressed: () {},
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 24),
+              
               // Grid View
               Expanded(
                 child: GridView.builder(
@@ -79,42 +118,83 @@ class ShopPage extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16.0,
                     mainAxisSpacing: 16.0,
-                    childAspectRatio: 0.85,
+                    childAspectRatio: 0.72, // Taller ratio to fit images and text nicely
                   ),
-                  itemCount: 6,
+                  itemCount: products.length,
                   itemBuilder: (context, index) {
+                    final product = products[index];
                     return GestureDetector(
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => ProductDetailPage(
-                              productName: 'Product ${index + 1}',
+                              productName: product['name']!,
+                              imagePath: product['image']!,
                             ),
                           ),
                         );
                       },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border.all(color: Colors.black87, width: 1.5),
-                                borderRadius: BorderRadius.circular(8.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF121212),
+                          borderRadius: BorderRadius.circular(16.0),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                          border: Border.all(color: const Color(0xFF2A2A2A)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
+                                child: Container(
+                                  color: const Color(0xFF1A1A1A),
+                                  child: Image.asset(
+                                    product['image']!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) => Center(
+                                      child: Icon(Icons.fitness_center, color: Colors.grey.shade800, size: 40),
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 8.0),
-                          Text(
-                            'Product ${index + 1}',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                            Padding(
+                              padding: const EdgeInsets.all(12.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    product['name']!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: Colors.white,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '\$39.99',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 16,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },
@@ -130,22 +210,23 @@ class ShopPage extends StatelessWidget {
 
 class ProductDetailPage extends StatelessWidget {
   final String productName;
+  final String imagePath;
   
-  const ProductDetailPage({super.key, required this.productName});
+  const ProductDetailPage({super.key, required this.productName, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
-          'Shop',
+          'SHOP',
           style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
             fontSize: 24,
           ),
         ),
@@ -158,69 +239,121 @@ class ProductDetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Product Image Placeholder
+              // Product Image with soft glowing shadow
               Expanded(
                 flex: 5,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: Colors.black87, width: 1.5),
-                    borderRadius: BorderRadius.circular(8.0),
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(20.0),
+                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF4500).withOpacity(0.08),
+                        blurRadius: 30,
+                        spreadRadius: 5,
+                      ),
+                    ],
                   ),
-                ),
-              ),
-              const SizedBox(height: 16.0),
-              
-              // Product Name
-              Text(
-                productName,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                ),
-              ),
-              const SizedBox(height: 16.0),
-              
-              // Description Box
-              Expanded(
-                flex: 3,
-                child: Container(
-                  padding: const EdgeInsets.all(16.0),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    border: Border.all(color: Colors.black87, width: 1.0),
-                    borderRadius: BorderRadius.circular(8.0),
-                  ),
-                  child: const Text(
-                    'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolo',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.black87,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20.0),
+                    child: Image.asset(
+                      imagePath,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Center(
+                        child: Icon(Icons.fitness_center, color: Colors.grey.shade800, size: 60),
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 24.0),
               
-              // Buttons
+              // Product Name & Price
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      productName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 28,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '\$39.99',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 28,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              
+              // Sleek Description Box
+              Expanded(
+                flex: 3,
+                child: Container(
+                  padding: const EdgeInsets.all(20.0),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF121212),
+                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                    borderRadius: BorderRadius.circular(16.0),
+                  ),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'DESCRIPTION',
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Premium quality supplement designed to help you crush your workouts and build lean muscle mass. Formulated with fast-absorbing ingredients for maximum results and incredible taste. No artificial fillers, just pure gains.',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey.shade300,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24.0),
+              
+              // Professional Call-to-Action Buttons
               Row(
                 children: [
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {},
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade100,
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        side: const BorderSide(color: Colors.black87, width: 1.0),
+                        padding: const EdgeInsets.symmetric(vertical: 18.0),
+                        side: const BorderSide(color: Color(0xFFFF4500), width: 2.0),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
                       child: const Text(
-                        'Add to cart',
+                        'ADD TO CART',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: Color(0xFFFF4500),
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
                           fontSize: 16,
                         ),
                       ),
@@ -228,21 +361,23 @@ class ProductDetailPage extends StatelessWidget {
                   ),
                   const SizedBox(width: 16.0),
                   Expanded(
-                    child: OutlinedButton(
+                    child: ElevatedButton(
                       onPressed: () {},
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade100,
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                        side: const BorderSide(color: Colors.black87, width: 1.0),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF4500),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 18.0),
+                        elevation: 8,
+                        shadowColor: const Color(0xFFFF4500).withOpacity(0.6),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8.0),
+                          borderRadius: BorderRadius.circular(12.0),
                         ),
                       ),
                       child: const Text(
-                        'Purchase',
+                        'PURCHASE',
                         style: TextStyle(
-                          color: Colors.black,
                           fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
                           fontSize: 16,
                         ),
                       ),
