@@ -8,7 +8,7 @@ class HomeScreen extends StatelessWidget {
   // Color Palette Definitions
   static const Color bgColor = Color(0xFF1A1A1A);
   static const Color cardColor = Color(0xFF292929);
-  static const Color accentColor = Color(0xFFCCFF00); // Lime Green
+  static const Color accentColor = Color(0xFFCCFF00);
   static const Color textPrimary = Colors.white;
   static const Color textSecondary = Color(0xFF9E9E9E);
 
@@ -48,6 +48,13 @@ class HomeScreen extends StatelessWidget {
           unselectedItemColor: textSecondary,
           showSelectedLabels: false,
           showUnselectedLabels: false,
+          currentIndex: 0, // Keep Home selected for this screen
+          onTap: (index) {
+            if (index == 1) { // Index 1 is the Icons.fitness_center (Dumbbell)
+              Navigator.pushNamed(context, '/exercise-catalogue');
+            }
+            // You can add logic for other indexes (Progress, Profile) here
+          },
           items: const [
             BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: 'Home'),
             BottomNavigationBarItem(icon: Icon(Icons.fitness_center), label: 'Workout'),
