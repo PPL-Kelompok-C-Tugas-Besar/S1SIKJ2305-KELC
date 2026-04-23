@@ -29,12 +29,12 @@ class MyApp extends StatelessWidget {
 
 // Sample data to make it look professional
 final List<Map<String, String>> products = [
-  {'name': 'Optimum Whey', 'image': 'assets/whey.png'},
-  {'name': 'Creatine Mono', 'image': 'assets/creatine.png'},
-  {'name': 'Pre-Workout', 'image': 'assets/whey.png'},
-  {'name': 'BCAA Plus', 'image': 'assets/creatine.png'},
-  {'name': 'Mass Gainer', 'image': 'assets/whey.png'},
-  {'name': 'Glutamine', 'image': 'assets/creatine.png'},
+  {'name': 'Optimum Whey', 'image': 'assets/whey.png', 'price': 'Rp 850.000'},
+  {'name': 'Creatine Mono', 'image': 'assets/creatine.png', 'price': 'Rp 350.000'},
+  {'name': 'Pre-Workout', 'image': 'assets/whey.png', 'price': 'Rp 450.000'},
+  {'name': 'BCAA Plus', 'image': 'assets/creatine.png', 'price': 'Rp 300.000'},
+  {'name': 'Mass Gainer', 'image': 'assets/whey.png', 'price': 'Rp 950.000'},
+  {'name': 'Glutamine', 'image': 'assets/creatine.png', 'price': 'Rp 250.000'},
 ];
 
 class ShopPage extends StatelessWidget {
@@ -131,6 +131,7 @@ class ShopPage extends StatelessWidget {
                             builder: (context) => ProductDetailPage(
                               productName: product['name']!,
                               imagePath: product['image']!,
+                              price: product['price']!,
                             ),
                           ),
                         );
@@ -183,7 +184,7 @@ class ShopPage extends StatelessWidget {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    '\$39.99',
+                                    product['price']!,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 16,
@@ -211,8 +212,9 @@ class ShopPage extends StatelessWidget {
 class ProductDetailPage extends StatelessWidget {
   final String productName;
   final String imagePath;
+  final String price;
   
-  const ProductDetailPage({super.key, required this.productName, required this.imagePath});
+  const ProductDetailPage({super.key, required this.productName, required this.imagePath, required this.price});
 
   @override
   Widget build(BuildContext context) {
@@ -285,7 +287,7 @@ class ProductDetailPage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '\$39.99',
+                    price,
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 28,
