@@ -4,6 +4,15 @@ void main() {
   runApp(const MyApp());
 }
 
+// Color Palette Definitions provided by the user
+class AppColors {
+  static const Color bgColor = Color(0xFF1A1A1A);
+  static const Color cardColor = Color(0xFF292929);
+  static const Color accentColor = Color(0xFFCCFF00); // Neon Yellow-Green
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xFF9E9E9E);
+}
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -14,10 +23,10 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0A0A), // Very dark grey/black background
+        scaffoldBackgroundColor: AppColors.bgColor,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFFF4500), // Neon Orange accent color
-          surface: Color(0xFF1A1A1A),
+          primary: AppColors.accentColor,
+          surface: AppColors.cardColor,
         ),
         useMaterial3: true,
         fontFamily: 'Roboto', 
@@ -57,7 +66,7 @@ class ShopPage extends StatelessWidget {
                       fontSize: 28,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1.5,
-                      color: Colors.white,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -65,13 +74,13 @@ class ShopPage extends StatelessWidget {
                     child: SizedBox(
                       height: 44,
                       child: TextField(
-                        style: const TextStyle(color: Colors.white),
+                        style: const TextStyle(color: AppColors.textPrimary),
                         decoration: InputDecoration(
                           hintText: 'Search supplements...',
-                          hintStyle: TextStyle(color: Colors.grey.shade600, fontSize: 14),
-                          prefixIcon: const Icon(Icons.search, size: 20, color: Color(0xFFFF4500)),
+                          hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                          prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.accentColor),
                           filled: true,
-                          fillColor: const Color(0xFF1A1A1A),
+                          fillColor: AppColors.cardColor,
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.0),
@@ -79,7 +88,7 @@ class ShopPage extends StatelessWidget {
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12.0),
-                            borderSide: const BorderSide(color: Color(0xFFFF4500), width: 1.5),
+                            borderSide: const BorderSide(color: AppColors.accentColor, width: 1.5),
                           ),
                         ),
                       ),
@@ -88,22 +97,22 @@ class ShopPage extends StatelessWidget {
                   const SizedBox(width: 12),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: AppColors.cardColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.shopping_cart_outlined, color: Colors.white),
+                      icon: const Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary),
                       onPressed: () {},
                     ),
                   ),
                   const SizedBox(width: 8),
                   Container(
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1A1A1A),
+                      color: AppColors.cardColor,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.sort, color: Colors.white),
+                      icon: const Icon(Icons.sort, color: AppColors.textPrimary),
                       onPressed: () {},
                     ),
                   ),
@@ -118,7 +127,7 @@ class ShopPage extends StatelessWidget {
                     crossAxisCount: 2,
                     crossAxisSpacing: 16.0,
                     mainAxisSpacing: 16.0,
-                    childAspectRatio: 0.72, // Taller ratio to fit images and text nicely
+                    childAspectRatio: 0.72,
                   ),
                   itemCount: products.length,
                   itemBuilder: (context, index) {
@@ -138,16 +147,15 @@ class ShopPage extends StatelessWidget {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFF121212),
+                          color: AppColors.cardColor,
                           borderRadius: BorderRadius.circular(16.0),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.4),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 4),
                             ),
                           ],
-                          border: Border.all(color: const Color(0xFF2A2A2A)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -156,12 +164,12 @@ class ShopPage extends StatelessWidget {
                               child: ClipRRect(
                                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
                                 child: Container(
-                                  color: const Color(0xFF1A1A1A),
+                                  color: AppColors.cardColor, // Background for image area
                                   child: Image.asset(
                                     product['image']!,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Center(
-                                      child: Icon(Icons.fitness_center, color: Colors.grey.shade800, size: 40),
+                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                      child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 40),
                                     ),
                                   ),
                                 ),
@@ -177,7 +185,7 @@ class ShopPage extends StatelessWidget {
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
-                                      color: Colors.white,
+                                      color: AppColors.textPrimary,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -185,10 +193,10 @@ class ShopPage extends StatelessWidget {
                                   const SizedBox(height: 4),
                                   Text(
                                     product['price']!,
-                                    style: TextStyle(
+                                    style: const TextStyle(
                                       fontWeight: FontWeight.w900,
                                       fontSize: 16,
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: AppColors.accentColor,
                                     ),
                                   ),
                                 ],
@@ -222,11 +230,11 @@ class ProductDetailPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         title: const Text(
           'SHOP',
           style: TextStyle(
-            color: Colors.white,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.w900,
             letterSpacing: 1.5,
             fontSize: 24,
@@ -241,17 +249,16 @@ class ProductDetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Product Image with soft glowing shadow
+              // Product Image with soft glowing shadow matching the new accent color
               Expanded(
                 flex: 5,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
+                    color: AppColors.cardColor,
                     borderRadius: BorderRadius.circular(20.0),
-                    border: Border.all(color: const Color(0xFF2A2A2A)),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF4500).withOpacity(0.08),
+                        color: AppColors.accentColor.withOpacity(0.05),
                         blurRadius: 30,
                         spreadRadius: 5,
                       ),
@@ -262,8 +269,8 @@ class ProductDetailPage extends StatelessWidget {
                     child: Image.asset(
                       imagePath,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => Center(
-                        child: Icon(Icons.fitness_center, color: Colors.grey.shade800, size: 60),
+                      errorBuilder: (context, error, stackTrace) => const Center(
+                        child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 60),
                       ),
                     ),
                   ),
@@ -282,16 +289,16 @@ class ProductDetailPage extends StatelessWidget {
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 28,
-                        color: Colors.white,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
                   Text(
                     price,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 28,
-                      color: Theme.of(context).colorScheme.primary,
+                      color: AppColors.accentColor,
                     ),
                   ),
                 ],
@@ -304,29 +311,28 @@ class ProductDetailPage extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(20.0),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF121212),
-                    border: Border.all(color: const Color(0xFF2A2A2A)),
+                    color: AppColors.cardColor,
                     borderRadius: BorderRadius.circular(16.0),
                   ),
-                  child: SingleChildScrollView(
+                  child: const SingleChildScrollView(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'DESCRIPTION',
                           style: TextStyle(
-                            color: Colors.grey,
+                            color: AppColors.textSecondary,
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.5,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        SizedBox(height: 12),
                         Text(
                           'Premium quality supplement designed to help you crush your workouts and build lean muscle mass. Formulated with fast-absorbing ingredients for maximum results and incredible taste. No artificial fillers, just pure gains.',
                           style: TextStyle(
                             fontSize: 15,
-                            color: Colors.grey.shade300,
+                            color: AppColors.textPrimary,
                             height: 1.5,
                           ),
                         ),
@@ -345,7 +351,7 @@ class ProductDetailPage extends StatelessWidget {
                       onPressed: () {},
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18.0),
-                        side: const BorderSide(color: Color(0xFFFF4500), width: 2.0),
+                        side: const BorderSide(color: AppColors.accentColor, width: 2.0),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
@@ -353,7 +359,7 @@ class ProductDetailPage extends StatelessWidget {
                       child: const Text(
                         'ADD TO CART',
                         style: TextStyle(
-                          color: Color(0xFFFF4500),
+                          color: AppColors.accentColor,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,
                           fontSize: 16,
@@ -366,11 +372,11 @@ class ProductDetailPage extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF4500),
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.accentColor,
+                        foregroundColor: AppColors.bgColor, // Blackish text on neon background for max contrast
                         padding: const EdgeInsets.symmetric(vertical: 18.0),
                         elevation: 8,
-                        shadowColor: const Color(0xFFFF4500).withOpacity(0.6),
+                        shadowColor: AppColors.accentColor.withOpacity(0.4),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
