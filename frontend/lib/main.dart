@@ -4,11 +4,11 @@ void main() {
   runApp(const MyApp());
 }
 
-// Color Palette Definitions provided by the user
+// Color Palette Definitions
 class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
   static const Color cardColor = Color(0xFF292929);
-  static const Color accentColor = Color(0xFFCCFF00); // Neon Yellow-Green
+  static const Color accentColor = Color(0xFFCCFF00);
   static const Color textPrimary = Colors.white;
   static const Color textSecondary = Color(0xFF9E9E9E);
 }
@@ -52,6 +52,7 @@ class ShopPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgColor,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -152,8 +153,8 @@ class ShopPage extends StatelessWidget {
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 5),
                             ),
                           ],
                         ),
@@ -164,7 +165,7 @@ class ShopPage extends StatelessWidget {
                               child: ClipRRect(
                                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
                                 child: Container(
-                                  color: AppColors.cardColor, // Background for image area
+                                  color: AppColors.cardColor,
                                   child: Image.asset(
                                     product['image']!,
                                     fit: BoxFit.cover,
@@ -227,6 +228,7 @@ class ProductDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -249,7 +251,7 @@ class ProductDetailPage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Product Image with soft glowing shadow matching the new accent color
+              // Product Image with soft glowing shadow
               Expanded(
                 flex: 5,
                 child: Container(
@@ -332,7 +334,7 @@ class ProductDetailPage extends StatelessWidget {
                           'Premium quality supplement designed to help you crush your workouts and build lean muscle mass. Formulated with fast-absorbing ingredients for maximum results and incredible taste. No artificial fillers, just pure gains.',
                           style: TextStyle(
                             fontSize: 15,
-                            color: AppColors.textPrimary,
+                            color: AppColors.textSecondary,
                             height: 1.5,
                           ),
                         ),
@@ -373,10 +375,10 @@ class ProductDetailPage extends StatelessWidget {
                       onPressed: () {},
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accentColor,
-                        foregroundColor: AppColors.bgColor, // Blackish text on neon background for max contrast
+                        foregroundColor: Colors.black, // High contrast text on neon background
                         padding: const EdgeInsets.symmetric(vertical: 18.0),
                         elevation: 8,
-                        shadowColor: AppColors.accentColor.withOpacity(0.4),
+                        shadowColor: AppColors.accentColor.withOpacity(0.3),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),
@@ -387,6 +389,7 @@ class ProductDetailPage extends StatelessWidget {
                           fontWeight: FontWeight.bold,
                           letterSpacing: 1.0,
                           fontSize: 16,
+                          color: Colors.black, // Ensures text is readable
                         ),
                       ),
                     ),
