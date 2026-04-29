@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ExerciseCatalogueScreen extends StatefulWidget {
-  const ExerciseCatalogueScreen({Key? key}) : super(key: key);
+  const ExerciseCatalogueScreen({super.key});
 
   @override
   _ExerciseCatalogueScreenState createState() =>
@@ -117,20 +117,8 @@ class _ExerciseCatalogueScreenState extends State<ExerciseCatalogueScreen> {
                   const Divider(height: 1, color: Colors.black),
               ],
             );
-          }).toList(),
+          }),
         ],
-      ),
-    );
-  }
-
-  Widget _buildExpansionTile(String title) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.black),
-      ),
-      child: ListTile(
-        title: Text(title, style: const TextStyle(fontSize: 16)),
-        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }
