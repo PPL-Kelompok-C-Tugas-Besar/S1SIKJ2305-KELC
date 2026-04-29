@@ -37,6 +37,29 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
   Timer? _timer;
   bool _isPaused = false;
 
+  // Warna tema berdasarkan fase workout
+  Color get _themeColor {
+    switch (_currentState) {
+      case WorkoutState.exercising:
+        return Colors.orangeAccent; // Oranye untuk latihan
+      case WorkoutState.restTime:
+        return Colors.greenAccent; // Hijau untuk istirahat
+      default:
+        return Colors.orangeAccent;
+    }
+  }
+
+  String get _themeLabel {
+    switch (_currentState) {
+      case WorkoutState.exercising:
+        return 'EXERCISING';
+      case WorkoutState.restTime:
+        return 'RESTING';
+      default:
+        return 'GYMBRO';
+    }
+  }
+
   void _startWorkout() {
     int duration = int.tryParse(_workDurationController.text) ?? 30;
     setState(() {
@@ -119,8 +142,8 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        title: const Text('GYMBRO', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.orangeAccent,
+        title: Text(_themeLabel, style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black)),
+        backgroundColor: _themeColor, // Warna tema otomatis berdasarkan fase
         centerTitle: true,
         leading: showBackButton 
           ? IconButton(
@@ -186,7 +209,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          decoration: BoxDecoration(color: Colors.orangeAccent, borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(color: _themeColor, borderRadius: BorderRadius.circular(10)),
           child: Text("DO IT: $_currentReps REPS", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
         ),
         const SizedBox(height: 20),
@@ -204,7 +227,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
                   value: progress,
                   strokeWidth: 12,
                   backgroundColor: Colors.grey[800],
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.orangeAccent),
+                  valueColor: AlwaysStoppedAnimation<Color>(_themeColor),
                 ),
               ),
               Text(
@@ -220,7 +243,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
         ),
         const SizedBox(height: 10),
         IconButton(
-          icon: Icon(_isPaused ? Icons.play_circle_fill : Icons.pause_circle_filled, size: 80, color: Colors.orangeAccent),
+          icon: Icon(_isPaused ? Icons.play_circle_fill : Icons.pause_circle_filled, size: 80, color: _themeColor),
           onPressed: () => setState(() => _isPaused = !_isPaused),
         ),
       ],
@@ -253,7 +276,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
     
     return Column(
       children: [
-        const Text("RESTING...", style: TextStyle(color: Colors.greenAccent, fontSize: 24)),
+        Text(_themeLabel, style: TextStyle(color: _themeColor, fontSize: 24)),
         const SizedBox(height: 20),
         // Circular Progress Indicator untuk rest time
         SizedBox(
@@ -269,7 +292,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
                   value: progress,
                   strokeWidth: 12,
                   backgroundColor: Colors.grey[800],
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.greenAccent),
+                  valueColor: AlwaysStoppedAnimation<Color>(_themeColor),
                 ),
               ),
               Text(
