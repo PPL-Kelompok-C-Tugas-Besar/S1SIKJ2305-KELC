@@ -218,12 +218,38 @@ class ShopPage extends StatelessWidget {
   }
 }
 
-class ProductDetailPage extends StatelessWidget {
+class ProductDetailPage extends StatefulWidget {
   final String productName;
   final String imagePath;
   final String price;
   
-  const ProductDetailPage({super.key, required this.productName, required this.imagePath, required this.price});
+  const ProductDetailPage({
+    super.key, 
+    required this.productName, 
+    required this.imagePath, 
+    required this.price
+  });
+
+  @override
+  State<ProductDetailPage> createState() => _ProductDetailPageState();
+}
+
+class _ProductDetailPageState extends State<ProductDetailPage> {
+  int _quantity = 1;
+
+  void _increment() {
+    setState(() {
+      _quantity++;
+    });
+  }
+
+  void _decrement() {
+    if (_quantity > 1) {
+      setState(() {
+        _quantity--;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -269,7 +295,7 @@ class ProductDetailPage extends StatelessWidget {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20.0),
                     child: Image.asset(
-                      imagePath,
+                      widget.imagePath,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) => const Center(
                         child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 60),
@@ -287,7 +313,7 @@ class ProductDetailPage extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      productName,
+                      widget.productName,
                       style: const TextStyle(
                         fontWeight: FontWeight.w900,
                         fontSize: 28,
@@ -296,7 +322,7 @@ class ProductDetailPage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    price,
+                    widget.price,
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
                       fontSize: 28,
@@ -307,41 +333,52 @@ class ProductDetailPage extends StatelessWidget {
               ),
               const SizedBox(height: 16.0),
               
-              // Sleek Description Box
-              Expanded(
-                flex: 3,
-                child: Container(
-                  padding: const EdgeInsets.all(20.0),
-                  decoration: BoxDecoration(
-                    color: AppColors.cardColor,
-                    borderRadius: BorderRadius.circular(16.0),
-                  ),
-                  child: const SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'DESCRIPTION',
-                          style: TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 1.5,
-                          ),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          'Premium quality supplement designed to help you crush your workouts and build lean muscle mass. Formulated with fast-absorbing ingredients for maximum results and incredible taste. No artificial fillers, just pure gains.',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: AppColors.textSecondary,
-                            height: 1.5,
-                          ),
-                        ),
-                      ],
+              const Spacer(),
+
+              // Quantity Selector
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Minus Button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
+                    ),
+                    child: IconButton(
+                      onPressed: _decrement,
+                      icon: const Icon(Icons.remove, color: AppColors.textPrimary),
+                      tooltip: 'Decrease quantity',
                     ),
                   ),
-                ),
+                  
+                  // Quantity Value
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Text(
+                      '$_quantity',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                  
+                  // Plus Button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.accentColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      onPressed: _increment,
+                      icon: const Icon(Icons.add, color: AppColors.bgColor),
+                      tooltip: 'Increase quantity',
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24.0),
               
