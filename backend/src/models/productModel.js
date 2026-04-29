@@ -16,55 +16,49 @@ const getAllProducts = async () => {
   const dummyProducts = [
     {
       id: 1,
-      name: 'Optimum Whey Protein',
-      description: 'Premium quality whey protein supplement designed to help you crush your workouts and build lean muscle mass.',
-      price: 850000,
-      stock: 50,
+      name: 'gacor Whey Protein',
+      price: 10000,
+      stock: 10,
       image_url: 'assets/whey.png',
       category: 'Protein'
     },
     {
       id: 2,
       name: 'Creatine Monohydrate',
-      description: 'Pure creatine monohydrate to boost strength, power, and muscle volume during intense workouts.',
       price: 350000,
-      stock: 120,
+      stock: 12,
       image_url: 'assets/creatine.png',
       category: 'Performance'
     },
     {
       id: 3,
       name: 'Pre-Workout Blast',
-      description: 'Explosive energy and focus for your toughest gym sessions. Contains caffeine, beta-alanine, and citrulline.',
       price: 450000,
-      stock: 75,
+      stock: 7,
       image_url: 'assets/whey.png',
       category: 'Pre-Workout'
     },
     {
       id: 4,
       name: 'BCAA Plus',
-      description: 'Branched-Chain Amino Acids to support muscle recovery and reduce fatigue during long workouts.',
       price: 300000,
-      stock: 100,
+      stock: 10,
       image_url: 'assets/creatine.png',
       category: 'Recovery'
     },
     {
       id: 5,
       name: 'Mass Gainer Extreme',
-      description: 'High-calorie mass gainer packed with protein and complex carbs for serious bulking.',
       price: 950000,
-      stock: 30,
+      stock: 7,
       image_url: 'assets/whey.png',
       category: 'Weight Gainer'
     },
     {
       id: 6,
       name: 'Pure Glutamine',
-      description: 'L-Glutamine powder to support gut health and rapid muscle tissue repair.',
       price: 250000,
-      stock: 85,
+      stock: 8,
       image_url: 'assets/creatine.png',
       category: 'Recovery'
     }
