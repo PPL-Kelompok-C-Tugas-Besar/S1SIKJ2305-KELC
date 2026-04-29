@@ -6,6 +6,7 @@ import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/homepage_screens.dart';
 import 'screens/auth/catalogue.dart';
+import 'package:frontend/screens/auth/workout_screen.dart';
 
 void main() {
   runApp(
@@ -32,6 +33,7 @@ class GymbroApp extends StatelessWidget {
         '/home': (_) => const HomeScreen(),
         '/admin-dashboard': (_) => const AdminDashboardScreen(),
         '/exercise-catalogue': (_) => const ExerciseCatalogueScreen(),
+        '/exercise-workout': (_) => const AlifWorkoutScreen(),
       },
     );
   }
