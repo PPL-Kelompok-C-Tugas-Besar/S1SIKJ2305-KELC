@@ -4,9 +4,24 @@ import 'package:http/http.dart' as http;
 import '../models/history_model.dart';
 import 'api_constants.dart';
 
+/// Hasil dari [HistoryService.getHistory] — berisi data dan info pagination
+class HistoryResult {
+  final List<WorkoutHistory> data;
+  final int total;
+  final bool hasMore;
+
+  const HistoryResult({
+    required this.data,
+    required this.total,
+    required this.hasMore,
+  });
+}
+
 class HistoryService {
   final _storage = const FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
+
+  static const int pageLimit = 10; // harus sama dengan PAGE_LIMIT di backend
 
   Future<String?> _getToken() async {
     return await _storage.read(key: _tokenKey);
@@ -19,26 +34,37 @@ class HistoryService {
     };
   }
 
-  Future<List<WorkoutHistory>> getHistory() async {
+  /// Mengambil riwayat dengan dukungan pagination.
+  /// [offset] adalah indeks awal data yang diinginkan.
+  Future<HistoryResult> getHistory({int offset = 0}) async {
     final token = await _getToken();
-    if (token == null) return [];
+    if (token == null) {
+      return const HistoryResult(data: [], total: 0, hasMore: false);
+    }
 
     try {
-      final response = await http.get(
-        Uri.parse(ApiConstants.history),
-        headers: _headers(token),
-      );
+      final uri = Uri.parse(ApiConstants.history).replace(queryParameters: {
+        'limit': '$pageLimit',
+        'offset': '$offset',
+      });
+
+      final response = await http.get(uri, headers: _headers(token));
 
       if (response.statusCode == 200) {
         final body = jsonDecode(response.body);
-        if (body['success']) {
-          List<dynamic> data = body['data'];
-          return data.map((json) => WorkoutHistory.fromJson(json)).toList();
+        if (body['success'] == true) {
+          final List<dynamic> raw = body['data'];
+          final pagination = body['pagination'];
+          return HistoryResult(
+            data: raw.map((j) => WorkoutHistory.fromJson(j)).toList(),
+            total: pagination['total'] ?? 0,
+            hasMore: pagination['hasMore'] ?? false,
+          );
         }
       }
-      return [];
+      return const HistoryResult(data: [], total: 0, hasMore: false);
     } catch (e) {
-      return [];
+      return const HistoryResult(data: [], total: 0, hasMore: false);
     }
   }
 
@@ -60,11 +86,7 @@ class HistoryService {
           'calories_burned': caloriesBurned,
         }),
       );
-
-      if (response.statusCode == 201) {
-        return true;
-      }
-      return false;
+      return response.statusCode == 201;
     } catch (e) {
       return false;
     }

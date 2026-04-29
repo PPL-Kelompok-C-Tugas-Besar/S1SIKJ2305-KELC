@@ -1,14 +1,38 @@
 const { pool } = require('../config/db');
 
-// GET /users/history
+const PAGE_LIMIT = 10; // jumlah item per halaman
+
+// GET /users/history?limit=10&offset=0
 const getHistory = async (req, res) => {
     try {
         const userId = req.user.id;
-        const [rows] = await pool.execute(
-            'SELECT * FROM workout_history WHERE user_id = ? ORDER BY date DESC',
+
+        // Ambil limit & offset dari query params, dengan nilai default
+        const limit  = Math.min(parseInt(req.query.limit)  || PAGE_LIMIT, 50); // maks 50
+        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+        // Hitung total data milik user ini (untuk info hasMore di frontend)
+        const [[{ total }]] = await pool.execute(
+            'SELECT COUNT(*) AS total FROM workout_history WHERE user_id = ?',
             [userId]
         );
-        return res.status(200).json({ success: true, data: rows });
+
+        // Ambil data dengan LIMIT & OFFSET
+        const [rows] = await pool.execute(
+            'SELECT * FROM workout_history WHERE user_id = ? ORDER BY date DESC LIMIT ? OFFSET ?',
+            [userId, limit, offset]
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: rows,
+            pagination: {
+                total,
+                limit,
+                offset,
+                hasMore: offset + rows.length < total,
+            },
+        });
     } catch (err) {
         console.error('Get history error:', err);
         return res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil riwayat' });

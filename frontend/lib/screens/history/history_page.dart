@@ -13,32 +13,76 @@ class HistoryPage extends StatefulWidget {
 
 class _HistoryPageState extends State<HistoryPage> {
   final HistoryService _historyService = HistoryService();
-  List<WorkoutHistory> _histories = [];
-  bool _isLoading = true;
+  final ScrollController _scrollController = ScrollController();
 
-  // --- Stat Getters ---
-  int get _totalSessions => _histories.length;
-  int get _totalMinutes =>
-      _histories.fold(0, (sum, h) => sum + h.durationMinutes);
+  List<WorkoutHistory> _histories = [];
+  bool _isInitialLoading = true; // loading pertama kali (seluruh halaman)
+  bool _isLoadingMore = false;   // loading tambahan (bottom indicator)
+  bool _hasMore = true;
+  int _total = 0;
+  int _offset = 0;
+
+  // --- Stat Getters (dari semua data yang sudah di-load) ---
   int get _totalCalories =>
       _histories.fold(0, (sum, h) => sum + h.caloriesBurned);
+  int get _totalMinutes =>
+      _histories.fold(0, (sum, h) => sum + h.durationMinutes);
 
   @override
   void initState() {
     super.initState();
-    _fetchHistory();
+    _loadInitial();
+    _scrollController.addListener(_onScroll);
   }
 
-  Future<void> _fetchHistory() async {
-    setState(() => _isLoading = true);
-    final data = await _historyService.getHistory();
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  // Deteksi scroll mencapai 80% ke bawah → muat lebih banyak
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.8) {
+      _loadMore();
+    }
+  }
+
+  // Reset & muat dari awal (pull-to-refresh atau init)
+  Future<void> _loadInitial() async {
     setState(() {
-      _histories = data;
-      _isLoading = false;
+      _isInitialLoading = true;
+      _histories = [];
+      _offset = 0;
+      _hasMore = true;
+    });
+    final result = await _historyService.getHistory(offset: 0);
+    setState(() {
+      _histories = result.data;
+      _total = result.total;
+      _hasMore = result.hasMore;
+      _offset = result.data.length;
+      _isInitialLoading = false;
     });
   }
 
-  // Groups histories by date label (e.g. "Hari Ini", "Kemarin", "22 Apr 2026")
+  // Muat halaman berikutnya (infinite scroll)
+  Future<void> _loadMore() async {
+    if (_isLoadingMore || !_hasMore) return;
+    setState(() => _isLoadingMore = true);
+
+    final result = await _historyService.getHistory(offset: _offset);
+    setState(() {
+      _histories.addAll(result.data);
+      _total = result.total;
+      _hasMore = result.hasMore;
+      _offset += result.data.length;
+      _isLoadingMore = false;
+    });
+  }
+
+  // Groups the LOADED histories by date label
   Map<String, List<WorkoutHistory>> get _grouped {
     final Map<String, List<WorkoutHistory>> map = {};
     final now = DateTime.now();
@@ -72,13 +116,14 @@ class _HistoryPageState extends State<HistoryPage> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        padding:
+            EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
         child: Container(
           padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
           decoration: BoxDecoration(
             color: kCard,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28)),
             border: Border.all(color: Colors.white10),
           ),
           child: Form(
@@ -159,7 +204,7 @@ class _HistoryPageState extends State<HistoryPage> {
                           caloriesBurned: int.tryParse(caloriesStr) ?? 0,
                         );
                         if (ok) {
-                          _fetchHistory();
+                          _loadInitial(); // refresh dari awal
                         } else if (mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -223,29 +268,34 @@ class _HistoryPageState extends State<HistoryPage> {
         child: RefreshIndicator(
           color: kAccent,
           backgroundColor: kCard,
-          onRefresh: _fetchHistory,
+          onRefresh: _loadInitial,
           child: CustomScrollView(
+            controller: _scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
-              // ── Header ────────────────────────────────────────────────────
+              // ── Header ────────────────────────────────────────────
               SliverToBoxAdapter(
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20, vertical: 16),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Riwayat',
+                          const Text('Riwayat',
                               style: TextStyle(
                                   color: kTextMuted, fontSize: 14)),
-                          Text('Latihan',
+                          const Text('Latihan',
                               style: TextStyle(
                                   color: kTextPrimary,
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold)),
+                          if (!_isInitialLoading)
+                            Text('$_total sesi tersimpan',
+                                style: const TextStyle(
+                                    color: kTextMuted, fontSize: 12)),
                         ],
                       ),
                       GestureDetector(
@@ -256,8 +306,7 @@ class _HistoryPageState extends State<HistoryPage> {
                             color: kAccent,
                             borderRadius: BorderRadius.circular(14),
                           ),
-                          child:
-                              const Icon(Icons.add, color: kBg, size: 22),
+                          child: const Icon(Icons.add, color: kBg, size: 22),
                         ),
                       ),
                     ],
@@ -265,8 +314,8 @@ class _HistoryPageState extends State<HistoryPage> {
                 ),
               ),
 
-              // ── Summary Stats ─────────────────────────────────────────────
-              if (!_isLoading)
+              // ── Summary Stats ──────────────────────────────────────
+              if (!_isInitialLoading)
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
@@ -274,7 +323,7 @@ class _HistoryPageState extends State<HistoryPage> {
                       children: [
                         _StatCard(
                           icon: Icons.bar_chart_rounded,
-                          value: '$_totalSessions',
+                          value: '$_total',
                           label: 'Sesi',
                           color: kAccent,
                         ),
@@ -297,14 +346,14 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 ),
 
-              // ── Loading ───────────────────────────────────────────────────
-              if (_isLoading)
+              // ── Initial Loading ────────────────────────────────────
+              if (_isInitialLoading)
                 const SliverFillRemaining(
                   child: Center(
                       child: CircularProgressIndicator(color: kAccent)),
                 )
 
-              // ── Empty State ───────────────────────────────────────────────
+              // ── Empty State ────────────────────────────────────────
               else if (_histories.isEmpty)
                 SliverFillRemaining(
                   child: Center(
@@ -328,10 +377,11 @@ class _HistoryPageState extends State<HistoryPage> {
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold)),
                         const SizedBox(height: 8),
-                        const Text('Tekan tombol + untuk mencatat\nlatihan pertamamu!',
+                        const Text(
+                            'Tekan tombol + untuk mencatat\nlatihan pertamamu!',
                             textAlign: TextAlign.center,
-                            style:
-                                TextStyle(color: kTextMuted, height: 1.5)),
+                            style: TextStyle(
+                                color: kTextMuted, height: 1.5)),
                         const SizedBox(height: 28),
                         GestureDetector(
                           onTap: _showAddHistoryDialog,
@@ -353,10 +403,10 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 )
 
-              // ── History List (grouped by date) ────────────────────────────
+              // ── History list (grouped by date) ─────────────────────
               else
                 SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
@@ -376,8 +426,7 @@ class _HistoryPageState extends State<HistoryPage> {
                                     height: 16,
                                     decoration: BoxDecoration(
                                       color: kAccent,
-                                      borderRadius:
-                                          BorderRadius.circular(4),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -389,14 +438,13 @@ class _HistoryPageState extends State<HistoryPage> {
                                   const SizedBox(width: 8),
                                   Text('(${entry.value.length} sesi)',
                                       style: const TextStyle(
-                                          color: kTextMuted, fontSize: 12)),
+                                          color: kTextMuted,
+                                          fontSize: 12)),
                                 ],
                               ),
                             ),
-                            // Cards in this group
-                            ...entry.value.map(
-                              (h) => _WorkoutCard(history: h),
-                            ),
+                            ...entry.value
+                                .map((h) => _WorkoutCard(history: h)),
                             const SizedBox(height: 8),
                           ],
                         );
@@ -405,6 +453,43 @@ class _HistoryPageState extends State<HistoryPage> {
                     ),
                   ),
                 ),
+
+              // ── Load More indicator ────────────────────────────────
+              SliverToBoxAdapter(
+                child: _isLoadingMore
+                    ? const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(
+                            child: SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                              color: kAccent, strokeWidth: 2),
+                        )),
+                      )
+                    : (!_hasMore && _histories.isNotEmpty)
+                        ? Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 24),
+                            child: Center(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: kCard,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border:
+                                      Border.all(color: Colors.white12),
+                                ),
+                                child: Text(
+                                  'Semua $_total riwayat sudah ditampilkan',
+                                  style: const TextStyle(
+                                      color: kTextMuted, fontSize: 12),
+                                ),
+                              ),
+                            ),
+                          )
+                        : const SizedBox(height: 80),
+              ),
             ],
           ),
         ),
@@ -413,7 +498,7 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 }
 
-// ─── Summary stat box ─────────────────────────────────────────────────────────
+// ─── Summary stat box ──────────────────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   const _StatCard({
     required this.icon,
@@ -457,7 +542,7 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ─── Individual workout card ──────────────────────────────────────────────────
+// ─── Individual workout card ───────────────────────────────────────────────────
 class _WorkoutCard extends StatelessWidget {
   const _WorkoutCard({required this.history});
   final WorkoutHistory history;
@@ -482,8 +567,7 @@ class _WorkoutCard extends StatelessWidget {
               color: kAccent.withOpacity(0.15),
               borderRadius: BorderRadius.circular(14),
             ),
-            child:
-                const Icon(Icons.fitness_center, color: kAccent, size: 24),
+            child: const Icon(Icons.fitness_center, color: kAccent, size: 24),
           ),
           const SizedBox(width: 14),
 
@@ -498,7 +582,6 @@ class _WorkoutCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 16)),
                 const SizedBox(height: 6),
-                // Stat pills row
                 Row(
                   children: [
                     _Pill(
@@ -519,17 +602,12 @@ class _WorkoutCard extends StatelessWidget {
           ),
 
           // Time
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                DateFormat('HH:mm').format(history.date.toLocal()),
-                style: const TextStyle(
-                    color: kTextMuted,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600),
-              ),
-            ],
+          Text(
+            DateFormat('HH:mm').format(history.date.toLocal()),
+            style: const TextStyle(
+                color: kTextMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -537,7 +615,7 @@ class _WorkoutCard extends StatelessWidget {
   }
 }
 
-// ─── Small info pill ──────────────────────────────────────────────────────────
+// ─── Small info pill ───────────────────────────────────────────────────────────
 class _Pill extends StatelessWidget {
   const _Pill(
       {required this.icon, required this.label, required this.color});
