@@ -3,15 +3,22 @@ const express = require('express');
 const cors = require('cors');
 const { testConnection } = require('./config/db');
 
+// Import routes
+const productRoutes = require('./routes/productRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
 
+// Base Route
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Gymbro API is running' });
 });
+
+// API Routes
+app.use('/products', productRoutes);
 
 const start = async () => {
   await testConnection();
