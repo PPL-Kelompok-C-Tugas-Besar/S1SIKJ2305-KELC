@@ -53,7 +53,8 @@ const getWeightHistory = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // Ambil riwayat berat badan, urutkan dari yang terbaru (DESC)
+        // [PKCTB-314] Filter Keamanan Privasi: Mengambil riwayat berat badan HANYA untuk user_id ini (Token)
+        // [PKCTB-315] Sorting Waktu: Diurutkan secara spesifik dari yang terbaru ke terlama (DESC)
         const [rows] = await pool.query(
             'SELECT * FROM user_weight_logs WHERE user_id = ? ORDER BY recorded_date DESC',
             [userId]
