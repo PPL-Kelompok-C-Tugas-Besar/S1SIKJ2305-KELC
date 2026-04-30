@@ -48,21 +48,40 @@ const updateWeight = async (req, res) => {
     }
 };
 
-// GET /users/weight/history
+// GET /users/weight/history?page=1&limit=10
 const getWeightHistory = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        // [PKCTB-314] Filter Keamanan Privasi: Mengambil riwayat berat badan HANYA untuk user_id ini (Token)
-        // [PKCTB-315] Sorting Waktu: Diurutkan secara spesifik dari yang terbaru ke terlama (DESC)
-        const [rows] = await pool.query(
-            'SELECT * FROM user_weight_logs WHERE user_id = ? ORDER BY recorded_date DESC',
+        // [PKCTB-316] Pagination: Ambil parameter page & limit dari query, dengan nilai default
+        const limit = Math.min(parseInt(req.query.limit) || 10, 50); // maks 50 per halaman
+        const page  = Math.max(parseInt(req.query.page)  || 1,  1);
+        const offset = (page - 1) * limit;
+
+        // Hitung total data milik user ini
+        const [[{ total }]] = await pool.query(
+            'SELECT COUNT(*) AS total FROM user_weight_logs WHERE user_id = ?',
             [userId]
         );
 
+        // [PKCTB-314] Filter Keamanan Privasi: Mengambil riwayat HANYA untuk user_id ini
+        // [PKCTB-315] Sorting: Diurutkan dari yang terbaru ke terlama (DESC)
+        const [rows] = await pool.query(
+            'SELECT * FROM user_weight_logs WHERE user_id = ? ORDER BY recorded_date DESC LIMIT ? OFFSET ?',
+            [userId, limit, offset]
+        );
+
+        const totalPages = Math.ceil(total / limit);
+
         return res.status(200).json({
             success: true,
-            data: rows
+            data: rows,
+            pagination: {
+                totalData:   total,
+                totalPages:  totalPages,
+                currentPage: page,
+                limit:       limit
+            }
         });
     } catch (err) {
         console.error('Get weight history error:', err);
