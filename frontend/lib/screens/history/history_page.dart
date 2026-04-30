@@ -19,6 +19,7 @@ class _HistoryPageState extends State<HistoryPage> {
   bool _isInitialLoading = true; // loading pertama kali (seluruh halaman)
   bool _isLoadingMore = false;   // loading tambahan (bottom indicator)
   bool _hasMore = true;
+  bool _hasError = false;        // flag error saat load gagal
   int _total = 0;
   int _offset = 0;
 
@@ -51,35 +52,54 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // Reset & muat dari awal (pull-to-refresh atau init)
   Future<void> _loadInitial() async {
+    if (!mounted) return;
     setState(() {
       _isInitialLoading = true;
+      _hasError = false;
       _histories = [];
       _offset = 0;
       _hasMore = true;
     });
-    final result = await _historyService.getHistory(offset: 0);
-    setState(() {
-      _histories = result.data;
-      _total = result.total;
-      _hasMore = result.hasMore;
-      _offset = result.data.length;
-      _isInitialLoading = false;
-    });
+    try {
+      final result = await _historyService.getHistory(offset: 0);
+      if (!mounted) return;
+      setState(() {
+        _histories = result.data;
+        _total = result.total;
+        _hasMore = result.hasMore;
+        _offset = result.data.length;
+        _isInitialLoading = false;
+        _hasError = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isInitialLoading = false;
+        _hasError = true;
+      });
+    }
   }
 
   // Muat halaman berikutnya (infinite scroll)
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore) return;
+    if (!mounted) return;
     setState(() => _isLoadingMore = true);
 
-    final result = await _historyService.getHistory(offset: _offset);
-    setState(() {
-      _histories.addAll(result.data);
-      _total = result.total;
-      _hasMore = result.hasMore;
-      _offset += result.data.length;
-      _isLoadingMore = false;
-    });
+    try {
+      final result = await _historyService.getHistory(offset: _offset);
+      if (!mounted) return;
+      setState(() {
+        _histories.addAll(result.data);
+        _total = result.total;
+        _hasMore = result.hasMore;
+        _offset += result.data.length;
+        _isLoadingMore = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoadingMore = false);
+    }
   }
 
   // Groups the LOADED histories by date label
@@ -353,6 +373,57 @@ class _HistoryPageState extends State<HistoryPage> {
                 const SliverFillRemaining(
                   child: Center(
                       child: CircularProgressIndicator(color: kAccent)),
+                )
+
+              // ── Error State ────────────────────────────────────────
+              else if (_hasError)
+                SliverFillRemaining(
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 36),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: kCard,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.red.withOpacity(0.3)),
+                            ),
+                            child: const Icon(Icons.wifi_off_rounded,
+                                color: Colors.redAccent, size: 44),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text('Gagal memuat data',
+                              style: TextStyle(
+                                  color: kTextPrimary,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Periksa koneksi internet\natau coba lagi.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: kTextMuted, height: 1.5),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: _loadInitial,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Coba Lagi'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kAccent,
+                              foregroundColor: kBg,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 28, vertical: 12),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 )
 
               // ── Empty State ────────────────────────────────────────
