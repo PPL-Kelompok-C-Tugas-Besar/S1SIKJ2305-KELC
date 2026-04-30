@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
-import '../history/history_page.dart';
+import '../history/history_page_fixed.dart';
 
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────

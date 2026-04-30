@@ -366,7 +366,14 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 ),
 
-              // ── Initial Loading ───────────────────────�              // ── Error State ──────────────────────────────────────
+              // ── Initial Loading ────────────────────────────────────
+              if (_isInitialLoading)
+                const SliverFillRemaining(
+                  child: Center(
+                      child: CircularProgressIndicator(color: kAccent)),
+                )
+
+              // ── Error State ────────────────────────────────────────
               else if (_hasError)
                 SliverFillRemaining(
                   child: Center(
@@ -415,21 +422,11 @@ class _HistoryPageState extends State<HistoryPage> {
                       ),
                     ),
                   ),
-                )dius.circular(14)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 28, vertical: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 )
 
               // ── Empty State ────────────────────────────────────────
               else if (_histories.isEmpty)
                 SliverFillRemaining(
-                  hasScrollBody: false,
                   child: _EmptyState(onCta: _showAddHistoryDialog),
                 )
 
