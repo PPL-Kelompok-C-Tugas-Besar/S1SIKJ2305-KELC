@@ -10,7 +10,12 @@ async function runMigration() {
                 duration_minutes INT NOT NULL,
                 calories_burned INT NOT NULL,
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                
+                -- [PKCTB-245] Relasi & Integritas Data: 
+                -- Memastikan riwayat_latihan terikat kuat dengan tabel USERS.
+                -- Jika user dihapus, riwayat ikut terhapus (ON DELETE CASCADE)
                 FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE,
+                
                 -- [PKCTB-244] Optimasi: Menambahkan INDEX gabungan (user_id, date) 
                 -- untuk mempercepat proses filtering, sorting, dan pagination
                 INDEX idx_user_date (user_id, date)
