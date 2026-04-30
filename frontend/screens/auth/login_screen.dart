@@ -133,4 +133,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextButton(
                   onPressed: () =>
                       Navigator.pushReplacementNamed(context, '/register'),
-                  child: const Text('Belum punya akun? Da
+                  child: const Text('Belum punya akun? Daftar Sekarang'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
