@@ -19,7 +19,6 @@ class _HistoryPageState extends State<HistoryPage> {
   bool _isInitialLoading = true; // loading pertama kali (seluruh halaman)
   bool _isLoadingMore = false;   // loading tambahan (bottom indicator)
   bool _hasMore = true;
-  bool _hasError = false;        // flag error saat load gagal
   int _total = 0;
   int _offset = 0;
 
@@ -52,54 +51,35 @@ class _HistoryPageState extends State<HistoryPage> {
 
   // Reset & muat dari awal (pull-to-refresh atau init)
   Future<void> _loadInitial() async {
-    if (!mounted) return;
     setState(() {
       _isInitialLoading = true;
-      _hasError = false;
       _histories = [];
       _offset = 0;
       _hasMore = true;
     });
-    try {
-      final result = await _historyService.getHistory(offset: 0);
-      if (!mounted) return;
-      setState(() {
-        _histories = result.data;
-        _total = result.total;
-        _hasMore = result.hasMore;
-        _offset = result.data.length;
-        _isInitialLoading = false;
-        _hasError = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isInitialLoading = false;
-        _hasError = true;
-      });
-    }
+    final result = await _historyService.getHistory(offset: 0);
+    setState(() {
+      _histories = result.data;
+      _total = result.total;
+      _hasMore = result.hasMore;
+      _offset = result.data.length;
+      _isInitialLoading = false;
+    });
   }
 
   // Muat halaman berikutnya (infinite scroll)
   Future<void> _loadMore() async {
     if (_isLoadingMore || !_hasMore) return;
-    if (!mounted) return;
     setState(() => _isLoadingMore = true);
 
-    try {
-      final result = await _historyService.getHistory(offset: _offset);
-      if (!mounted) return;
-      setState(() {
-        _histories.addAll(result.data);
-        _total = result.total;
-        _hasMore = result.hasMore;
-        _offset += result.data.length;
-        _isLoadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _isLoadingMore = false);
-    }
+    final result = await _historyService.getHistory(offset: _offset);
+    setState(() {
+      _histories.addAll(result.data);
+      _total = result.total;
+      _hasMore = result.hasMore;
+      _offset += result.data.length;
+      _isLoadingMore = false;
+    });
   }
 
   // Groups the LOADED histories by date label
@@ -366,71 +346,61 @@ class _HistoryPageState extends State<HistoryPage> {
                   ),
                 ),
 
-              // ── Initial Loading ───────────────────────�              // ── Error State ──────────────────────────────────────
-              else if (_hasError)
-                SliverFillRemaining(
+              // ── Initial Loading ────────────────────────────────────
+              if (_isInitialLoading)
+                const SliverFillRemaining(
                   child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 36),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: kCard,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.red.withOpacity(0.3)),
-                            ),
-                            child: const Icon(Icons.wifi_off_rounded,
-                                color: Colors.redAccent, size: 44),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text('Gagal memuat data',
-                              style: TextStyle(
-                                  color: kTextPrimary,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Periksa koneksi internet\natau coba lagi.',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: kTextMuted, height: 1.5),
-                          ),
-                          const SizedBox(height: 24),
-                          ElevatedButton.icon(
-                            onPressed: _loadInitial,
-                            icon: const Icon(Icons.refresh_rounded, size: 18),
-                            label: const Text('Coba Lagi'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kAccent,
-                              foregroundColor: kBg,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 28, vertical: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                )dius.circular(14)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 28, vertical: 12),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                      child: CircularProgressIndicator(color: kAccent)),
                 )
 
               // ── Empty State ────────────────────────────────────────
               else if (_histories.isEmpty)
                 SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyState(onCta: _showAddHistoryDialog),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(28),
+                          decoration: BoxDecoration(
+                            color: kCard,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white10),
+                          ),
+                          child: const Icon(Icons.fitness_center,
+                              color: kTextMuted, size: 48),
+                        ),
+                        const SizedBox(height: 20),
+                        const Text('Belum Ada Riwayat',
+                            style: TextStyle(
+                                color: kTextPrimary,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 8),
+                        const Text(
+                            'Tekan tombol + untuk mencatat\nlatihan pertamamu!',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                                color: kTextMuted, height: 1.5)),
+                        const SizedBox(height: 28),
+                        GestureDetector(
+                          onTap: _showAddHistoryDialog,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 28, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: kAccent,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: const Text('Catat Sekarang',
+                                style: TextStyle(
+                                    color: kBg,
+                                    fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 )
 
               // ── History list (grouped by date) ─────────────────────
@@ -675,344 +645,4 @@ class _Pill extends StatelessWidget {
       ),
     );
   }
-}
-
-// ─── Premium Empty State ──────────────────────────────────────────────────────
-class _EmptyState extends StatefulWidget {
-  const _EmptyState({required this.onCta});
-  final VoidCallback onCta;
-
-  @override
-  State<_EmptyState> createState() => _EmptyStateState();
-}
-
-class _EmptyStateState extends State<_EmptyState>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _pulse;
-  late Animation<double> _fade;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 2200),
-    )..repeat(reverse: true);
-
-    _pulse = Tween<double>(begin: 0.92, end: 1.08).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-    _fade = Tween<double>(begin: 0.25, end: 0.65).animate(
-      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final illustrationSize =
-            (constraints.maxWidth * 0.48).clamp(140.0, 220.0);
-
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 36),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // ── Animated dumbbell illustration ──
-                AnimatedBuilder(
-                  animation: _ctrl,
-                  builder: (_, __) {
-                    return Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Outer pulsing aura
-                        Transform.scale(
-                          scale: _pulse.value,
-                          child: Container(
-                            width: illustrationSize + 44,
-                            height: illustrationSize + 44,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: RadialGradient(
-                                colors: [
-                                  kAccent.withOpacity(_fade.value * 0.30),
-                                  kAccent.withOpacity(0.0),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Inner glow ring
-                        Transform.scale(
-                          scale: _pulse.value * 0.95,
-                          child: Container(
-                            width: illustrationSize + 14,
-                            height: illustrationSize + 14,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color:
-                                    kAccent.withOpacity(_fade.value * 0.55),
-                                width: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Illustration circle
-                        Container(
-                          width: illustrationSize,
-                          height: illustrationSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: kCard,
-                            border: Border.all(
-                              color: Colors.white10,
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: kAccent.withOpacity(0.10),
-                                blurRadius: 32,
-                                spreadRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: CustomPaint(
-                            painter: _DumbbellPainter(),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 36),
-
-                // ── Badge chip ──
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        kAccent.withOpacity(0.18),
-                        kAccent.withOpacity(0.06)
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: kAccent.withOpacity(0.35)),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.bolt_rounded, color: kAccent, size: 14),
-                      SizedBox(width: 4),
-                      Text(
-                        'Mulai perjalanan fitnesmu',
-                        style: TextStyle(
-                          color: kAccent,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ── Headline ──
-                const Text(
-                  'Belum ada riwayat latihan',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: kTextPrimary,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    height: 1.25,
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                // ── Subtitle ──
-                const Text(
-                  'Setiap sesi latihanmu akan tersimpan\ndi sini. Catat sekarang dan mulai\nbangun kebiasaan sehatmu!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: kTextMuted,
-                    fontSize: 13.5,
-                    height: 1.65,
-                  ),
-                ),
-
-                const SizedBox(height: 36),
-
-                // ── CTA Button ──
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: widget.onCta,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kAccent,
-                      foregroundColor: kBg,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.add_circle_outline_rounded, size: 20),
-                        SizedBox(width: 8),
-                        Text(
-                          'Mulai Latihan',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // ── Secondary hint ──
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.info_outline_rounded,
-                        color: kTextMuted, size: 13),
-                    SizedBox(width: 5),
-                    Text(
-                      'Atau tarik ke bawah untuk memuat ulang',
-                      style: TextStyle(color: kTextMuted, fontSize: 11.5),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// ─── Custom dumbbell painter ───────────────────────────────────────────────────
-class _DumbbellPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-
-    final barPaint = Paint()
-      ..color = kAccent
-      ..strokeWidth = 6
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-
-    final platePaint = Paint()
-      ..color = kAccent
-      ..style = PaintingStyle.fill;
-
-    final glowPaint = Paint()
-      ..color = kAccent.withOpacity(0.18)
-      ..style = PaintingStyle.fill;
-
-    final shadowPaint = Paint()
-      ..color = kAccent.withOpacity(0.08)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10);
-
-    // Bar
-    final barHalfLen = size.width * 0.28;
-    canvas.drawLine(
-      Offset(cx - barHalfLen, cy),
-      Offset(cx + barHalfLen, cy),
-      barPaint,
-    );
-
-    // Left plates
-    _drawPlate(canvas, cx - barHalfLen - 6, cy, 14, 28, platePaint,
-        glowPaint, shadowPaint);
-    _drawPlate(canvas, cx - barHalfLen - 22, cy, 10, 22, platePaint,
-        glowPaint, shadowPaint);
-
-    // Right plates
-    _drawPlate(canvas, cx + barHalfLen + 6, cy, 14, 28, platePaint,
-        glowPaint, shadowPaint);
-    _drawPlate(canvas, cx + barHalfLen + 22, cy, 10, 22, platePaint,
-        glowPaint, shadowPaint);
-
-    // Center grip knurling lines
-    final gripPaint = Paint()
-      ..color = kBg.withOpacity(0.65)
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    for (int i = -2; i <= 2; i++) {
-      final x = cx + i * 7.0;
-      canvas.drawLine(Offset(x, cy - 5), Offset(x, cy + 5), gripPaint);
-    }
-
-    // Sweat drops (decoration)
-    final dropPaint = Paint()
-      ..color = kAccent.withOpacity(0.55)
-      ..style = PaintingStyle.fill;
-    _drawDrop(canvas, cx - 14, cy - 38, 4, dropPaint);
-    _drawDrop(canvas, cx + 20, cy - 46, 3, dropPaint);
-    _drawDrop(canvas, cx + 4, cy - 34, 2.5, dropPaint);
-  }
-
-  void _drawPlate(
-    Canvas canvas,
-    double cx,
-    double cy,
-    double rx,
-    double ry,
-    Paint fill,
-    Paint glow,
-    Paint shadow,
-  ) {
-    final rect = Rect.fromCenter(
-        center: Offset(cx, cy), width: rx * 2, height: ry * 2);
-    final rRect = RRect.fromRectAndRadius(rect, const Radius.circular(4));
-    canvas.drawRRect(rRect, shadow);
-    canvas.drawRRect(
-        rRect, glow..color = kAccent.withOpacity(0.18));
-    canvas.drawRRect(rRect, fill);
-  }
-
-  void _drawDrop(Canvas canvas, double x, double y, double r, Paint paint) {
-    final path = Path();
-    path.moveTo(x, y - r * 2.2);
-    path.cubicTo(
-      x + r, y - r * 0.5,
-      x + r, y + r,
-      x, y + r * 1.2,
-    );
-    path.cubicTo(
-      x - r, y + r,
-      x - r, y - r * 0.5,
-      x, y - r * 2.2,
-    );
-    canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
