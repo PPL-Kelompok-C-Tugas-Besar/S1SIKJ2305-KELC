@@ -10,10 +10,13 @@ async function runMigration() {
                 duration_minutes INT NOT NULL,
                 calories_burned INT NOT NULL,
                 date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE
+                FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE,
+                -- [PKCTB-244] Optimasi: Menambahkan INDEX gabungan (user_id, date) 
+                -- untuk mempercepat proses filtering, sorting, dan pagination
+                INDEX idx_user_date (user_id, date)
             )
         `);
-        console.log("✅ Migration: workout_history table created successfully.");
+        console.log("✅ Migration: workout_history table created successfully (Optimized for PKCTB-244).");
     } catch (error) {
         console.error("❌ Migration error:", error.message);
     }
