@@ -18,7 +18,9 @@ const getHistory = async (req, res) => {
             [userId]
         );
 
-        // [PKCTB-241] Filter & Sorting: Mengembalikan data HANYA milik user_id tersebut dan diurutkan dari terbaru
+        // [PKCTB-241 & PKCTB-242] Filter & Sorting: 
+        // 1. Mengembalikan data HANYA milik user_id tersebut (Filter)
+        // 2. Diurutkan dari yang terbaru menggunakan ORDER BY date DESC (Sorting)
         const [rows] = await pool.execute(
             'SELECT * FROM workout_history WHERE user_id = ? ORDER BY date DESC LIMIT ? OFFSET ?',
             [userId, limit, offset]
