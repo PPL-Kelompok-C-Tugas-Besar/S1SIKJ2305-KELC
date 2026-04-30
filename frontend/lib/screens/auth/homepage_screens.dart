@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
+import '../history/history_page.dart';
+import '../profile/profile_page.dart';
 
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
@@ -19,8 +21,8 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _pages = [
     _HomePage(),
     CataloguePage(),
-    _PlaceholderPage(label: 'Progress'),
-    _PlaceholderPage(label: 'Profile'),
+    HistoryPage(),
+    ProfilePage(),
   ];
 
   @override
