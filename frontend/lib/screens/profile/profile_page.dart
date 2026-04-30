@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/palette.dart';
+import 'weight_tracking_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -313,6 +314,27 @@ class _ProfilePageState extends State<ProfilePage> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Tombol Lihat Riwayat
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const WeightTrackingPage()),
+                  );
+                },
+                icon: const Icon(Icons.history_rounded, color: kTextMuted),
+                label: const Text(
+                  'Lihat Riwayat Berat Badan',
+                  style: TextStyle(color: kTextMuted),
                 ),
               ),
             ),
