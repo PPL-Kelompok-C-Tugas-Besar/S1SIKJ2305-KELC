@@ -21,8 +21,6 @@ class _HomeScreenState extends State<HomeScreen> {
     _HomePage(),
     CataloguePage(),
     _PlaceholderPage(label: 'Marketplace'),
-    _PlaceholderPage(label: 'Progress'),
-    _PlaceholderPage(label: 'Profile'),
     HistoryPage(),
     ProfilePage(),
   ];
