@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
+import '../history/history_page.dart';
+import '../profile/profile_page.dart';
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
@@ -21,6 +23,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _PlaceholderPage(label: 'Marketplace'),
     _PlaceholderPage(label: 'Progress'),
     _PlaceholderPage(label: 'Profile'),
+    HistoryPage(),
+    ProfilePage(),
   ];
 
   @override
