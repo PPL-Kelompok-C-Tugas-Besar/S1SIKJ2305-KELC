@@ -6,8 +6,17 @@ const updateWeight = async (req, res) => {
         const userId = req.user.id;
         const { weight, recorded_date } = req.body;
 
-        if (!weight) {
+        // [PKCTB-307] Validasi ketat di sisi backend
+        if (weight === undefined || weight === null) {
             return res.status(400).json({ success: false, message: 'Berat badan wajib diisi' });
+        }
+
+        const parsedWeight = parseFloat(weight);
+        if (isNaN(parsedWeight) || parsedWeight < 20 || parsedWeight > 300) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Data tidak valid. Berat badan harus berupa angka antara 20 - 300 kg' 
+            });
         }
 
         // Tanggal default adalah waktu sekarang jika tidak dikirim dari klien
@@ -39,4 +48,25 @@ const updateWeight = async (req, res) => {
     }
 };
 
-module.exports = { updateWeight };
+// GET /users/weight/history
+const getWeightHistory = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Ambil riwayat berat badan, urutkan dari yang terbaru (DESC)
+        const [rows] = await pool.query(
+            'SELECT * FROM user_weight_logs WHERE user_id = ? ORDER BY recorded_date DESC',
+            [userId]
+        );
+
+        return res.status(200).json({
+            success: true,
+            data: rows
+        });
+    } catch (err) {
+        console.error('Get weight history error:', err);
+        return res.status(500).json({ success: false, message: 'Terjadi kesalahan saat mengambil riwayat berat badan' });
+    }
+};
+
+module.exports = { updateWeight, getWeightHistory };

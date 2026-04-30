@@ -3,7 +3,7 @@ const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
 const { getHistory, addHistory } = require('../controllers/historyController');
-const { updateWeight } = require('../controllers/profileController');
+const { updateWeight, getWeightHistory } = require('../controllers/profileController');
 
 // GET /users/profile
 router.get('/profile', verifyToken, async (req, res) => {
@@ -24,6 +24,9 @@ router.get('/profile', verifyToken, async (req, res) => {
 
 // POST /users/weight
 router.post('/weight', verifyToken, updateWeight);
+
+// GET /users/weight/history
+router.get('/weight/history', verifyToken, getWeightHistory);
 
 // GET /users/history
 router.get('/history', verifyToken, getHistory);
