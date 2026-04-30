@@ -34,7 +34,9 @@ class HistoryService {
     };
   }
 
-  /// Mengambil riwayat dengan dukungan pagination.
+  /// [PKCTB-247] Integrasi Frontend API: Mengambil riwayat latihan.
+  /// Menangani pemanggilan API dinamis berdasarkan user login (menggunakan token JWT),
+  /// lengkap dengan manajemen state untuk loading, error handling, dan pagination.
   /// [page] adalah halaman yang diinginkan (dimulai dari 1).
   Future<HistoryResult> getHistory({int page = 1}) async {
     final token = await _getToken();

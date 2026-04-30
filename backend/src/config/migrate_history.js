@@ -16,8 +16,9 @@ async function runMigration() {
                 -- Jika user dihapus, riwayat ikut terhapus (ON DELETE CASCADE)
                 FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE,
                 
-                -- [PKCTB-244] Optimasi: Menambahkan INDEX gabungan (user_id, date) 
-                -- untuk mempercepat proses filtering, sorting, dan pagination
+                -- [PKCTB-244 & PKCTB-246] Optimasi Index: 
+                -- 1. Index spesifik pada user_id otomatis terbuat oleh Foreign Key di atas (mempercepat WHERE user_id).
+                -- 2. Menambahkan INDEX gabungan (user_id, date) tambahan untuk menyempurnakan performa pagination & sorting.
                 INDEX idx_user_date (user_id, date)
             )
         `);
