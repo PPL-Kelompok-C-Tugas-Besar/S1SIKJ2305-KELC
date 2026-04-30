@@ -4,7 +4,6 @@ import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
 
-
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -75,11 +74,22 @@ class _HomePage extends StatelessWidget {
           children: [
             _Header(firstName: firstName),
             const SizedBox(height: 24),
-            _PromoBanner(),
+            _DailyStatsRow(),
+            const SizedBox(height: 24),
+            _WeeklyGoalCard(),
             const SizedBox(height: 32),
-            _SectionTitle(title: 'Rekomendasi Hari ini'),
+            const _SectionTitle(title: 'Popular Goals'),
+            const SizedBox(height: 16),
+            _GoalList(),
+            const SizedBox(height: 32),
+            const _SectionTitle(title: 'Rekomendasi Hari ini'),
             const SizedBox(height: 16),
             _HotWorkoutList(),
+            const SizedBox(height: 32),
+            const _SectionTitle(title: 'Pemanasan & Peregangan'),
+            const SizedBox(height: 16),
+            _WarmUpList(),
+            const SizedBox(height: 32),
           ],
         ),
       ),
@@ -112,7 +122,7 @@ class _Header extends StatelessWidget {
         ),
         Row(
           children: [
-            _StreakBadge(),
+            const _StreakBadge(),
             IconButton(
               icon: const Icon(Icons.logout, color: kTextMuted),
               onPressed: () async {
@@ -130,6 +140,8 @@ class _Header extends StatelessWidget {
 }
 
 class _StreakBadge extends StatelessWidget {
+  const _StreakBadge();
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -156,59 +168,179 @@ class _StreakBadge extends StatelessWidget {
   }
 }
 
-// ── Promo banner ─────────────────────────────────────────────────────────────
-class _PromoBanner extends StatelessWidget {
+// ── Daily Stats ──────────────────────────────────────────────────────────────
+class _DailyStatsRow extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        Expanded(
+          child: _StatCard(
+            label: 'Calories',
+            value: '320',
+            unit: 'kcal',
+            icon: Icons.local_fire_department,
+          ),
+        ),
+        SizedBox(width: 16),
+        Expanded(
+          child: _StatCard(
+            label: 'Time',
+            value: '45',
+            unit: 'min',
+            icon: Icons.timer_outlined,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatCard extends StatelessWidget {
+  const _StatCard({
+    required this.label,
+    required this.value,
+    required this.unit,
+    required this.icon,
+  });
+
+  final String label, value, unit;
+  final IconData icon;
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3A3A3A), Color(0xFF222222)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: kCard,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white10),
       ),
       child: Row(
         children: [
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Join Gymbro\nmembership',
-                    style: TextStyle(
-                        color: kTextPrimary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2)),
-                const SizedBox(height: 8),
-                const Text('20% Off',
-                    style: TextStyle(color: kTextMuted, fontSize: 14)),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kAccent,
-                    foregroundColor: kBg,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20)),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
-                  ),
-                  child: const Text('Check detail',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: kAccent.withAlpha(31),
+              borderRadius: BorderRadius.circular(12),
             ),
+            child: Icon(icon, color: kAccent, size: 20),
           ),
-          Expanded(
-            child: Icon(Icons.star,
-                size: 80, color: kAccent.withOpacity(0.5)),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(color: kTextMuted, fontSize: 12)),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(value,
+                      style: const TextStyle(
+                          color: kTextPrimary,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 4),
+                  Text(unit, style: const TextStyle(color: kTextMuted, fontSize: 12)),
+                ],
+              ),
+            ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Weekly Goal Card ─────────────────────────────────────────────────────────
+class _WeeklyGoalCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final DateTime now = DateTime.now();
+    final int currentWeekday = now.weekday; 
+    final DateTime startOfWeek = now.subtract(Duration(days: currentWeekday - 1));
+
+    final List<String> dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text('Weekly Goal',
+                  style: TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold)),
+              Text('3 of 4 days',
+                  style: TextStyle(
+                      color: kAccent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (index) {
+              final DateTime date = startOfWeek.add(Duration(days: index));
+              final bool isActive = index == (currentWeekday - 1);
+              
+              return _DayBadge(
+                day: dayNames[index],
+                date: date.day.toString(),
+                isActive: isActive,
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DayBadge extends StatelessWidget {
+  const _DayBadge({
+    required this.day,
+    required this.date,
+    required this.isActive,
+  });
+
+  final String day;
+  final String date;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      decoration: BoxDecoration(
+        color: isActive ? kAccent : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        border: isActive ? null : Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
+          Text(day,
+              style: TextStyle(
+                  color: isActive ? kBg : kTextMuted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500)),
+          const SizedBox(height: 8),
+          Text(date,
+              style: TextStyle(
+                  color: isActive ? kBg : kTextPrimary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -240,6 +372,61 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+// ── Goal list ────────────────────────────────────────────────────────────────
+class _GoalList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 100,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        children: const [
+          _GoalCard(title: 'Weight Loss', icon: Icons.monitor_weight_outlined),
+          SizedBox(width: 16),
+          _GoalCard(title: 'Muscle Gain', icon: Icons.fitness_center),
+          SizedBox(width: 16),
+          _GoalCard(title: 'Flexibility', icon: Icons.self_improvement),
+          SizedBox(width: 16),
+          _GoalCard(title: 'Endurance', icon: Icons.directions_run),
+        ],
+      ),
+    );
+  }
+}
+
+class _GoalCard extends StatelessWidget {
+  const _GoalCard({required this.title, required this.icon});
+  final String title;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 110,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, color: kAccent, size: 28),
+          const SizedBox(height: 12),
+          Text(title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  color: kTextPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Workout cards ─────────────────────────────────────────────────────────────
 class _HotWorkoutList extends StatelessWidget {
   @override
@@ -249,7 +436,7 @@ class _HotWorkoutList extends StatelessWidget {
       child: ListView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
-        children: [
+        children: const [
           _WorkoutCard(
             title: 'Full Body\nWorkout',
             level: 'Beginner',
@@ -257,13 +444,43 @@ class _HotWorkoutList extends StatelessWidget {
             imageUrl:
                 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80',
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: 16),
           _WorkoutCard(
             title: 'Upper Body\nStrength',
             level: 'Intermediate',
             duration: '45 min',
             imageUrl:
                 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WarmUpList extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 220,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        clipBehavior: Clip.none,
+        children: const [
+          _WorkoutCard(
+            title: 'Morning\nMobility',
+            level: 'All Levels',
+            duration: '15 min',
+            imageUrl:
+                'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80',
+          ),
+          SizedBox(width: 16),
+          _WorkoutCard(
+            title: 'Pre-Workout\nStretch',
+            level: 'Beginner',
+            duration: '10 min',
+            imageUrl:
+                'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80',
           ),
         ],
       ),
@@ -291,7 +508,7 @@ class _WorkoutCard extends StatelessWidget {
           image: NetworkImage(imageUrl),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(
-              Colors.black.withOpacity(0.5), BlendMode.darken),
+              Colors.black.withAlpha(128), BlendMode.darken),
         ),
       ),
       child: Padding(
@@ -347,8 +564,6 @@ class _WorkoutCard extends StatelessWidget {
   }
 }
 
-
-
 // ─── Placeholder tabs ─────────────────────────────────────────────────────────
 class _PlaceholderPage extends StatelessWidget {
   const _PlaceholderPage({required this.label});
@@ -363,7 +578,7 @@ class _PlaceholderPage extends StatelessWidget {
   }
 }
 
-// ─── Admin dashboard (unchanged) ─────────────────────────────────────────────
+// ─── Admin dashboard ─────────────────────────────────────────────────────────
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 

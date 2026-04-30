@@ -222,7 +222,7 @@ class _SummaryChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: kAccent.withOpacity(0.12),
+        color: kAccent.withAlpha(31),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
