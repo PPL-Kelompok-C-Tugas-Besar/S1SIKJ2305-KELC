@@ -34,6 +34,9 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
   Timer? _timer;
   bool _isPaused = false;
 
+  // State tambahan buat efek tombol 3D Lif
+  bool _is3DPressed = false;
+
   void _startWorkout() {
     int duration = int.tryParse(_workDurationController.text) ?? 30;
     setState(() {
@@ -89,7 +92,6 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
     });
   }
 
-  // Fungsi baru buat balik ke menu setting durasi/reps
   void _backToSettings() {
     _timer?.cancel();
     setState(() {
@@ -106,9 +108,43 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
     super.dispose();
   }
 
+  // WIDGET HELPER BUAT TOMBOL 3D BIAR GAK REPOT COPY-PASTE LIF
+  Widget _build3DButton({
+    required String text, 
+    required Color color, 
+    required VoidCallback onTap
+  }) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _is3DPressed = true),
+      onTapUp: (_) => setState(() => _is3DPressed = false),
+      onTapCancel: () => setState(() => _is3DPressed = false),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 100),
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: _is3DPressed
+              ? null // Mendam pas ditekan
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.5),
+                    offset: const Offset(4, 4),
+                    blurRadius: 8,
+                  ),
+                ],
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // Tombol back cuma muncul kalau lagi olahraga atau rest
     bool showBackButton = _currentState == WorkoutState.exercising || 
                          _currentState == WorkoutState.restTime || 
                          _currentState == WorkoutState.inputRest;
@@ -123,7 +159,6 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
           ? IconButton(
               icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
               onPressed: _backToSettings,
-              tooltip: "Back to Settings",
             )
           : null,
       ),
@@ -162,11 +197,11 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
             _inputFieldCol("Reps", _repsController),
           ],
         ),
-        const SizedBox(height: 30),
-        ElevatedButton(
-          onPressed: _startWorkout,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent, minimumSize: const Size(200, 50)),
-          child: const Text("START WORKOUT", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 40),
+        _build3DButton(
+          text: "START WORKOUT", 
+          color: Colors.orangeAccent, 
+          onTap: _startWorkout
         ),
       ],
     );
@@ -200,11 +235,11 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
         const Text("SET REST DURATION", style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
         const SizedBox(height: 20),
         _customTextField(_restDurationController),
-        const SizedBox(height: 30),
-        ElevatedButton(
-          onPressed: _startRest,
-          style: ElevatedButton.styleFrom(backgroundColor: Colors.greenAccent, minimumSize: const Size(200, 50)),
-          child: const Text("START REST", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 40),
+        _build3DButton(
+          text: "START REST", 
+          color: Colors.greenAccent, 
+          onTap: _startRest
         ),
       ],
     );
@@ -217,15 +252,10 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
         const SizedBox(height: 10),
         Text('$_timerSeconds', style: const TextStyle(color: Colors.white, fontSize: 100, fontWeight: FontWeight.bold)),
         const SizedBox(height: 30),
-        ElevatedButton(
-          onPressed: _goToNextExercise, 
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orangeAccent,
-            foregroundColor: Colors.black,
-            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-          ),
-          child: const Text("SKIP REST", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        _build3DButton(
+          text: "SKIP REST", 
+          color: Colors.orangeAccent, 
+          onTap: _goToNextExercise
         ),
       ],
     );
@@ -242,7 +272,6 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen> {
     );
   }
 
-  // Widget Helper biar rapi
   Widget _inputFieldCol(String label, TextEditingController controller) {
     return Column(
       children: [
