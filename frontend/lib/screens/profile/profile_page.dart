@@ -19,6 +19,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showWeightDialog(BuildContext context) {
     final TextEditingController weightController = TextEditingController();
     DateTime selectedDate = DateTime.now();
+    String? _weightError;
 
     showModalBottomSheet(
       context: context,
@@ -56,9 +57,15 @@ class _ProfilePageState extends State<ProfilePage> {
                     controller: weightController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     style: const TextStyle(color: kTextPrimary),
+                    onChanged: (value) {
+                      if (_weightError != null) {
+                        setModalState(() => _weightError = null);
+                      }
+                    },
                     decoration: InputDecoration(
                       labelText: 'Berat Badan (kg)',
                       labelStyle: const TextStyle(color: kTextMuted),
+                      errorText: _weightError,
                       filled: true,
                       fillColor: kBg,
                       border: OutlineInputBorder(
@@ -125,18 +132,20 @@ class _ProfilePageState extends State<ProfilePage> {
                           ? null
                           : () async {
                               final weightText = weightController.text.trim();
+                              
                               if (weightText.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Masukkan berat badan valid')),
-                                );
+                                setModalState(() => _weightError = 'Berat badan tidak boleh kosong');
                                 return;
                               }
                               
                               final weight = double.tryParse(weightText.replaceAll(',', '.'));
                               if (weight == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Format angka tidak valid')),
-                                );
+                                setModalState(() => _weightError = 'Masukkan angka yang valid');
+                                return;
+                              }
+                              
+                              if (weight < 20 || weight > 300) {
+                                setModalState(() => _weightError = 'Berat badan harus antara 20 - 300 kg');
                                 return;
                               }
 
