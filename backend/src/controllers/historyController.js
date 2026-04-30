@@ -5,6 +5,7 @@ const PAGE_LIMIT = 10; // jumlah item per halaman
 // GET /users/history?limit=10&offset=0
 const getHistory = async (req, res) => {
     try {
+        // [PKCTB-241] Autentikasi: Mendapatkan identitas user yang sedang login dari JWT token
         const userId = req.user.id;
 
         // Ambil limit & offset dari query params, dengan nilai default
@@ -17,7 +18,7 @@ const getHistory = async (req, res) => {
             [userId]
         );
 
-        // Ambil data dengan LIMIT & OFFSET
+        // [PKCTB-241] Filter & Sorting: Mengembalikan data HANYA milik user_id tersebut dan diurutkan dari terbaru
         const [rows] = await pool.execute(
             'SELECT * FROM workout_history WHERE user_id = ? ORDER BY date DESC LIMIT ? OFFSET ?',
             [userId, limit, offset]
