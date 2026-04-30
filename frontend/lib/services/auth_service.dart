@@ -110,6 +110,31 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> updateWeight(double weight, DateTime date) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Sesi telah habis. Silakan login kembali.'};
+      }
+      final response = await http.post(
+        Uri.parse(ApiConstants.weight),
+        headers: _headers(token: token),
+        body: jsonEncode({
+          'weight': weight,
+          'recorded_date': date.toIso8601String(),
+        }),
+      );
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': body['message']};
+      } else {
+        return {'success': false, 'message': body['message'] ?? 'Gagal memperbarui berat badan'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
+    }
+  }
+
   Future<void> logout() async {
     await deleteToken();
   }

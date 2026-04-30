@@ -112,6 +112,9 @@ const start = async () => {
     // Jalankan migrasi tabel
     const { runMigration } = require('./config/migrate_history');
     await runMigration();
+    
+    const { runWeightMigration } = require('./config/migrate_weight');
+    await runWeightMigration();
 
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);

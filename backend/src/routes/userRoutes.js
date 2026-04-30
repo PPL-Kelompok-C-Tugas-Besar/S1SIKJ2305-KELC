@@ -3,6 +3,7 @@ const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
 const { getHistory, addHistory } = require('../controllers/historyController');
+const { updateWeight } = require('../controllers/profileController');
 
 // GET /users/profile
 router.get('/profile', verifyToken, async (req, res) => {
@@ -20,6 +21,9 @@ router.get('/profile', verifyToken, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
   }
 });
+
+// POST /users/weight
+router.post('/weight', verifyToken, updateWeight);
 
 // GET /users/history
 router.get('/history', verifyToken, getHistory);

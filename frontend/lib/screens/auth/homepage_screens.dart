@@ -4,6 +4,7 @@ import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
+import '../profile/profile_page.dart';
 
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
@@ -21,7 +22,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _HomePage(),
     CataloguePage(),
     HistoryPage(),
-    _PlaceholderPage(label: 'Profile'),
+    ProfilePage(),
   ];
 
   @override
