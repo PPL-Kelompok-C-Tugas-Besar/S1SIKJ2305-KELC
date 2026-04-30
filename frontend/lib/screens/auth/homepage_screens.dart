@@ -18,6 +18,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _pages = [
     _HomePage(),
     CataloguePage(),
+    _PlaceholderPage(label: 'Marketplace'),
     _PlaceholderPage(label: 'Progress'),
     _PlaceholderPage(label: 'Profile'),
   ];
@@ -46,6 +47,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icon(Icons.home_filled), label: 'Home'),
             BottomNavigationBarItem(
                 icon: Icon(Icons.fitness_center), label: 'Workout'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.storefront_outlined), label: 'Marketplace'),
             BottomNavigationBarItem(
                 icon: Icon(Icons.insert_chart_outlined), label: 'Progress'),
             BottomNavigationBarItem(
