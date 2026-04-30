@@ -1,7 +1,13 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import '../main.dart'; // To get AppColors
+class AppColors {
+  static const Color bgColor = Color(0xFF1A1A1A);
+  static const Color cardColor = Color(0xFF292929);
+  static const Color accentColor = Color(0xFFCCFF00);
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xFF9E9E9E);
+}
 import 'detailcatalog_ecommerce.dart';
 
 class ShopPage extends StatefulWidget {
