@@ -21,7 +21,7 @@ class _HistoryPageState extends State<HistoryPage> {
   bool _hasMore = true;
   bool _hasError = false;        // flag error saat load gagal
   int _total = 0;
-  int _offset = 0;
+  int _page = 1;
 
   // --- Stat Getters (dari semua data yang sudah di-load) ---
   int get _totalCalories =>
@@ -57,17 +57,17 @@ class _HistoryPageState extends State<HistoryPage> {
       _isInitialLoading = true;
       _hasError = false;
       _histories = [];
-      _offset = 0;
+      _page = 1;
       _hasMore = true;
     });
     try {
-      final result = await _historyService.getHistory(offset: 0);
+      final result = await _historyService.getHistory(page: 1);
       if (!mounted) return;
       setState(() {
         _histories = result.data;
         _total = result.total;
         _hasMore = result.hasMore;
-        _offset = result.data.length;
+        if (result.data.isNotEmpty) _page++;
         _isInitialLoading = false;
         _hasError = false;
       });
@@ -87,13 +87,13 @@ class _HistoryPageState extends State<HistoryPage> {
     setState(() => _isLoadingMore = true);
 
     try {
-      final result = await _historyService.getHistory(offset: _offset);
+      final result = await _historyService.getHistory(page: _page);
       if (!mounted) return;
       setState(() {
         _histories.addAll(result.data);
         _total = result.total;
         _hasMore = result.hasMore;
-        _offset += result.data.length;
+        if (result.data.isNotEmpty) _page++;
         _isLoadingMore = false;
       });
     } catch (e) {

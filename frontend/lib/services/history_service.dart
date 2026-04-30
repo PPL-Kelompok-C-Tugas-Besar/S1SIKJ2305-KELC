@@ -35,8 +35,8 @@ class HistoryService {
   }
 
   /// Mengambil riwayat dengan dukungan pagination.
-  /// [offset] adalah indeks awal data yang diinginkan.
-  Future<HistoryResult> getHistory({int offset = 0}) async {
+  /// [page] adalah halaman yang diinginkan (dimulai dari 1).
+  Future<HistoryResult> getHistory({int page = 1}) async {
     final token = await _getToken();
     if (token == null) {
       return const HistoryResult(data: [], total: 0, hasMore: false);
@@ -45,7 +45,7 @@ class HistoryService {
     try {
       final uri = Uri.parse(ApiConstants.history).replace(queryParameters: {
         'limit': '$pageLimit',
-        'offset': '$offset',
+        'page': '$page',
       });
 
       final response = await http.get(uri, headers: _headers(token));
@@ -57,7 +57,7 @@ class HistoryService {
           final pagination = body['pagination'];
           return HistoryResult(
             data: raw.map((j) => WorkoutHistory.fromJson(j)).toList(),
-            total: pagination['total'] ?? 0,
+            total: pagination['totalData'] ?? 0,
             hasMore: pagination['hasMore'] ?? false,
           );
         }

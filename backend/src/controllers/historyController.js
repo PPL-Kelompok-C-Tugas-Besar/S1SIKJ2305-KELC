@@ -8,11 +8,12 @@ const getHistory = async (req, res) => {
         // [PKCTB-241] Autentikasi: Mendapatkan identitas user yang sedang login dari JWT token
         const userId = req.user.id;
 
-        // Ambil limit & offset dari query params, dengan nilai default
-        const limit  = Math.min(parseInt(req.query.limit)  || PAGE_LIMIT, 50); // maks 50
-        const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+        // Ambil limit & page dari query params, dengan nilai default
+        const limit = Math.min(parseInt(req.query.limit) || PAGE_LIMIT, 50); // maks 50
+        const page  = Math.max(parseInt(req.query.page) || 1, 1);
+        const offset = (page - 1) * limit;
 
-        // Hitung total data milik user ini (untuk info hasMore di frontend)
+        // Hitung total data milik user ini
         const [[{ total }]] = await pool.execute(
             'SELECT COUNT(*) AS total FROM workout_history WHERE user_id = ?',
             [userId]
@@ -26,14 +27,17 @@ const getHistory = async (req, res) => {
             [userId, limit, offset]
         );
 
+        const totalPages = Math.ceil(total / limit);
+
         return res.status(200).json({
             success: true,
             data: rows,
             pagination: {
-                total,
-                limit,
-                offset,
-                hasMore: offset + rows.length < total,
+                totalData: total,
+                totalPages: totalPages,
+                currentPage: page,
+                limit: limit,
+                hasMore: page < totalPages
             },
         });
     } catch (err) {
