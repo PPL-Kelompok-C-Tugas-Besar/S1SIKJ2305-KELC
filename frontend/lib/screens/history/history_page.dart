@@ -98,7 +98,9 @@ class _HistoryPageState extends State<HistoryPage> {
       } else if (day == yesterday) {
         label = 'Kemarin';
       } else {
-        label = DateFormat('dd MMM yyyy').format(d);
+        // Menggunakan format yang lebih user-friendly dengan locale Indonesia
+        // Contoh: "12 Mei 2026"
+        label = DateFormat('d MMMM yyyy', 'id_ID').format(d);
       }
       map.putIfAbsent(label, () => []).add(h);
     }
