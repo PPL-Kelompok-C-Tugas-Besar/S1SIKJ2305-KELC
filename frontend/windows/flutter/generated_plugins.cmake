@@ -3,17 +3,11 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-<<<<<<< HEAD
-)
-
-list(APPEND FLUTTER_FFI_PLUGIN_LIST
-=======
   flutter_secure_storage_windows
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
   jni
->>>>>>> a30277c7cebaa1a40c31aeb34a273bd65fc9cc92
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)
