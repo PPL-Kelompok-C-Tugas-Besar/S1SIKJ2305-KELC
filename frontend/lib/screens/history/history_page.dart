@@ -389,7 +389,7 @@ class _HistoryPageState extends State<HistoryPage> {
                             decoration: BoxDecoration(
                               color: kCard,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.red.withOpacity(0.3)),
+                              border: Border.all(color: Colors.red.withAlpha(128)),
                             ),
                             child: const Icon(Icons.wifi_off_rounded,
                                 color: Colors.redAccent, size: 44),
@@ -637,7 +637,7 @@ class _WorkoutCard extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: kAccent.withOpacity(0.15),
+              color: kAccent.withAlpha(38),
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Icon(Icons.fitness_center, color: kAccent, size: 24),
@@ -701,7 +701,7 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withAlpha(31),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(

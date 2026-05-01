@@ -170,7 +170,7 @@ class _WeightTrackingPageState extends State<WeightTrackingPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.monitor_weight_outlined, color: kTextMuted.withOpacity(0.5), size: 80),
+            Icon(Icons.monitor_weight_outlined, color: kTextMuted.withAlpha(128), size: 80),
             const SizedBox(height: 20),
             const Text(
               'Belum ada data berat badan',
@@ -230,7 +230,7 @@ class _WeightLogCard extends StatelessWidget {
         color: kCard,
         borderRadius: BorderRadius.circular(20),
         border: isFirst
-            ? Border.all(color: kAccent.withOpacity(0.5), width: 1.5)
+            ? Border.all(color: kAccent.withAlpha(128), width: 1.5)
             : Border.all(color: Colors.white10),
       ),
       child: Row(
@@ -240,7 +240,7 @@ class _WeightLogCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: isFirst ? kAccent.withOpacity(0.15) : kBg,
+              color: isFirst ? kAccent.withAlpha(38) : kBg,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Icon(
