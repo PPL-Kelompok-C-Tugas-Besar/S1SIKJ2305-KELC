@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'detailcatalog_ecommerce.dart';
+import 'cart_ecommerce.dart';
 
 class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
@@ -22,6 +23,7 @@ class _ShopPageState extends State<ShopPage> {
   List<dynamic> products = [];
   bool isLoading = true;
   String errorMessage = '';
+  int cartItemCount = 0;
 
   @override
   void initState() {
@@ -79,6 +81,36 @@ class _ShopPageState extends State<ShopPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
+      floatingActionButton: cartItemCount > 0
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const CartPage()),
+                );
+              },
+              backgroundColor: Colors.white,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.shopping_bag_outlined, color: Colors.black, size: 28),
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -128,7 +160,7 @@ class _ShopPageState extends State<ShopPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
-                      icon: const Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary),
+                      icon: const Icon(Icons.receipt_long_outlined, color: AppColors.textPrimary),
                       onPressed: () {},
                     ),
                   ),
@@ -184,8 +216,8 @@ class _ShopPageState extends State<ShopPage> {
                               final int stock = product['stock'] ?? 0;
 
                               return GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
+                                onTap: () async {
+                                  final result = await Navigator.push(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => ProductDetailPage(
@@ -196,6 +228,11 @@ class _ShopPageState extends State<ShopPage> {
                                       ),
                                     ),
                                   );
+                                  if (result != null && result is int) {
+                                    setState(() {
+                                      cartItemCount += result;
+                                    });
+                                  }
                                 },
                                 child: Container(
                                   decoration: BoxDecoration(

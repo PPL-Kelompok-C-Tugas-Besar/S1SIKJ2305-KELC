@@ -202,7 +202,9 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.pop(context, _quantity);
+                      },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 18.0),
                         side: const BorderSide(color: AppColors.accentColor, width: 2.0),
