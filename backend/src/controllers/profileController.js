@@ -30,7 +30,7 @@ const updateWeight = async (req, res) => {
 
         // 2. Update kolom weight di profil utama (tabel USERS)
         await pool.execute(
-            'UPDATE USERS SET weight = ? WHERE id = ?',
+            'UPDATE users SET weight = ? WHERE id = ?',
             [weight, userId]
         );
 

@@ -1,10 +1,15 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import '../../models/workout_model.dart';
+import '../../services/api_constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
 import '../profile/profile_page.dart';
+import '../catalogue/workout_detail.dart';
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
@@ -89,7 +94,7 @@ class _HomePage extends StatelessWidget {
             const SizedBox(height: 32),
             const _SectionTitle(title: 'Rekomendasi Hari ini'),
             const SizedBox(height: 16),
-            _HotWorkoutList(),
+            const _HotWorkoutList(), // Now fetches from DB
             const SizedBox(height: 32),
             const _SectionTitle(title: 'Pemanasan & Peregangan'),
             const SizedBox(height: 16),
@@ -432,62 +437,162 @@ class _GoalCard extends StatelessWidget {
   }
 }
 
-// ── Workout cards ─────────────────────────────────────────────────────────────
-class _HotWorkoutList extends StatelessWidget {
+// ── Dynamic Workout cards ─────────────────────────────────────────────────────
+class _HotWorkoutList extends StatefulWidget {
+  const _HotWorkoutList();
+
+  @override
+  State<_HotWorkoutList> createState() => _HotWorkoutListState();
+}
+
+class _HotWorkoutListState extends State<_HotWorkoutList> {
+  late Future<List<Workout>> futureWorkouts;
+
+  @override
+  void initState() {
+    super.initState();
+    futureWorkouts = fetchWorkouts();
+  }
+
+  Future<List<Workout>> fetchWorkouts() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=workout'));
+      if (response.statusCode == 200) {
+        List jsonResponse = json.decode(response.body);
+        return jsonResponse.map((data) => Workout.fromJson(data)).toList();
+      } else {
+        throw Exception('Failed to load workouts. Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 220,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: const [
-          _WorkoutCard(
-            title: 'Full Body\nWorkout',
-            level: 'Beginner',
-            duration: '30 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80',
-          ),
-          SizedBox(width: 16),
-          _WorkoutCard(
-            title: 'Upper Body\nStrength',
-            level: 'Intermediate',
-            duration: '45 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80',
-          ),
-        ],
+      child: FutureBuilder<List<Workout>>(
+        future: futureWorkouts,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: kAccent));
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('Failed to load workouts.', style: TextStyle(color: kTextMuted)));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No workouts available.', style: TextStyle(color: kTextMuted)));
+          }
+
+          List<Workout> workouts = snapshot.data!;
+
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: workouts.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              final workout = workouts[index];
+              
+              final String imageUrl = index % 2 == 0
+                  ? 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80'
+                  : 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80';
+
+              return _WorkoutCard(
+                title: workout.title,
+                level: workout.difficulty[0].toUpperCase() + workout.difficulty.substring(1),
+                duration: '${workout.durationMinutes} min',
+                imageUrl: imageUrl,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutDetailPage(workout: workout),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
-class _WarmUpList extends StatelessWidget {
+class _WarmUpList extends StatefulWidget {
+  @override
+  State<_WarmUpList> createState() => _WarmUpListState();
+}
+
+class _WarmUpListState extends State<_WarmUpList> {
+  late Future<List<Workout>> futureWarmups;
+
+  @override
+  void initState() {
+    super.initState();
+    futureWarmups = fetchWarmups();
+  }
+
+  Future<List<Workout>> fetchWarmups() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=warmup'));
+      if (response.statusCode == 200) {
+        List jsonResponse = json.decode(response.body);
+        return jsonResponse.map((data) => Workout.fromJson(data)).toList();
+      } else {
+        throw Exception('Failed to load warmups.');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 220,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: const [
-          _WorkoutCard(
-            title: 'Morning\nMobility',
-            level: 'All Levels',
-            duration: '15 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80',
-          ),
-          SizedBox(width: 16),
-          _WorkoutCard(
-            title: 'Pre-Workout\nStretch',
-            level: 'Beginner',
-            duration: '10 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80',
-          ),
-        ],
+      child: FutureBuilder<List<Workout>>(
+        future: futureWarmups,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: kAccent));
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('Failed to load warmups.', style: TextStyle(color: kTextMuted)));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No warmups available.', style: TextStyle(color: kTextMuted)));
+          }
+
+          List<Workout> warmups = snapshot.data!;
+
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: warmups.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              final warmup = warmups[index];
+              
+              final String imageUrl = index % 2 == 0
+                  ? 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80'
+                  : 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80';
+
+              return _WorkoutCard(
+                title: warmup.title,
+                level: warmup.difficulty[0].toUpperCase() + warmup.difficulty.substring(1),
+                duration: '${warmup.durationMinutes} min',
+                imageUrl: imageUrl,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutDetailPage(workout: warmup),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -499,9 +604,11 @@ class _WorkoutCard extends StatelessWidget {
     required this.level,
     required this.duration,
     required this.imageUrl,
+    required this.onTap, // Inject callback
   });
 
   final String title, level, duration, imageUrl;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -550,7 +657,7 @@ class _WorkoutCard extends StatelessWidget {
             Align(
               alignment: Alignment.bottomRight,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: onTap, // Execute injected callback
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kAccent,
                   foregroundColor: kBg,

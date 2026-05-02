@@ -30,8 +30,9 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/workouts', require('./routes/workoutRoutes'));
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Gymbro API is running 🚀' });

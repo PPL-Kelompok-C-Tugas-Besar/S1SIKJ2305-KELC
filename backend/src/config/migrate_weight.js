@@ -8,7 +8,7 @@ async function runWeightMigration() {
                 user_id VARCHAR(255) NOT NULL,
                 weight FLOAT NOT NULL,
                 recorded_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                 INDEX idx_user_date (user_id, recorded_date DESC)
             )
         `);
