@@ -104,6 +104,7 @@ class _CataloguePageState extends State<CataloguePage> {
           workoutId: workout.id,
           location: workout.locationType,
           workoutType: workout.title,
+          workout: workout, 
         ),
       ),
     );
@@ -431,7 +432,7 @@ class _WorkoutCard extends StatelessWidget {
               Row(
                 children: [
                   Text(
-                    '${_capitalize(workout.difficulty)} - ${workout.durationMinutes ?? 0} min - ${workout.exerciseCount} exercises',
+                    '${_capitalize(workout.difficulty)} - ${workout.durationMinutes ?? 0} min - ${workout.exerciseCount} exercises - ${workout.caloriesBurned?.toStringAsFixed(0) ?? '0'} kcal',
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 12,

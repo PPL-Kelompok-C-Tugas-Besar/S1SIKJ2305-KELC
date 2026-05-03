@@ -9,6 +9,7 @@ class Workout {
   final int exerciseCount;
   final String equipmentSummary;
   final String? fitnessGoal;
+  final double? caloriesBurned;
 
   const Workout({
     required this.id,
@@ -21,6 +22,7 @@ class Workout {
     required this.exerciseCount,
     required this.equipmentSummary,
     this.fitnessGoal,
+    this.caloriesBurned,
   });
 
   Workout copyWith({
@@ -34,6 +36,7 @@ class Workout {
     int? exerciseCount,
     String? equipmentSummary,
     String? fitnessGoal,
+    double? caloriesBurned,
   }) {
     return Workout(
       id: id ?? this.id,
@@ -46,10 +49,12 @@ class Workout {
       exerciseCount: exerciseCount ?? this.exerciseCount,
       equipmentSummary: equipmentSummary ?? this.equipmentSummary,
       fitnessGoal: fitnessGoal ?? this.fitnessGoal,
+      caloriesBurned: caloriesBurned ?? this.caloriesBurned,
     );
   }
 
   factory Workout.fromJson(Map<String, dynamic> json) {
+    
     return Workout(
       id: _readString(json, 'id'),
       title: _readString(json, 'title'),
@@ -61,6 +66,7 @@ class Workout {
       exerciseCount: _readInt(json, 'exercise_count') ?? 0,
       equipmentSummary: _readString(json, 'equipment_summary'),
       fitnessGoal: _readString(json, 'fitness_goal'),
+      caloriesBurned: _readDouble(json, 'calories_burned'),
     );
   }
 
@@ -75,5 +81,13 @@ class Workout {
     if (value == null) return null;
     if (value is int) return value;
     return int.tryParse(value.toString());
+  }
+
+  static double? _readDouble(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 }

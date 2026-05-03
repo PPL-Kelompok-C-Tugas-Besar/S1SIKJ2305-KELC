@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:http/http.dart' as http;
 import '../../models/workout_model.dart';
 import '../../services/api_constants.dart';
+import '../../services/history_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
@@ -68,9 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ─── Home tab ─────────────────────────────────────────────────────────────────
-class _HomePage extends StatelessWidget {
+class _HomePage extends StatefulWidget {
   const _HomePage();
 
+  @override
+  State<_HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<_HomePage> {
   @override
   Widget build(BuildContext context) {
     final user      = context.watch<AuthProvider>().user;
@@ -175,15 +181,75 @@ class _StreakBadge extends StatelessWidget {
 }
 
 // ── Daily Stats ──────────────────────────────────────────────────────────────
-class _DailyStatsRow extends StatelessWidget {
+class _DailyStatsRow extends StatefulWidget {
+  @override
+  State<_DailyStatsRow> createState() => _DailyStatsRowState();
+}
+
+class _DailyStatsRowState extends State<_DailyStatsRow> {
+  final HistoryService _historyService = HistoryService();
+  int _totalCalories = 0;
+  int _totalMinutes = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayStats();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data when returning to homepage
+    _loadTodayStats();
+  }
+
+  Future<void> _loadTodayStats() async {
+    try {
+      final result = await _historyService.getHistory(page: 1);
+      
+      // Get today's date at midnight for comparison
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      
+      int todayCalories = 0;
+      int todayMinutes = 0;
+      
+      for (final workout in result.data) {
+        // Get date at midnight for comparison
+        final workoutDay = DateTime(workout.date.year, workout.date.month, workout.date.day);
+        
+        if (workoutDay.isAtSameMomentAs(today)) {
+          todayCalories += workout.caloriesBurned.round();
+          todayMinutes += workout.durationMinutes;
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _totalCalories = todayCalories;
+          _totalMinutes = todayMinutes;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Expanded(
           child: _StatCard(
             label: 'Calories',
-            value: '320',
+            value: _isLoading ? '...' : _totalCalories.toString(),
             unit: 'kcal',
             icon: Icons.local_fire_department,
           ),
@@ -192,7 +258,7 @@ class _DailyStatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             label: 'Time',
-            value: '45',
+            value: _isLoading ? '...' : _totalMinutes.toString(),
             unit: 'min',
             icon: Icons.timer_outlined,
           ),
@@ -444,6 +510,7 @@ class _HotWorkoutListState extends State<_HotWorkoutList> {
                 title: workout.title,
                 level: workout.difficulty[0].toUpperCase() + workout.difficulty.substring(1),
                 duration: '${workout.durationMinutes ?? 0} min',
+                calories: '${workout.caloriesBurned?.toStringAsFixed(0) ?? '0'} kcal',
                 imageUrl: imageUrl,
                 onTap: () {
                   Navigator.push(
@@ -453,6 +520,7 @@ class _HotWorkoutListState extends State<_HotWorkoutList> {
                         workoutId: workout.id,
                         location: workout.locationType,
                         workoutType: workout.title,
+                        workout: workout,
                       ),
                     ),
                   );
@@ -528,6 +596,7 @@ class _WarmUpListState extends State<_WarmUpList> {
                 title: warmup.title,
                 level: warmup.difficulty[0].toUpperCase() + warmup.difficulty.substring(1),
                 duration: '${warmup.durationMinutes} min',
+                calories: '${warmup.caloriesBurned?.toStringAsFixed(0) ?? '0'} kcal',
                 imageUrl: imageUrl,
                 onTap: () {
                   Navigator.push(
@@ -537,6 +606,7 @@ class _WarmUpListState extends State<_WarmUpList> {
                         workoutId: warmup.id,
                         location: warmup.locationType,
                         workoutType: warmup.title,
+                        workout: warmup,
                       ),
                     ),
                   );
@@ -555,11 +625,12 @@ class _WorkoutCard extends StatelessWidget {
     required this.title,
     required this.level,
     required this.duration,
+    required this.calories,
     required this.imageUrl,
     required this.onTap, // Inject callback
   });
 
-  final String title, level, duration, imageUrl;
+  final String title, level, duration, calories, imageUrl;
   final VoidCallback onTap;
 
   @override
@@ -601,6 +672,10 @@ class _WorkoutCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text('• $duration',
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 12)),
+                const SizedBox(width: 8),
+                Text('• $calories',
                     style: const TextStyle(
                         color: Colors.white70, fontSize: 12)),
               ],

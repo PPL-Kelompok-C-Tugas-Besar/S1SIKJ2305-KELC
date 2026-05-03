@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/exercise_model.dart';
+import '../../models/workout_model.dart';
 import '../../services/exercise_service.dart';
+import '../../services/history_service.dart';
 import '../../utils/palette.dart';
 
 class ExerciseSelectionPage extends StatefulWidget {
@@ -9,11 +11,13 @@ class ExerciseSelectionPage extends StatefulWidget {
     this.workoutId,
     required this.location,
     required this.workoutType,
+    this.workout,
   });
 
   final String? workoutId;
   final String location;
   final String workoutType;
+  final Workout? workout;
 
   @override
   State<ExerciseSelectionPage> createState() => _ExerciseSelectionPageState();
@@ -21,6 +25,7 @@ class ExerciseSelectionPage extends StatefulWidget {
 
 class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
   final ExerciseService _exerciseService = ExerciseService();
+  final HistoryService _historyService = HistoryService();
 
   List<Exercise> _exercises = [];
   bool _isLoading = true;
@@ -60,14 +65,62 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
   }
 
   
-  void _startSession() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Starting ${widget.workoutType}',
+  void _startSession() async {
+    // Use workout data if available, otherwise use defaults
+    final calories = widget.workout?.caloriesBurned?.round() ?? 0;
+    final duration = widget.workout?.durationMinutes ?? 0;
+    
+    if (calories == 0 || duration == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Workout data incomplete. Cannot save completion.'),
+          backgroundColor: Colors.orange,
         ),
-      ),
-    );
+      );
+      return;
+    }
+    
+    try {
+      // Save workout completion to history
+      final success = await _historyService.addHistory(
+        workoutName: widget.workoutType,
+        durationMinutes: duration,
+        caloriesBurned: calories,
+      );
+      
+      if (success) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Workout completed! $calories kcal burned in $duration minutes',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+          // Navigate back to homepage using named route
+          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to save workout completion'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   @override

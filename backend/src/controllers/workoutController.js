@@ -31,6 +31,7 @@ exports.getWorkouts = async (req, res) => {
         w.description,
         w.duration_minutes,
         w.fitness_goal,
+        w.calories_burned,
         w.created_at,
         COUNT(DISTINCT we.exercise_id) AS exercise_count,
         GROUP_CONCAT(
@@ -57,6 +58,7 @@ exports.getWorkouts = async (req, res) => {
         w.description,
         w.duration_minutes,
         w.fitness_goal,
+        w.calories_burned,
         w.created_at
       ORDER BY w.category ASC, w.created_at DESC, w.title ASC
     `;
