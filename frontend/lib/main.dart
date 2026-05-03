@@ -5,6 +5,7 @@ import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/homepage_screens.dart';
+import 'screens/auth/onboarding_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
@@ -32,6 +33,7 @@ class GymbroApp extends StatelessWidget {
         '/': (_) => const SplashScreen(),
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
+        '/onboarding': (_) => const OnboardingPage(),
         '/home': (_) => const HomeScreen(),
         '/admin-dashboard': (_) => const AdminDashboardScreen(),
       },

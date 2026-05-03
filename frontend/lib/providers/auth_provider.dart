@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 
@@ -21,10 +22,14 @@ class AuthProvider extends ChangeNotifier {
   Future<void> checkAuthStatus() async {
     _setLoading(true);
     final result = await _authService.getProfile();
+    debugPrint('AuthProvider - Profile result: $result');
+    
     if (result['success'] == true) {
       _user = result['user'];
+      debugPrint('AuthProvider - User set: ${_user?.fullName}, onboardingCompleted: ${_user?.onboardingCompleted}');
       _status = AuthStatus.authenticated;
     } else {
+      debugPrint('AuthProvider - Auth failed: ${result['message']}');
       _status = AuthStatus.unauthenticated;
     }
     _setLoading(false);
@@ -60,14 +65,31 @@ class AuthProvider extends ChangeNotifier {
   }) async {
     _setLoading(true);
     _clearError();
+    debugPrint('AuthProvider - Attempting login for: $email');
+    
     final result = await _authService.login(email: email, password: password);
+    debugPrint('AuthProvider - Login result: $result');
+    
     _setLoading(false);
     if (result['success'] == true) {
-      _user = result['user'];
+      // After successful login, fetch the complete profile to get onboarding status
+      debugPrint('AuthProvider - Fetching updated profile after login...');
+      final profileResult = await _authService.getProfile();
+      
+      if (profileResult['success'] == true) {
+        _user = profileResult['user'];
+        debugPrint('AuthProvider - Profile updated, user: ${_user?.fullName}, onboardingCompleted: ${_user?.onboardingCompleted}');
+      } else {
+        // Fallback to login user data if profile fetch fails
+        _user = result['user'];
+        debugPrint('AuthProvider - Using login user data as fallback: ${_user?.fullName}, onboardingCompleted: ${_user?.onboardingCompleted}');
+      }
+      
       _status = AuthStatus.authenticated;
       notifyListeners();
       return true;
     } else {
+      debugPrint('AuthProvider - Login failed: ${result['message']}');
       _errorMessage = result['message'];
       notifyListeners();
       return false;
@@ -93,5 +115,36 @@ class AuthProvider extends ChangeNotifier {
   void clearError() {
     _clearError();
     notifyListeners();
+  }
+
+  Future<bool> completeOnboarding(Map<String, dynamic> onboardingData) async {
+    _setLoading(true);
+    _clearError();
+    
+    debugPrint('AuthProvider - Completing onboarding with data: $onboardingData');
+    
+    final result = await _authService.updateProfile(onboardingData);
+    
+    debugPrint('AuthProvider - Update profile result: $result');
+    
+    _setLoading(false);
+    if (result['success'] == true) {
+      // Update user with new data
+      _user = _user?.copyWith(
+        gender: onboardingData['gender'],
+        goals: onboardingData['goals'],
+        weight: onboardingData['currentWeight'],
+        targetWeight: onboardingData['targetWeight'],
+        onboardingCompleted: true,
+      );
+      debugPrint('AuthProvider - User updated successfully');
+      notifyListeners();
+      return true;
+    } else {
+      debugPrint('AuthProvider - Update profile failed: ${result['message']}');
+      _errorMessage = result['message'];
+      notifyListeners();
+      return false;
+    }
   }
 }

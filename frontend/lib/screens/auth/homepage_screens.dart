@@ -1,10 +1,16 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import '../../models/workout_model.dart';
+import '../../services/api_constants.dart';
+import '../../services/history_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
 import '../profile/profile_page.dart';
+import '../catalogue/exercise_selection_page.dart';
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
@@ -63,9 +69,14 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // ─── Home tab ─────────────────────────────────────────────────────────────────
-class _HomePage extends StatelessWidget {
+class _HomePage extends StatefulWidget {
   const _HomePage();
 
+  @override
+  State<_HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<_HomePage> {
   @override
   Widget build(BuildContext context) {
     final user      = context.watch<AuthProvider>().user;
@@ -83,15 +94,11 @@ class _HomePage extends StatelessWidget {
             const SizedBox(height: 24),
             _WeeklyGoalCard(),
             const SizedBox(height: 32),
-            const _SectionTitle(title: 'Popular Goals'),
+            const _SectionTitle(title: 'Recommended Today'),
             const SizedBox(height: 16),
-            _GoalList(),
+            const _HotWorkoutList(), // Now fetches from DB
             const SizedBox(height: 32),
-            const _SectionTitle(title: 'Rekomendasi Hari ini'),
-            const SizedBox(height: 16),
-            _HotWorkoutList(),
-            const SizedBox(height: 32),
-            const _SectionTitle(title: 'Pemanasan & Peregangan'),
+            const _SectionTitle(title: 'Warm-up & Stretches'),
             const SizedBox(height: 16),
             _WarmUpList(),
             const SizedBox(height: 32),
@@ -174,15 +181,75 @@ class _StreakBadge extends StatelessWidget {
 }
 
 // ── Daily Stats ──────────────────────────────────────────────────────────────
-class _DailyStatsRow extends StatelessWidget {
+class _DailyStatsRow extends StatefulWidget {
+  @override
+  State<_DailyStatsRow> createState() => _DailyStatsRowState();
+}
+
+class _DailyStatsRowState extends State<_DailyStatsRow> {
+  final HistoryService _historyService = HistoryService();
+  int _totalCalories = 0;
+  int _totalMinutes = 0;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTodayStats();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data when returning to homepage
+    _loadTodayStats();
+  }
+
+  Future<void> _loadTodayStats() async {
+    try {
+      final result = await _historyService.getHistory(page: 1);
+      
+      // Get today's date at midnight for comparison
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      
+      int todayCalories = 0;
+      int todayMinutes = 0;
+      
+      for (final workout in result.data) {
+        // Get date at midnight for comparison
+        final workoutDay = DateTime(workout.date.year, workout.date.month, workout.date.day);
+        
+        if (workoutDay.isAtSameMomentAs(today)) {
+          todayCalories += workout.caloriesBurned.round();
+          todayMinutes += workout.durationMinutes;
+        }
+      }
+      
+      if (mounted) {
+        setState(() {
+          _totalCalories = todayCalories;
+          _totalMinutes = todayMinutes;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       children: [
         Expanded(
           child: _StatCard(
             label: 'Calories',
-            value: '320',
+            value: _isLoading ? '...' : _totalCalories.toString(),
             unit: 'kcal',
             icon: Icons.local_fire_department,
           ),
@@ -191,7 +258,7 @@ class _DailyStatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             label: 'Time',
-            value: '45',
+            value: _isLoading ? '...' : _totalMinutes.toString(),
             unit: 'min',
             icon: Icons.timer_outlined,
           ),
@@ -359,135 +426,195 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title,
-            style: const TextStyle(
-                color: kTextPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold)),
-        TextButton(
-          onPressed: () {},
-          child:
-              const Text('See All', style: TextStyle(color: kAccent)),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Goal list ────────────────────────────────────────────────────────────────
-class _GoalList extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: const [
-          _GoalCard(title: 'Weight Loss', icon: Icons.monitor_weight_outlined),
-          SizedBox(width: 16),
-          _GoalCard(title: 'Muscle Gain', icon: Icons.fitness_center),
-          SizedBox(width: 16),
-          _GoalCard(title: 'Flexibility', icon: Icons.self_improvement),
-          SizedBox(width: 16),
-          _GoalCard(title: 'Endurance', icon: Icons.directions_run),
-        ],
+    return Text(
+      title,
+      style: const TextStyle(
+        color: kTextPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
       ),
     );
   }
 }
 
-class _GoalCard extends StatelessWidget {
-  const _GoalCard({required this.title, required this.icon});
-  final String title;
-  final IconData icon;
+// ── Dynamic Workout cards ─────────────────────────────────────────────────────
+class _HotWorkoutList extends StatefulWidget {
+  const _HotWorkoutList();
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 110,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: kAccent, size: 28),
-          const SizedBox(height: 12),
-          Text(title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: kTextPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
+  State<_HotWorkoutList> createState() => _HotWorkoutListState();
 }
 
-// ── Workout cards ─────────────────────────────────────────────────────────────
-class _HotWorkoutList extends StatelessWidget {
+class _HotWorkoutListState extends State<_HotWorkoutList> {
+  late Future<List<Workout>> futureWorkouts;
+
+  @override
+  void initState() {
+    super.initState();
+    futureWorkouts = fetchWorkouts();
+  }
+
+  Future<List<Workout>> fetchWorkouts() async {
+    try {
+      final user = context.read<AuthProvider>().user;
+      final fitnessGoal = user?.goals?.isNotEmpty == true ? user!.goals![0].toLowerCase().replaceAll(' ', '_') : 'all';
+      
+      // Add limit parameter to fetch only 10 workouts
+      // If backend doesn't support limit parameter, take first 10 workouts
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=workout&fitness_goal=$fitnessGoal&limit=10'));
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        final List<dynamic> data = body['data'] ?? [];
+        final workouts = data.map((item) => Workout.fromJson(item)).toList();
+        
+        // If backend doesn't support limit parameter, take first 10 workouts
+        return workouts.take(10).toList();
+      } else {
+        throw Exception('Failed to load workouts. Status: ${response.statusCode}');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 220,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: const [
-          _WorkoutCard(
-            title: 'Full Body\nWorkout',
-            level: 'Beginner',
-            duration: '30 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80',
-          ),
-          SizedBox(width: 16),
-          _WorkoutCard(
-            title: 'Upper Body\nStrength',
-            level: 'Intermediate',
-            duration: '45 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80',
-          ),
-        ],
+      child: FutureBuilder<List<Workout>>(
+        future: futureWorkouts,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: kAccent));
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('Failed to load workouts.', style: TextStyle(color: kTextMuted)));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No workouts available.', style: TextStyle(color: kTextMuted)));
+          }
+
+          List<Workout> workouts = snapshot.data!;
+
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: workouts.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              final workout = workouts[index];
+              
+              final String imageUrl = index % 2 == 0
+                  ? 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=400&q=80'
+                  : 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=400&q=80';
+
+              return _WorkoutCard(
+                title: workout.title,
+                level: workout.difficulty[0].toUpperCase() + workout.difficulty.substring(1),
+                duration: '${workout.durationMinutes ?? 0} min',
+                calories: '${workout.caloriesBurned?.toStringAsFixed(0) ?? '0'} kcal',
+                imageUrl: imageUrl,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExerciseSelectionPage(
+                        workoutId: workout.id,
+                        location: workout.locationType,
+                        workoutType: workout.title,
+                        workout: workout,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
 }
 
-class _WarmUpList extends StatelessWidget {
+class _WarmUpList extends StatefulWidget {
+  @override
+  State<_WarmUpList> createState() => _WarmUpListState();
+}
+
+class _WarmUpListState extends State<_WarmUpList> {
+  late Future<List<Workout>> futureWarmups;
+
+  @override
+  void initState() {
+    super.initState();
+    futureWarmups = fetchWarmups();
+  }
+
+  Future<List<Workout>> fetchWarmups() async {
+    try {
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=warmup'));
+      if (response.statusCode == 200) {
+        final body = json.decode(response.body);
+        final List<dynamic> data = body['data'] ?? [];
+        return data.map((item) => Workout.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load warmups.');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 220,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: const [
-          _WorkoutCard(
-            title: 'Morning\nMobility',
-            level: 'All Levels',
-            duration: '15 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80',
-          ),
-          SizedBox(width: 16),
-          _WorkoutCard(
-            title: 'Pre-Workout\nStretch',
-            level: 'Beginner',
-            duration: '10 min',
-            imageUrl:
-                'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80',
-          ),
-        ],
+      child: FutureBuilder<List<Workout>>(
+        future: futureWarmups,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator(color: kAccent));
+          } else if (snapshot.hasError) {
+            return const Center(child: Text('Failed to load warmups.', style: TextStyle(color: kTextMuted)));
+          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('No warmups available.', style: TextStyle(color: kTextMuted)));
+          }
+
+          List<Workout> warmups = snapshot.data!;
+
+          return ListView.separated(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            itemCount: warmups.length,
+            separatorBuilder: (context, index) => const SizedBox(width: 16),
+            itemBuilder: (context, index) {
+              final warmup = warmups[index];
+              
+              final String imageUrl = index % 2 == 0
+                  ? 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=400&q=80'
+                  : 'https://images.unsplash.com/photo-1552674605-db6ffd4facb5?w=400&q=80';
+
+              return _WorkoutCard(
+                title: warmup.title,
+                level: warmup.difficulty[0].toUpperCase() + warmup.difficulty.substring(1),
+                duration: '${warmup.durationMinutes} min',
+                calories: '${warmup.caloriesBurned?.toStringAsFixed(0) ?? '0'} kcal',
+                imageUrl: imageUrl,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ExerciseSelectionPage(
+                        workoutId: warmup.id,
+                        location: warmup.locationType,
+                        workoutType: warmup.title,
+                        workout: warmup,
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -498,10 +625,13 @@ class _WorkoutCard extends StatelessWidget {
     required this.title,
     required this.level,
     required this.duration,
+    required this.calories,
     required this.imageUrl,
+    required this.onTap, // Inject callback
   });
 
-  final String title, level, duration, imageUrl;
+  final String title, level, duration, calories, imageUrl;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -544,13 +674,17 @@ class _WorkoutCard extends StatelessWidget {
                 Text('• $duration',
                     style: const TextStyle(
                         color: Colors.white70, fontSize: 12)),
+                const SizedBox(width: 8),
+                Text('• $calories',
+                    style: const TextStyle(
+                        color: Colors.white70, fontSize: 12)),
               ],
             ),
             const Spacer(),
             Align(
               alignment: Alignment.bottomRight,
               child: ElevatedButton(
-                onPressed: () {},
+                onPressed: onTap, // Execute injected callback
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kAccent,
                   foregroundColor: kBg,
