@@ -7,7 +7,7 @@ const { pool } = require('../config/db');
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, date_created FROM USERS WHERE id = ?',
+      'SELECT id, full_name, email, weight, role, date_created FROM gymbro_db.users WHERE id = ?',
       [req.user.id]
     );
     if (rows.length === 0) {

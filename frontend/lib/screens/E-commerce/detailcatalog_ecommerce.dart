@@ -109,13 +109,21 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(20.0),
-                    child: Image.asset(
-                      widget.imagePath,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => const Center(
-                        child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 60),
-                      ),
-                    ),
+                    child: widget.imagePath.startsWith('http')
+                        ? Image.network(
+                            widget.imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 60),
+                            ),
+                          )
+                        : Image.asset(
+                            widget.imagePath,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 60),
+                            ),
+                          ),
                   ),
                 ),
               ),

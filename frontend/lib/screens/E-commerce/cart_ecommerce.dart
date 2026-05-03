@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
-class AppColors {
+import 'dart:convert';
+import 'package:http/http.dart' as http;class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
   static const Color cardColor = Color(0xFF292929);
   static const Color accentColor = Color(0xFFCCFF00);
@@ -16,6 +16,8 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> {
+  bool isCheckingOut = false;
+
   // Dummy data for cart items
   List<Map<String, dynamic>> cartItems = [
     {
@@ -85,6 +87,74 @@ class _CartPageState extends State<CartPage> {
     setState(() {
       cartItems.removeAt(index);
     });
+  }
+
+  Future<void> _processCheckout() async {
+    final selectedItems = cartItems.where((item) => item['selected'] == true).toList();
+    if (selectedItems.isEmpty) return;
+
+    setState(() {
+      isCheckingOut = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/products/validate-checkout'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'items': selectedItems.map((item) => {
+            'id': item['id'],
+            'quantity': item['quantity']
+          }).toList()
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Checkout berhasil!'),
+            backgroundColor: Colors.green,
+          )
+        );
+        setState(() {
+          cartItems.removeWhere((item) => item['selected'] == true);
+        });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    data['message'] ?? 'Checkout gagal',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange.shade800,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 3),
+          )
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Terjadi kesalahan koneksi server'),
+          backgroundColor: Colors.red,
+        )
+      );
+    } finally {
+      setState(() {
+        isCheckingOut = false;
+      });
+    }
   }
 
   @override
@@ -204,7 +274,7 @@ class _CartPageState extends State<CartPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: cartItems.isEmpty ? null : () {},
+                      onPressed: (cartItems.isEmpty || isCheckingOut) ? null : _processCheckout,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accentColor,
                         foregroundColor: Colors.black,
@@ -216,14 +286,20 @@ class _CartPageState extends State<CartPage> {
                           borderRadius: BorderRadius.circular(16.0),
                         ),
                       ),
-                      child: const Text(
-                        'CHECKOUT',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.5,
-                          fontSize: 16,
-                        ),
-                      ),
+                      child: isCheckingOut 
+                        ? const SizedBox(
+                            height: 20, 
+                            width: 20, 
+                            child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2)
+                          )
+                        : const Text(
+                            'CHECKOUT',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1.5,
+                              fontSize: 16,
+                            ),
+                          ),
                     ),
                   ),
                 ],
@@ -274,13 +350,21 @@ class _CartPageState extends State<CartPage> {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.asset(
-                item['image'],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Center(
-                  child: Icon(Icons.fitness_center, color: AppColors.textSecondary),
-                ),
-              ),
+              child: item['image'].toString().startsWith('http')
+                  ? Image.network(
+                      item['image'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Center(
+                        child: Icon(Icons.fitness_center, color: AppColors.textSecondary),
+                      ),
+                    )
+                  : Image.asset(
+                      item['image'],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const Center(
+                        child: Icon(Icons.fitness_center, color: AppColors.textSecondary),
+                      ),
+                    ),
             ),
           ),
           const SizedBox(width: 16),

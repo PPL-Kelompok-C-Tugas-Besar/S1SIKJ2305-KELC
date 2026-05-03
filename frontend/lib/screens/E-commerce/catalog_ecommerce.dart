@@ -254,13 +254,21 @@ class _ShopPageState extends State<ShopPage> {
                                           borderRadius: const BorderRadius.vertical(top: Radius.circular(16.0)),
                                           child: Container(
                                             color: AppColors.cardColor,
-                                            child: Image.asset(
-                                              imagePath,
-                                              fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) => const Center(
-                                                child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 40),
-                                              ),
-                                            ),
+                                            child: imagePath.startsWith('http')
+                                                ? Image.network(
+                                                    imagePath,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                                      child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 40),
+                                                    ),
+                                                  )
+                                                : Image.asset(
+                                                    imagePath,
+                                                    fit: BoxFit.cover,
+                                                    errorBuilder: (context, error, stackTrace) => const Center(
+                                                      child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 40),
+                                                    ),
+                                                  ),
                                           ),
                                         ),
                                       ),

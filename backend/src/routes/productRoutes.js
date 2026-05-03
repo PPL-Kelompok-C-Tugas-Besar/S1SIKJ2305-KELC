@@ -6,4 +6,7 @@ const productController = require('../controllers/productController');
 // GET /products
 router.get('/', productController.getProducts);
 
+// POST /products/validate-checkout
+router.post('/validate-checkout', productController.validateCheckout);
+
 module.exports = router;
