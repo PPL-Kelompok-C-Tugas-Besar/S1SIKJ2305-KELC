@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'detailcatalog_ecommerce.dart';
 import 'cart_ecommerce.dart';
+import '../../services/auth_service.dart';
 
 class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
@@ -74,6 +75,43 @@ class _ShopPageState extends State<ShopPage> {
         errorMessage = 'Tidak bisa connect ke server -_-.';
         isLoading = false;
       });
+    }
+  }
+
+  Future<void> _addToCart(int productId, int quantity) async {
+    try {
+      final token = await AuthService().getToken();
+      if (token == null) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+        return;
+      }
+      
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/cart'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'product_id': productId,
+          'quantity': quantity,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+      if (!mounted) return;
+      if (response.statusCode == 201 && data['success'] == true) {
+        setState(() {
+          cartItemCount += quantity;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil ditambahkan ke cart'), backgroundColor: Colors.green));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Gagal menambahkan ke cart'), backgroundColor: Colors.red));
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak bisa terhubung ke server'), backgroundColor: Colors.red));
     }
   }
 
@@ -210,6 +248,7 @@ class _ShopPageState extends State<ShopPage> {
                             itemCount: products.length,
                             itemBuilder: (context, index) {
                               final product = products[index];
+                              final int productId = product['id'] ?? 0;
                               final String productName = product['name'] ?? 'Unknown';
                               final String imagePath = product['image_url'] ?? 'assets/whey.png';
                               final String priceFormatted = formatRupiah(product['price']);
@@ -229,9 +268,7 @@ class _ShopPageState extends State<ShopPage> {
                                     ),
                                   );
                                   if (result != null && result is int) {
-                                    setState(() {
-                                      cartItemCount += result;
-                                    });
+                                    await _addToCart(productId, result);
                                   }
                                 },
                                 child: Container(
