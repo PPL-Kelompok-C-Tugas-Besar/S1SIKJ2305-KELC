@@ -24,13 +24,13 @@ class ExerciseExecutionItem {
 
 // ── Color Palette (Dark Mode) ─────────────────────────────────────────────────
 
-const _bg       = Color(0xFF0A0A0F);
-const _surface  = Color(0xFF14141C);
-const _card     = Color(0xFF1C1C28);
-const _border   = Color(0xFF2A2A3A);
-const _accent   = Color(0xFFFF6B35);
-const _green    = Color(0xFF00E676);
-const _white    = Colors.white;
+const _bg = Color(0xFF0A0A0F);
+const _surface = Color(0xFF14141C);
+const _card = Color(0xFF1C1C28);
+const _border = Color(0xFF2A2A3A);
+const _accent = Color(0xFFFF6B35);
+const _green = Color(0xFF00E676);
+const _white = Colors.white;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,6 @@ class ExerciseExecutionScreen extends StatefulWidget {
 
 class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
     with TickerProviderStateMixin {
-
   int _currentIndex = 0;
   int _timerSeconds = 0;
   bool _isPaused = false;
@@ -77,24 +76,30 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
   void initState() {
     super.initState();
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
 
     _pulseCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..repeat(reverse: true);
-    _pulseAnim = Tween(begin: 1.0, end: 1.05)
-        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+    _pulseAnim = Tween(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
 
     _slideCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 400),
     );
-    _slideAnim = Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
-        .animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(1, 0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _slideCtrl, curve: Curves.easeOut));
 
     _fadeCtrl = AnimationController(
       vsync: this,
@@ -285,7 +290,11 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
                 color: _green.withValues(alpha: 0.12),
                 border: Border.all(color: _green, width: 2),
               ),
-              child: const Icon(Icons.self_improvement, color: _green, size: 52),
+              child: const Icon(
+                Icons.self_improvement,
+                color: _green,
+                size: 52,
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -364,8 +373,11 @@ class _TopBar extends StatelessWidget {
           Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new,
-                    color: Colors.white70, size: 20),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new,
+                  color: Colors.white70,
+                  size: 20,
+                ),
                 onPressed: onBack,
               ),
               Expanded(
@@ -380,8 +392,10 @@ class _TopBar extends StatelessWidget {
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(20),
@@ -452,13 +466,18 @@ class _MediaPanel extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.fitness_center,
-                      color: color.withValues(alpha: 0.4), size: 72),
+                  Icon(
+                    Icons.fitness_center,
+                    color: color.withValues(alpha: 0.4),
+                    size: 72,
+                  ),
                   const SizedBox(height: 8),
                   Text(
                     'GIF tidak tersedia',
                     style: TextStyle(
-                        color: color.withValues(alpha: 0.5), fontSize: 13),
+                      color: color.withValues(alpha: 0.5),
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),
@@ -475,10 +494,7 @@ class _MediaPanel extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    _card.withValues(alpha: 0.7),
-                  ],
+                  colors: [Colors.transparent, _card.withValues(alpha: 0.7)],
                 ),
               ),
             ),
@@ -555,10 +571,7 @@ class _ControlPanel extends StatelessWidget {
               onPause: onPause,
             )
           else
-            _RepsSection(
-              value: exercise.value,
-              color: color,
-            ),
+            _RepsSection(value: exercise.value, color: color),
 
           const Spacer(),
 
@@ -566,8 +579,8 @@ class _ControlPanel extends StatelessWidget {
             label: isLast
                 ? '🏆  SELESAI WORKOUT'
                 : isTimer
-                    ? 'SKIP ▶'
-                    : '✓  SELESAI ${exercise.value} REPS',
+                ? 'SKIP ▶'
+                : '✓  SELESAI ${exercise.value} REPS',
             color: isTimer && !isLast ? Colors.white24 : color,
             onTap: onDone,
           ),
@@ -685,10 +698,7 @@ class _RepsSection extends StatelessWidget {
           const SizedBox(width: 8),
           const Text(
             'reps',
-            style: TextStyle(
-              color: Colors.white38,
-              fontSize: 16,
-            ),
+            style: TextStyle(color: Colors.white38, fontSize: 16),
           ),
         ],
       ),
@@ -720,10 +730,7 @@ class _ActionButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 15),
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              color.withValues(alpha: 0.85),
-              color,
-            ],
+            colors: [color.withValues(alpha: 0.85), color],
           ),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
@@ -815,12 +822,19 @@ class _CompletionDialog extends StatelessWidget {
   Widget _statChip(String value, String label, Color color) {
     return Column(
       children: [
-        Text(value,
-            style: TextStyle(
-                color: color, fontSize: 28, fontWeight: FontWeight.w900)),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 28,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(color: Colors.white38, fontSize: 12)),
+        Text(
+          label,
+          style: const TextStyle(color: Colors.white38, fontSize: 12),
+        ),
       ],
     );
   }
