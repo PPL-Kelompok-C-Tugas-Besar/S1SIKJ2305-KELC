@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
-import 'package:http/http.dart' as http;class AppColors {
+import 'package:http/http.dart' as http;
+import '../../services/auth_service.dart';
+
+class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
   static const Color cardColor = Color(0xFF292929);
   static const Color accentColor = Color(0xFFCCFF00);
@@ -18,27 +21,39 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> {
   bool isCheckingOut = false;
 
-  // Dummy data for cart items
-  List<Map<String, dynamic>> cartItems = [
-    {
-      'id': '1',
-      'name': 'Whey Protein Isolate',
-      'variant': 'Chocolate - 2kg',
-      'price': 850000,
-      'quantity': 1,
-      'selected': true,
-      'image': 'assets/whey.png',
-    },
-    {
-      'id': '2',
-      'name': 'Creatine Monohydrate',
-      'variant': 'Unflavored - 300g',
-      'price': 250000,
-      'quantity': 2,
-      'selected': true,
-      'image': 'assets/creatine.png', // Assuming there's a fallback or other image
-    },
-  ];
+  bool isLoading = true;
+  List<Map<String, dynamic>> cartItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchCart();
+  }
+
+  Future<void> fetchCart() async {
+    setState(() => isLoading = true);
+    try {
+      final token = await AuthService().getToken();
+      if (token == null) return;
+      
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/cart'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode == 200 && data['success'] == true) {
+        setState(() {
+          cartItems = List<Map<String, dynamic>>.from(data['data']);
+        });
+      }
+    } catch (e) {
+      // print error
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
+  }
 
   String formatRupiah(int number) {
     String numStr = number.toString();
@@ -74,19 +89,53 @@ class _CartPageState extends State<CartPage> {
     });
   }
 
-  void updateQuantity(int index, int delta) {
+  void updateQuantity(int index, int delta) async {
+    int currentQty = cartItems[index]['quantity'];
+    int newQty = currentQty + delta;
+    if (newQty <= 0) return;
+
+    // optimistic update
     setState(() {
-      int currentQty = cartItems[index]['quantity'];
-      if (currentQty + delta > 0) {
-        cartItems[index]['quantity'] = currentQty + delta;
-      }
+      cartItems[index]['quantity'] = newQty;
     });
+
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.put(
+        Uri.parse('http://localhost:3000/cart/${cartItems[index]['id']}'),
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        body: jsonEncode({'quantity': newQty}),
+      );
+      final data = jsonDecode(response.body);
+      if (response.statusCode != 200) {
+        if (mounted) {
+          setState(() => cartItems[index]['quantity'] = currentQty);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Gagal update quantity'), backgroundColor: Colors.red));
+        }
+      }
+    } catch (e) {
+      if (mounted) setState(() => cartItems[index]['quantity'] = currentQty);
+    }
   }
 
-  void removeItem(int index) {
+  void removeItem(int index) async {
+    final item = cartItems[index];
     setState(() {
       cartItems.removeAt(index);
     });
+
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.delete(
+        Uri.parse('http://localhost:3000/cart/${item['id']}'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode != 200) {
+        if (mounted) setState(() => cartItems.insert(index, item));
+      }
+    } catch (e) {
+      if (mounted) setState(() => cartItems.insert(index, item));
+    }
   }
 
   Future<void> _processCheckout() async {
@@ -196,7 +245,9 @@ class _CartPageState extends State<CartPage> {
           children: [
             // Cart Items List
             Expanded(
-              child: cartItems.isEmpty
+              child: isLoading 
+                ? const Center(child: CircularProgressIndicator(color: AppColors.accentColor))
+                : cartItems.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -221,8 +272,9 @@ class _CartPageState extends State<CartPage> {
             ),
 
             // Bottom Summary Section
-            Container(
-              padding: const EdgeInsets.all(24.0),
+            if (cartItems.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
                 color: AppColors.cardColor,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(30.0)),
