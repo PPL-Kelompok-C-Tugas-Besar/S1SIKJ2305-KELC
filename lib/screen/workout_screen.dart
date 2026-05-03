@@ -50,11 +50,11 @@ class WorkoutCategory {
 
 // ── Exercise Database ────────────────────────────────────────────────────────
 
-// ── Warm-up Exercises (shared for all levels) ──────────────────────────────
+// ── Warm-up Exercises (3 gerakan peregangan awal) ────────────────────────────
 const List<Exercise> _warmupExercises = [
   Exercise(
     name: 'Neck Rolls',
-    gif: 'assets/gifs/jumping_jack.gif',
+    gif: 'assets/gifs/neck-rolls.gif',
     type: ExerciseType.timed,
     beginner: 20,
     intermediate: 20,
@@ -62,7 +62,7 @@ const List<Exercise> _warmupExercises = [
   ),
   Exercise(
     name: 'Arm Circles',
-    gif: 'assets/gifs/jumping_jack.gif',
+    gif: 'assets/gifs/arm-circles.gif',
     type: ExerciseType.timed,
     beginner: 20,
     intermediate: 20,
@@ -70,27 +70,11 @@ const List<Exercise> _warmupExercises = [
   ),
   Exercise(
     name: 'Hip Circles',
-    gif: 'assets/gifs/squat.gif',
+    gif: 'assets/gifs/hip-circles.gif',
     type: ExerciseType.timed,
     beginner: 20,
     intermediate: 20,
     advanced: 20,
-  ),
-  Exercise(
-    name: 'Jumping Jacks',
-    gif: 'assets/gifs/jumping_jack.gif',
-    type: ExerciseType.reps,
-    beginner: 15,
-    intermediate: 20,
-    advanced: 25,
-  ),
-  Exercise(
-    name: 'High Knees',
-    gif: 'assets/gifs/mountain_climb.gif',
-    type: ExerciseType.reps,
-    beginner: 20,
-    intermediate: 25,
-    advanced: 30,
   ),
 ];
 
@@ -114,7 +98,7 @@ const List<Exercise> _beginnerExercises = [
   ),
   Exercise(
     name: 'Standing Side Leg Raise',
-    gif: 'assets/gifs/fitness_legs.gif',
+    gif: 'assets/gifs/side-leg-raise.gif',
     type: ExerciseType.reps,
     beginner: 10,
     intermediate: 10,
@@ -122,7 +106,7 @@ const List<Exercise> _beginnerExercises = [
   ),
   Exercise(
     name: 'Sit-up',
-    gif: 'assets/gifs/mountain_climb.gif',
+    gif: 'assets/gifs/sit-up.gif',
     type: ExerciseType.reps,
     beginner: 12,
     intermediate: 12,
@@ -130,7 +114,7 @@ const List<Exercise> _beginnerExercises = [
   ),
   Exercise(
     name: 'Bicycle Crunch',
-    gif: 'assets/gifs/mountain_climb.gif',
+    gif: 'assets/gifs/bicycle-crunch.gif',
     type: ExerciseType.reps,
     beginner: 16,
     intermediate: 16,
@@ -146,7 +130,7 @@ const List<Exercise> _beginnerExercises = [
   ),
   Exercise(
     name: 'Wall Sit',
-    gif: 'assets/gifs/plank.gif',
+    gif: 'assets/gifs/wall-squat.gif',
     type: ExerciseType.timed,
     beginner: 20,
     intermediate: 20,
@@ -154,7 +138,7 @@ const List<Exercise> _beginnerExercises = [
   ),
   Exercise(
     name: 'Lunges',
-    gif: 'assets/gifs/squat.gif',
+    gif: 'assets/gifs/Lunges.gif',
     type: ExerciseType.reps,
     beginner: 10,
     intermediate: 10,
@@ -173,7 +157,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'Jump Squat',
-    gif: 'assets/gifs/squat.gif',
+    gif: 'assets/gifs/Jump-Squat.gif',
     type: ExerciseType.reps,
     beginner: 10,
     intermediate: 12,
@@ -181,7 +165,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'Leg Raise',
-    gif: 'assets/gifs/fitness_legs.gif',
+    gif: 'assets/gifs/leg-raises.gif',
     type: ExerciseType.reps,
     beginner: 10,
     intermediate: 12,
@@ -189,7 +173,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'Russian Twist',
-    gif: 'assets/gifs/mountain_climb.gif',
+    gif: 'assets/gifs/Russian-Twist.gif',
     type: ExerciseType.reps,
     beginner: 16,
     intermediate: 20,
@@ -197,7 +181,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'Burpees',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/burpees.gif',
     type: ExerciseType.reps,
     beginner: 8,
     intermediate: 10,
@@ -205,7 +189,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'High Knees',
-    gif: 'assets/gifs/mountain_climb.gif',
+    gif: 'assets/gifs/high-knees.gif',
     type: ExerciseType.reps,
     beginner: 20,
     intermediate: 30,
@@ -229,7 +213,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'Pike Push-Up',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/Pike-Push-Ups.gif',
     type: ExerciseType.reps,
     beginner: 8,
     intermediate: 10,
@@ -237,7 +221,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'Bench Dips',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/bench-dips.gif',
     type: ExerciseType.reps,
     beginner: 10,
     intermediate: 12,
@@ -253,7 +237,7 @@ const List<Exercise> _intermediateExercises = [
   ),
   Exercise(
     name: 'Skater Jump',
-    gif: 'assets/gifs/jumping_jack.gif',
+    gif: 'assets/gifs/skater-jump.gif',
     type: ExerciseType.reps,
     beginner: 12,
     intermediate: 16,
@@ -264,7 +248,7 @@ const List<Exercise> _intermediateExercises = [
 const List<Exercise> _advancedExercises = [
   Exercise(
     name: 'Handstand Push-Up',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/handstand-pushup.gif',
     type: ExerciseType.reps,
     beginner: 3,
     intermediate: 5,
@@ -272,7 +256,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Pseudo Planche Push-Up',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/pseudo-planche-pushup.gif',
     type: ExerciseType.reps,
     beginner: 5,
     intermediate: 8,
@@ -280,7 +264,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Archer Push-Up',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/archer-pushup.gif',
     type: ExerciseType.reps,
     beginner: 5,
     intermediate: 8,
@@ -288,7 +272,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Clap Push-Up',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/clap-pushup.gif',
     type: ExerciseType.reps,
     beginner: 5,
     intermediate: 8,
@@ -296,7 +280,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Pistol Squat',
-    gif: 'assets/gifs/squat.gif',
+    gif: 'assets/gifs/pistol-squat.gif',
     type: ExerciseType.reps,
     beginner: 3,
     intermediate: 5,
@@ -304,7 +288,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Bulgarian Split Squat',
-    gif: 'assets/gifs/squat.gif',
+    gif: 'assets/gifs/bulgarian-split-squat.gif',
     type: ExerciseType.reps,
     beginner: 8,
     intermediate: 12,
@@ -312,7 +296,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Single-Leg Glute Bridge',
-    gif: 'assets/gifs/fitness_legs.gif',
+    gif: 'assets/gifs/Single-Leg-Glute-Bridge.gif',
     type: ExerciseType.reps,
     beginner: 8,
     intermediate: 12,
@@ -320,7 +304,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Hollow Body Hold',
-    gif: 'assets/gifs/plank.gif',
+    gif: 'assets/gifs/hollow-body.gif',
     type: ExerciseType.timed,
     beginner: 20,
     intermediate: 35,
@@ -328,7 +312,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Dragon Flag',
-    gif: 'assets/gifs/mountain_climb.gif',
+    gif: 'assets/gifs/dragon-flag.gif',
     type: ExerciseType.reps,
     beginner: 3,
     intermediate: 5,
@@ -336,7 +320,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'V-Ups',
-    gif: 'assets/gifs/mountain_climb.gif',
+    gif: 'assets/gifs/v-ups.gif',
     type: ExerciseType.reps,
     beginner: 8,
     intermediate: 12,
@@ -344,7 +328,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Plank to Push-Up',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/plank-push-up.gif',
     type: ExerciseType.reps,
     beginner: 8,
     intermediate: 12,
@@ -352,7 +336,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Jump Lunges',
-    gif: 'assets/gifs/squat.gif',
+    gif: 'assets/gifs/Lunges.gif',
     type: ExerciseType.reps,
     beginner: 10,
     intermediate: 14,
@@ -360,7 +344,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'High Knees',
-    gif: 'assets/gifs/mountain_climb.gif',
+    gif: 'assets/gifs/high-knees.gif',
     type: ExerciseType.reps,
     beginner: 30,
     intermediate: 40,
@@ -368,7 +352,7 @@ const List<Exercise> _advancedExercises = [
   ),
   Exercise(
     name: 'Handstand Shoulder Taps',
-    gif: 'assets/gifs/pushups.gif',
+    gif: 'assets/gifs/handstand-shoulder-taps.gif',
     type: ExerciseType.reps,
     beginner: 6,
     intermediate: 10,
@@ -458,6 +442,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
   bool _btnPressed = false;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -477,6 +462,20 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
     _timer?.cancel();
     _pulseCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveWorkoutHistory() async {
+    final cat = _selectedCategory;
+    if (cat == null) return;
+
+    // Simulasi delay proses simpan
+    await Future.delayed(const Duration(seconds: 2));
+
+    debugPrint('--- Workout Summary ---');
+    debugPrint('Level: ${cat.label}');
+    debugPrint('Total Latihan: ${cat.exercises.length}');
+    debugPrint('Durasi: ${cat.totalMinutes} Menit');
+    debugPrint('-----------------------');
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -512,14 +511,8 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
   bool get _isLastWarmup => _warmupIndex >= _warmupExercises.length - 1;
 
   void _startSession() {
-    setState(() {
-      _warmupIndex = 0;
-      _screen = ScreenState.warmup;
-    });
-    final wu = _currentWarmup;
-    if (wu.type == ExerciseType.timed) {
-      _beginTimer(_valueFor(wu));
-    }
+    // Langsung gabung warmup + latihan utama ke ExerciseExecutionScreen
+    _beginMainExercise();
   }
 
   void _doneWarmupStep() {
@@ -538,8 +531,22 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
   void _beginMainExercise() {
     _timer?.cancel();
     final cat = _selectedCategory!;
-    // Convert Exercise list → ExerciseItem list untuk ExerciseExecutionScreen
-    final items = cat.exercises.map((e) {
+
+    // Warmup exercises di awal (digabung sebelum latihan utama)
+    final warmupItems = _warmupExercises.map((e) {
+      return ExerciseExecutionItem(
+        name: e.name,
+        gifPath: e.gif,
+        type: e.type == ExerciseType.reps
+            ? ExerciseExecutionType.reps
+            : ExerciseExecutionType.timed,
+        value: _valueFor(e),
+        description: 'Pemanasan',
+      );
+    }).toList();
+
+    // Latihan utama sesuai level
+    final mainItems = cat.exercises.map((e) {
       return ExerciseExecutionItem(
         name: e.name,
         gifPath: e.gif,
@@ -554,9 +561,10 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
         .push(
           MaterialPageRoute(
             builder: (_) => ExerciseExecutionScreen(
-              exercises: items,
+              exercises: [...warmupItems, ...mainItems],
               workoutTitle: '${cat.label} Workout',
               themeColor: cat.color,
+              warmupCount: warmupItems.length,
             ),
           ),
         )
@@ -1333,7 +1341,32 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
               ),
             ),
             const SizedBox(height: 40),
-            _bigButton('KEMBALI KE MENU', cat.color, _backToCategories),
+            _bigButton('KEMBALI KE MENU', cat.color, () async {
+              if (_isSaving) return;
+              setState(() => _isSaving = true);
+
+              await _saveWorkoutHistory();
+
+              if (!mounted) return;
+
+              setState(() => _isSaving = false);
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    '✓ Riwayat latihan berhasil disimpan!',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+
+              _backToCategories();
+            }, isLoading: _isSaving),
           ],
         ),
       ),
@@ -1403,19 +1436,22 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
     Color color,
     VoidCallback onTap, {
     Color textColor = Colors.white,
+    bool isLoading = false,
   }) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _btnPressed = true),
-      onTapUp: (_) {
-        setState(() => _btnPressed = false);
-        onTap();
-      },
-      onTapCancel: () => setState(() => _btnPressed = false),
+      onTapDown: isLoading ? null : (_) => setState(() => _btnPressed = true),
+      onTapUp: isLoading
+          ? null
+          : (_) {
+              setState(() => _btnPressed = false);
+              onTap();
+            },
+      onTapCancel: isLoading ? null : () => setState(() => _btnPressed = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 80),
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        transform: _btnPressed
+        transform: _btnPressed && !isLoading
             // ignore: deprecated_member_use
             ? (Matrix4.identity()..translate(0.0, 3.0))
             : Matrix4.identity(),
@@ -1424,7 +1460,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
             colors: [color.withValues(alpha: 0.85), color],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: _btnPressed
+          boxShadow: (_btnPressed || isLoading)
               ? []
               : [
                   BoxShadow(
@@ -1435,15 +1471,24 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
                 ],
         ),
         child: Center(
-          child: Text(
-            text,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              letterSpacing: 1,
-            ),
-          ),
+          child: isLoading
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: textColor,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Text(
+                  text,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    letterSpacing: 1,
+                  ),
+                ),
         ),
       ),
     );

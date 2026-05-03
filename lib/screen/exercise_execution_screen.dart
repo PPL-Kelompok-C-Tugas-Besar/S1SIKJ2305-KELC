@@ -38,12 +38,15 @@ class ExerciseExecutionScreen extends StatefulWidget {
   final List<ExerciseExecutionItem> exercises;
   final String workoutTitle;
   final Color themeColor;
+  /// Jumlah item pertama yang merupakan warmup (0 = tidak ada warmup)
+  final int warmupCount;
 
   const ExerciseExecutionScreen({
     super.key,
     required this.exercises,
     required this.workoutTitle,
     this.themeColor = _accent,
+    this.warmupCount = 0,
   });
 
   @override
@@ -59,6 +62,10 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
   bool _isResting = false;
   int _restSeconds = 15;
   Timer? _timer;
+
+  // ── Warmup Group (tampilkan semua warmup sekaligus) ──
+  bool _showingWarmupGroup = false;
+  int _warmupGroupSeconds = 30;
 
   late AnimationController _pulseCtrl;
   late Animation<double> _pulseAnim;
@@ -112,7 +119,13 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
       duration: const Duration(seconds: 1),
     );
 
-    _loadExercise();
+    // Jika ada warmup items, tampilkan group warmup screen dulu
+    if (widget.warmupCount > 0) {
+      _showingWarmupGroup = true;
+      _startWarmupGroupTimer();
+    } else {
+      _loadExercise();
+    }
   }
 
   @override
@@ -133,6 +146,50 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
     } else {
       _timer?.cancel();
     }
+  }
+
+  // ── Warmup Group Logic ────────────────────────────────────────────────────
+
+  void _startWarmupGroupTimer() {
+    _timer?.cancel();
+    setState(() {
+      _warmupGroupSeconds = 30;
+      _isPaused = false;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_isPaused) return;
+      if (_warmupGroupSeconds > 0) {
+        setState(() => _warmupGroupSeconds--);
+      } else {
+        t.cancel();
+        _finishWarmupGroup();
+      }
+    });
+  }
+
+  /// Warmup group selesai → pindah ke rest "Pemanasan Selesai" → latihan utama
+  void _finishWarmupGroup() {
+    _timer?.cancel();
+    setState(() {
+      _showingWarmupGroup = false;
+      // Posisikan di item warmup terakhir agar rest view mendeteksi isWarmupDone
+      _currentIndex = widget.warmupCount - 1;
+      _isResting = true;
+      _restSeconds = 15;
+    });
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_restSeconds > 0) {
+        setState(() => _restSeconds--);
+      } else {
+        t.cancel();
+        _goNextExercise();
+      }
+    });
+  }
+
+  void _skipWarmupGroup() {
+    _timer?.cancel();
+    _finishWarmupGroup();
   }
 
   void _startTimer(int seconds) {
@@ -214,8 +271,229 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
       backgroundColor: _bg,
       body: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        child: _isResting ? _buildRestView() : _buildExerciseView(),
+        child: _showingWarmupGroup
+            ? _buildWarmupGroupView()
+            : _isResting
+                ? _buildRestView()
+                : _buildExerciseView(),
       ),
+    );
+  }
+
+  // ── Warmup Group View (3 GIF ditampilkan sekaligus) ──────────────────────
+
+  Widget _buildWarmupGroupView() {
+    final top = MediaQuery.of(context).padding.top;
+    final warmupItems = widget.exercises.sublist(0, widget.warmupCount);
+
+    return Column(
+      key: const ValueKey('warmup_group'),
+      children: [
+        // ── Header ──
+        Container(
+          padding: EdgeInsets.fromLTRB(16, top + 12, 16, 12),
+          color: _surface,
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new,
+                      color: Colors.white70,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.workoutTitle,
+                      style: const TextStyle(
+                        color: _white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // Badge pemanasan
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _green.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(20),
+                      border:
+                          Border.all(color: _green.withValues(alpha: 0.5)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.local_fire_department,
+                          color: _green,
+                          size: 13,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Pemanasan',
+                          style: TextStyle(
+                            color: _green,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // ── Banner SESI PEMANASAN ──
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: _green.withValues(alpha: 0.10),
+            border: Border(
+              bottom:
+                  BorderSide(color: _green.withValues(alpha: 0.30), width: 1),
+            ),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.local_fire_department, color: _green, size: 16),
+              SizedBox(width: 8),
+              Text(
+                'SESI PEMANASAN',
+                style: TextStyle(
+                  color: _green,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 2.5,
+                ),
+              ),
+              SizedBox(width: 8),
+              Icon(Icons.local_fire_department, color: _green, size: 16),
+            ],
+          ),
+        ),
+
+        // ── 3 GIF Cards ──
+        Expanded(
+          flex: 5,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+            child: Row(
+              children: warmupItems.map((item) {
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: _card,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: _green.withValues(alpha: 0.35),
+                                width: 1.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: _green.withValues(alpha: 0.10),
+                                  blurRadius: 12,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
+                            child: Image.asset(
+                              item.gifPath,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, e, st) => Center(
+                                child: Icon(
+                                  Icons.fitness_center,
+                                  color: _green.withValues(alpha: 0.4),
+                                  size: 28,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          item.name,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+
+        // ── Timer & Controls ──
+        Expanded(
+          flex: 3,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const SizedBox(height: 8),
+                const Text(
+                  'Lakukan semua gerakan di atas',
+                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                const SizedBox(height: 6),
+                ScaleTransition(
+                  scale: _pulseAnim,
+                  child: Text(
+                    '$_warmupGroupSeconds',
+                    style: const TextStyle(
+                      color: _white,
+                      fontSize: 68,
+                      fontWeight: FontWeight.w900,
+                      height: 1,
+                    ),
+                  ),
+                ),
+                const Text(
+                  'detik',
+                  style: TextStyle(color: Colors.white38, fontSize: 13),
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: _ActionButton(
+                    label: 'SKIP PEMANASAN →',
+                    color: Colors.white12,
+                    onTap: _skipWarmupGroup,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -224,6 +502,8 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
   Widget _buildExerciseView() {
     final ex = _current;
     final color = widget.themeColor;
+    final isWarmup =
+        widget.warmupCount > 0 && _currentIndex < widget.warmupCount;
 
     return Column(
       key: const ValueKey('exercise'),
@@ -234,9 +514,46 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
           current: _currentIndex + 1,
           total: widget.exercises.length,
           progress: _progress,
-          color: color,
+          color: isWarmup ? _green : color,
           onBack: () => Navigator.of(context).pop(),
+          isWarmup: isWarmup,
+          warmupCurrent: isWarmup ? _currentIndex + 1 : 0,
+          warmupTotal: widget.warmupCount,
         ),
+
+        // ── Banner PEMANASAN (hanya saat warmup) ──
+        if (isWarmup)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: _green.withValues(alpha: 0.10),
+              border: Border(
+                bottom: BorderSide(
+                  color: _green.withValues(alpha: 0.30),
+                  width: 1,
+                ),
+              ),
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.local_fire_department, color: _green, size: 16),
+                SizedBox(width: 8),
+                Text(
+                  'SESI PEMANASAN',
+                  style: TextStyle(
+                    color: _green,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 2.5,
+                  ),
+                ),
+                SizedBox(width: 8),
+                Icon(Icons.local_fire_department, color: _green, size: 16),
+              ],
+            ),
+          ),
 
         // ── Media Area (fokus utama – vertikal) ──
         Expanded(
@@ -245,7 +562,10 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
             position: _slideAnim,
             child: FadeTransition(
               opacity: _fadeAnim,
-              child: _MediaPanel(gifPath: ex.gifPath, color: color),
+              child: _MediaPanel(
+                gifPath: ex.gifPath,
+                color: isWarmup ? _green : color,
+              ),
             ),
           ),
         ),
@@ -260,7 +580,7 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
               timerSeconds: _timerSeconds,
               isPaused: _isPaused,
               pulseAnim: _pulseAnim,
-              color: color,
+              color: isWarmup ? _green : color,
               onPause: _togglePause,
               onDone: _onExerciseDone,
               isLast: _isLast,
@@ -271,10 +591,119 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
     );
   }
 
+
   // ── Rest View ─────────────────────────────────────────────────────────────
 
   Widget _buildRestView() {
     final next = widget.exercises[_currentIndex + 1];
+    // Deteksi: apakah ini jeda antara warmup terakhir dan latihan utama pertama?
+    final isWarmupDone =
+        widget.warmupCount > 0 && _currentIndex == widget.warmupCount - 1;
+
+    if (isWarmupDone) {
+      // ── Layar Khusus: Pemanasan Selesai → Bersiap Latihan ────────────────
+      return Center(
+        key: const ValueKey('warmup_done'),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon api / pemanasan
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      _green.withValues(alpha: 0.30),
+                      _green.withValues(alpha: 0.06),
+                    ],
+                  ),
+                  border: Border.all(color: _green, width: 2.5),
+                ),
+                child: const Icon(
+                  Icons.check_circle_outline_rounded,
+                  color: _green,
+                  size: 56,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'PEMANASAN SELESAI!',
+                style: TextStyle(
+                  color: _green,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 3,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Tubuhmu sudah siap.\nBersiap untuk sesi latihan utama!',
+                style: TextStyle(color: Colors.white60, fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                decoration: BoxDecoration(
+                  color: widget.themeColor.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: widget.themeColor.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.fitness_center,
+                        color: widget.themeColor, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Latihan pertama: ${next.name}',
+                      style: TextStyle(
+                        color: widget.themeColor,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 44),
+              ScaleTransition(
+                scale: _pulseAnim,
+                child: Text(
+                  '$_restSeconds',
+                  style: const TextStyle(
+                    color: _white,
+                    fontSize: 96,
+                    fontWeight: FontWeight.w900,
+                    height: 1,
+                  ),
+                ),
+              ),
+              const Text(
+                'detik',
+                style: TextStyle(color: Colors.white38, fontSize: 16),
+              ),
+              const SizedBox(height: 40),
+              _ActionButton(
+                label: 'MULAI LATIHAN →',
+                color: widget.themeColor,
+                onTap: _skipRest,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ── Layar Istirahat Normal antar latihan ─────────────────────────────────
     return Center(
       key: const ValueKey('rest'),
       child: Padding(
@@ -352,6 +781,9 @@ class _TopBar extends StatelessWidget {
   final double progress;
   final Color color;
   final VoidCallback onBack;
+  final bool isWarmup;
+  final int warmupCurrent;
+  final int warmupTotal;
 
   const _TopBar({
     required this.title,
@@ -360,6 +792,9 @@ class _TopBar extends StatelessWidget {
     required this.progress,
     required this.color,
     required this.onBack,
+    this.isWarmup = false,
+    this.warmupCurrent = 0,
+    this.warmupTotal = 0,
   });
 
   @override
@@ -391,25 +826,58 @@ class _TopBar extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: color.withValues(alpha: 0.4)),
-                ),
-                child: Text(
-                  '$current / $total',
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+              // Badge PEMANASAN atau counter latihan
+              if (isWarmup)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _green.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: _green.withValues(alpha: 0.5)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.local_fire_department,
+                        color: _green,
+                        size: 13,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Pemanasan $warmupCurrent/$warmupTotal',
+                        style: const TextStyle(
+                          color: _green,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: color.withValues(alpha: 0.4)),
+                  ),
+                  child: Text(
+                    '$current / $total',
+                    style: TextStyle(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -713,18 +1181,20 @@ class _ActionButton extends StatelessWidget {
   final Color color;
   final Color textColor;
   final VoidCallback onTap;
+  final bool isLoading;
 
   const _ActionButton({
     required this.label,
     required this.color,
     required this.onTap,
     this.textColor = _white,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: isLoading ? null : onTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -733,7 +1203,7 @@ class _ActionButton extends StatelessWidget {
             colors: [color.withValues(alpha: 0.85), color],
           ),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: isLoading ? [] : [
             BoxShadow(
               color: color.withValues(alpha: 0.35),
               blurRadius: 14,
@@ -742,15 +1212,24 @@ class _ActionButton extends StatelessWidget {
           ],
         ),
         child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-              letterSpacing: 0.8,
-            ),
-          ),
+          child: isLoading
+              ? SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    color: textColor,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Text(
+                  label,
+                  style: TextStyle(
+                    color: textColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    letterSpacing: 0.8,
+                  ),
+                ),
         ),
       ),
     );
@@ -759,7 +1238,7 @@ class _ActionButton extends StatelessWidget {
 
 // ── Completion Dialog ─────────────────────────────────────────────────────────
 
-class _CompletionDialog extends StatelessWidget {
+class _CompletionDialog extends StatefulWidget {
   final String workoutTitle;
   final int totalExercises;
   final Color themeColor;
@@ -771,6 +1250,23 @@ class _CompletionDialog extends StatelessWidget {
     required this.themeColor,
     required this.onDone,
   });
+
+  @override
+  State<_CompletionDialog> createState() => _CompletionDialogState();
+}
+
+class _CompletionDialogState extends State<_CompletionDialog> {
+  bool _isSaving = false;
+
+  Future<void> _saveWorkoutHistory() async {
+    // Simulasi delay proses simpan
+    await Future.delayed(const Duration(seconds: 2));
+
+    debugPrint('--- Workout Summary ---');
+    debugPrint('Title: ${widget.workoutTitle}');
+    debugPrint('Total Latihan: ${widget.totalExercises}');
+    debugPrint('-----------------------');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -795,7 +1291,7 @@ class _CompletionDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              workoutTitle,
+              widget.workoutTitle,
               style: const TextStyle(color: Colors.white54, fontSize: 14),
               textAlign: TextAlign.center,
             ),
@@ -803,15 +1299,41 @@ class _CompletionDialog extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _statChip('$totalExercises', 'Latihan', themeColor),
+                _statChip('${widget.totalExercises}', 'Latihan', widget.themeColor),
                 _statChip('✓', 'Selesai', _green),
               ],
             ),
             const SizedBox(height: 28),
             _ActionButton(
               label: 'KEMBALI KE MENU',
-              color: themeColor,
-              onTap: onDone,
+              color: widget.themeColor,
+              isLoading: _isSaving,
+              onTap: () async {
+                if (_isSaving) return;
+                setState(() => _isSaving = true);
+                
+                await _saveWorkoutHistory();
+                
+                if (!mounted) return;
+                
+                setState(() => _isSaving = false);
+                
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      '✓ Riwayat latihan berhasil disimpan!',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    backgroundColor: Colors.green,
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+                
+                widget.onDone();
+              },
             ),
           ],
         ),
