@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import '../../models/exercise_model.dart';
-import '../../services/exercise_service.dart';
 import '../../utils/palette.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -19,9 +17,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
   
   // Form data
   String _selectedGender = '';
-  List<String> _selectedGoals = [];
+  final List<String> _selectedGoals = [];
   double _currentWeight = 70.0;
-  double _targetWeight = 65.0;
+  final double _targetWeight = 65.0;
   final TextEditingController _weightController = TextEditingController();
 
   final List<String> _genders = ['male', 'female'];

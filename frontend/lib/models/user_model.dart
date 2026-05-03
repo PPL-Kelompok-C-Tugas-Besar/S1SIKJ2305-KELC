@@ -65,17 +65,4 @@ class UserModel {
     if (value is int) return value.toDouble();
     return double.tryParse(value.toString());
   }
-
-  static String _readString(Map<String, dynamic> json, String key) {
-    final value = json[key];
-    if (value == null) return '';
-    return value.toString();
-  }
-
-  static int? _readInt(Map<String, dynamic> json, String key) {
-    final value = json[key];
-    if (value == null) return null;
-    if (value is int) return value;
-    return int.tryParse(value.toString());
-  }
 }

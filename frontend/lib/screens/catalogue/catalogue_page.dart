@@ -281,7 +281,7 @@ class _FilterSection extends StatelessWidget {
                 onTap: () => onSelect(option.value),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemCount: options.length,
           ),
         ),
