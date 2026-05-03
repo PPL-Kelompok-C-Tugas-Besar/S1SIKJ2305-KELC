@@ -344,7 +344,7 @@ class _WorkoutCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 220,
+        height: 244,
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
@@ -422,6 +422,29 @@ class _WorkoutCard extends StatelessWidget {
                       Icons.arrow_forward_rounded,
                       color: kBg,
                       size: 20,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.fitness_center,
+                    color: Color(0xFF6BE5FF),
+                    size: 14,
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      "Equipment: ${workout.equipmentSummary.isEmpty ? 'none' : workout.equipmentSummary}",
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],

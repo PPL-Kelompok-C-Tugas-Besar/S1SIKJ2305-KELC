@@ -24,12 +24,9 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
   final TextEditingController _searchController = TextEditingController();
 
   List<Exercise> _exercises = [];
-  final Set<String> _selectedExerciseIds = {};
   bool _isLoading = true;
   bool _hasError = false;
   String _searchQuery = '';
-  String _selectedEquipment = 'All';
-  String _selectedDifficulty = 'All';
 
   @override
   void initState() {
@@ -73,26 +70,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
     }
   }
 
-  List<String> get _equipmentFilters {
-    final values = _exercises
-        .map((exercise) => exercise.equipmentRequired)
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-    return ['All', ...values];
-  }
-
-  List<String> get _difficultyFilters {
-    final values = _exercises
-        .map((exercise) => exercise.difficulty)
-        .where((value) => value.isNotEmpty)
-        .toSet()
-        .toList()
-      ..sort();
-    return ['All', ...values];
-  }
-
   List<Exercise> get _filteredExercises {
     final query = _searchQuery.toLowerCase();
 
@@ -103,31 +80,15 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
           exercise.equipmentRequired.toLowerCase().contains(query) ||
           exercise.instructions.toLowerCase().contains(query);
 
-      final matchesEquipment = _selectedEquipment == 'All' ||
-          exercise.equipmentRequired == _selectedEquipment;
-
-      final matchesDifficulty = _selectedDifficulty == 'All' ||
-          exercise.difficulty == _selectedDifficulty;
-
-      return matchesSearch && matchesEquipment && matchesDifficulty;
+      return matchesSearch;
     }).toList();
   }
 
-  void _toggleExercise(Exercise exercise) {
-    setState(() {
-      if (_selectedExerciseIds.contains(exercise.id)) {
-        _selectedExerciseIds.remove(exercise.id);
-      } else {
-        _selectedExerciseIds.add(exercise.id);
-      }
-    });
-  }
-
-  void _confirmSelection() {
+  void _startSession() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          '${_selectedExerciseIds.length} exercise selected',
+          'Starting ${widget.workoutType}',
         ),
       ),
     );
@@ -139,14 +100,14 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
 
     return Scaffold(
       backgroundColor: kBg,
-      bottomNavigationBar: _selectedExerciseIds.isEmpty
+      bottomNavigationBar: _isLoading || _hasError || _exercises.isEmpty
           ? null
           : SafeArea(
               minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
               child: SizedBox(
                 height: 54,
                 child: ElevatedButton(
-                  onPressed: _confirmSelection,
+                  onPressed: _startSession,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kAccent,
                     foregroundColor: kBg,
@@ -154,9 +115,9 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  child: Text(
-                    'Start ${_selectedExerciseIds.length} Exercises',
-                    style: const TextStyle(
+                  child: const Text(
+                    'Start Session',
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
@@ -189,7 +150,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                             tooltip: 'Back',
                           ),
                           const Spacer(),
-                          _SelectionBadge(count: _selectedExerciseIds.length),
                         ],
                       ),
                       const SizedBox(height: 12),
@@ -218,24 +178,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                       ),
                       const SizedBox(height: 24),
                       _SearchField(controller: _searchController),
-                      const SizedBox(height: 20),
-                      _FilterSection(
-                        title: 'Equipment',
-                        options: _equipmentFilters,
-                        selected: _selectedEquipment,
-                        onSelected: (value) {
-                          setState(() => _selectedEquipment = value);
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _FilterSection(
-                        title: 'Difficulty',
-                        options: _difficultyFilters,
-                        selected: _selectedDifficulty,
-                        onSelected: (value) {
-                          setState(() => _selectedDifficulty = value);
-                        },
-                      ),
                     ],
                   ),
                 ),
@@ -269,7 +211,7 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                   child: _MessageState(
                     icon: Icons.search_off_rounded,
                     title: 'No matches',
-                    message: 'Try a different search or filter.',
+                    message: 'Try a different search.',
                   ),
                 )
               else
@@ -278,7 +220,7 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                     20,
                     0,
                     20,
-                    _selectedExerciseIds.isEmpty ? 24 : 96,
+                    _exercises.isEmpty ? 24 : 96,
                   ),
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
@@ -286,9 +228,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                         final exercise = filteredExercises[index];
                         return _ExerciseCard(
                           exercise: exercise,
-                          isSelected:
-                              _selectedExerciseIds.contains(exercise.id),
-                          onTap: () => _toggleExercise(exercise),
                         );
                       },
                       childCount: filteredExercises.length,
@@ -297,32 +236,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                 ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SelectionBadge extends StatelessWidget {
-  const _SelectionBadge({required this.count});
-
-  final int count;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: count == 0 ? kCard : kAccent,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: count == 0 ? Colors.white10 : kAccent),
-      ),
-      child: Text(
-        '$count selected',
-        style: TextStyle(
-          color: count == 0 ? kTextMuted : kBg,
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
         ),
       ),
     );
@@ -403,97 +316,22 @@ class _SearchField extends StatelessWidget {
   }
 }
 
-class _FilterSection extends StatelessWidget {
-  const _FilterSection({
-    required this.title,
-    required this.options,
-    required this.selected,
-    required this.onSelected,
-  });
-
-  final String title;
-  final List<String> options;
-  final String selected;
-  final ValueChanged<String> onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    if (options.length <= 1) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(
-            color: kTextMuted,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 10),
-        SizedBox(
-          height: 40,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            itemBuilder: (context, index) {
-              final option = options[index];
-              final isSelected = option == selected;
-              return ChoiceChip(
-                label: Text(option),
-                selected: isSelected,
-                onSelected: (_) => onSelected(option),
-                showCheckmark: false,
-                selectedColor: kAccent,
-                backgroundColor: kCard,
-                side: BorderSide(
-                  color: isSelected ? kAccent : Colors.white12,
-                ),
-                labelStyle: TextStyle(
-                  color: isSelected ? kBg : kTextPrimary,
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              );
-            },
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
-            itemCount: options.length,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({
     required this.exercise,
-    required this.isSelected,
-    required this.onTap,
   });
 
   final Exercise exercise;
-  final bool isSelected;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
+    return Container(
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: kCard,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: isSelected ? kAccent : Colors.white10,
-            width: isSelected ? 1.5 : 1,
-          ),
+        border: Border.all(color: Colors.white10),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -519,14 +357,6 @@ class _ExerciseCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Icon(
-                        isSelected
-                            ? Icons.check_circle_rounded
-                            : Icons.radio_button_unchecked_rounded,
-                        color: isSelected ? kAccent : kTextMuted,
-                        size: 22,
-                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -550,18 +380,6 @@ class _ExerciseCard extends StatelessWidget {
                           icon: Icons.repeat_rounded,
                           label: exercise.repsOrDuration,
                           color: kAccent,
-                        ),
-                      if (exercise.equipmentRequired.isNotEmpty)
-                        _ExercisePill(
-                          icon: Icons.fitness_center,
-                          label: exercise.equipmentRequired,
-                          color: const Color(0xFF6BE5FF),
-                        ),
-                      if (exercise.difficulty.isNotEmpty)
-                        _ExercisePill(
-                          icon: Icons.trending_up_rounded,
-                          label: exercise.difficulty,
-                          color: const Color(0xFFFFB74D),
                         ),
                       if (exercise.baseCaloriesBurn != null)
                         _ExercisePill(
@@ -590,7 +408,6 @@ class _ExerciseCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 }

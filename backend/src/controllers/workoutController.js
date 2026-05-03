@@ -26,9 +26,15 @@ exports.getWorkouts = async (req, res) => {
         w.description,
         w.duration_minutes,
         w.created_at,
-        COUNT(we.exercise_id) AS exercise_count
+        COUNT(DISTINCT we.exercise_id) AS exercise_count,
+        GROUP_CONCAT(
+          DISTINCT e.equipment_required
+          ORDER BY e.equipment_required
+          SEPARATOR ', '
+        ) AS equipment_summary
       FROM workouts w
       LEFT JOIN workout_exercises we ON we.workout_id = w.id
+      LEFT JOIN exercises e ON e.id = we.exercise_id
     `;
 
     if (conditions.length > 0) {

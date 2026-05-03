@@ -7,6 +7,7 @@ class Workout {
   final String description;
   final int? durationMinutes;
   final int exerciseCount;
+  final String equipmentSummary;
 
   const Workout({
     required this.id,
@@ -17,6 +18,7 @@ class Workout {
     required this.description,
     this.durationMinutes,
     required this.exerciseCount,
+    required this.equipmentSummary,
   });
 
   factory Workout.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class Workout {
       description: _readString(json, 'description'),
       durationMinutes: _readInt(json, 'duration_minutes'),
       exerciseCount: _readInt(json, 'exercise_count') ?? 0,
+      equipmentSummary: _readString(json, 'equipment_summary'),
     );
   }
 
