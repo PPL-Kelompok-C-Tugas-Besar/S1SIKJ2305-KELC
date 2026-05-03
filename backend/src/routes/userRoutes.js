@@ -9,7 +9,7 @@ const { updateWeight, getWeightHistory } = require('../controllers/profileContro
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, date_created FROM USERS WHERE id = ?',
+      'SELECT id, full_name, email, weight, role, date_created FROM users WHERE id = ?',
       [req.user.id]
     );
     if (rows.length === 0) {

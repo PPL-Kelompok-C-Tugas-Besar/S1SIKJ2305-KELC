@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import '../../models/workout_model.dart';
+import '../../services/workout_service.dart';
 import '../../utils/palette.dart';
+import 'exercise_selection_page.dart';
 
 class CataloguePage extends StatefulWidget {
   const CataloguePage({super.key});
@@ -9,86 +12,230 @@ class CataloguePage extends StatefulWidget {
 }
 
 class _CataloguePageState extends State<CataloguePage> {
-  String _location = 'Gym';
-  String _type     = 'Upper Body';
+  final WorkoutService _workoutService = WorkoutService();
 
-  static const _locations = ['Gym', 'Home'];
-  static const _types     = ['Upper Body', 'Lower Body', 'Full Body'];
+  List<Workout> _workouts = [];
+  bool _isLoading = true;
+  bool _hasError = false;
+  String _selectedLocation = 'all';
+  String _selectedCategory = 'all';
+
+  static const _locations = [
+    _FilterOption(label: 'All', value: 'all'),
+    _FilterOption(label: 'Home', value: 'home'),
+    _FilterOption(label: 'Gym', value: 'gym'),
+    _FilterOption(label: 'Anywhere', value: 'anywhere'),
+  ];
+
+  static const _categories = [
+    _FilterOption(label: 'All', value: 'all'),
+    _FilterOption(label: 'Workout', value: 'workout'),
+    _FilterOption(label: 'Warmup', value: 'warmup'),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWorkouts();
+  }
+
+  Future<void> _loadWorkouts() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      final workouts = await _workoutService.getWorkouts(
+        location: _selectedLocation,
+        category: _selectedCategory,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _workouts = workouts;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  void _setLocation(String value) {
+    if (_selectedLocation == value) return;
+    setState(() => _selectedLocation = value);
+    _loadWorkouts();
+  }
+
+  void _setCategory(String value) {
+    if (_selectedCategory == value) return;
+    setState(() => _selectedCategory = value);
+    _loadWorkouts();
+  }
+
+  void _openWorkout(Workout workout) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ExerciseSelectionPage(
+          workoutId: workout.id,
+          location: workout.locationType,
+          workoutType: workout.title,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Page title
-            const Text('Train',
-                style: TextStyle(
-                    color: kTextPrimary,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            const Text('Personalize your workout regime',
-                style: TextStyle(color: kTextMuted, fontSize: 14)),
-
-            const SizedBox(height: 32),
-
-            // ── Location selector
-            _SelectorSection(
-              label: 'Workout Location',
-              icon: Icons.location_on_outlined,
-              options: _locations,
-              selected: _location,
-              onSelect: (v) => setState(() => _location = v),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Type selector
-            _SelectorSection(
-              label: 'Workout Type',
-              icon: Icons.accessibility_new_rounded,
-              options: _types,
-              selected: _type,
-              onSelect: (v) => setState(() => _type = v),
-            ),
-
-            const SizedBox(height: 32),
-
-            // ── Summary card
-            _SummaryCard(location: _location, type: _type),
-
-            const SizedBox(height: 32),
-
-            // ── Start button
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kAccent,
-                  foregroundColor: kBg,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+      child: RefreshIndicator(
+        color: kAccent,
+        backgroundColor: kCard,
+        onRefresh: _loadWorkouts,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Train',
+                      style: TextStyle(
+                        color: kTextPrimary,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Choose a workout from your database',
+                      style: TextStyle(color: kTextMuted, fontSize: 14),
+                    ),
+                    const SizedBox(height: 24),
+                    _FilterSection(
+                      label: 'Location',
+                      icon: Icons.location_on_outlined,
+                      options: _locations,
+                      selected: _selectedLocation,
+                      onSelect: _setLocation,
+                    ),
+                    const SizedBox(height: 18),
+                    _FilterSection(
+                      label: 'Category',
+                      icon: Icons.category_outlined,
+                      options: _categories,
+                      selected: _selectedCategory,
+                      onSelect: _setCategory,
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Workouts',
+                          style: TextStyle(
+                            color: kTextPrimary,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (!_isLoading)
+                          Text(
+                            '${_workouts.length} found',
+                            style: const TextStyle(
+                              color: kTextMuted,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
                 ),
-                child: const Text('Start Workout',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
+            if (_isLoading)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(color: kAccent),
+                ),
+              )
+            else if (_hasError)
+              SliverFillRemaining(
+                child: _MessageState(
+                  icon: Icons.wifi_off_rounded,
+                  title: 'Failed to load workouts',
+                  message: 'Check the server connection and try again.',
+                  actionLabel: 'Retry',
+                  onAction: _loadWorkouts,
+                ),
+              )
+            else if (_workouts.isEmpty)
+              const SliverFillRemaining(
+                child: _MessageState(
+                  icon: Icons.fitness_center,
+                  title: 'No workouts found',
+                  message: 'No database workouts match this filter.',
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final workout = _workouts[index];
+                      return _WorkoutCard(
+                        workout: workout,
+                        imageUrl: _imageForWorkout(workout),
+                        onTap: () => _openWorkout(workout),
+                      );
+                    },
+                    childCount: _workouts.length,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
+
+  String _imageForWorkout(Workout workout) {
+    final title = workout.title.toLowerCase();
+    if (workout.category == 'warmup' || title.contains('mobility')) {
+      return 'https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=900&q=80';
+    }
+    if (title.contains('abs')) {
+      return 'https://images.unsplash.com/photo-1518611012118-696072aa579a?w=900&q=80';
+    }
+    if (workout.locationType == 'gym') {
+      return 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=900&q=80';
+    }
+    return 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=900&q=80';
+  }
 }
 
-// ── Selector section ──────────────────────────────────────────────────────────
-class _SelectorSection extends StatelessWidget {
-  const _SelectorSection({
+class _FilterOption {
+  const _FilterOption({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+}
+
+class _FilterSection extends StatelessWidget {
+  const _FilterSection({
     required this.label,
     required this.icon,
     required this.options,
@@ -96,10 +243,10 @@ class _SelectorSection extends StatelessWidget {
     required this.onSelect,
   });
 
-  final String        label;
-  final IconData      icon;
-  final List<String>  options;
-  final String        selected;
+  final String label;
+  final IconData icon;
+  final List<_FilterOption> options;
+  final String selected;
   final ValueChanged<String> onSelect;
 
   @override
@@ -111,31 +258,38 @@ class _SelectorSection extends StatelessWidget {
           children: [
             Icon(icon, color: kAccent, size: 18),
             const SizedBox(width: 8),
-            Text(label,
-                style: const TextStyle(
-                    color: kTextMuted,
-                    fontSize: 13,
-                    letterSpacing: 0.8)),
+            Text(
+              label,
+              style: const TextStyle(
+                color: kTextMuted,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: options
-              .map((opt) => _OptionChip(
-                    label: opt,
-                    isSelected: opt == selected,
-                    onTap: () => onSelect(opt),
-                  ))
-              .toList(),
+        SizedBox(
+          height: 42,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemBuilder: (context, index) {
+              final option = options[index];
+              return _OptionChip(
+                label: option.label,
+                isSelected: option.value == selected,
+                onTap: () => onSelect(option.value),
+              );
+            },
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemCount: options.length,
+          ),
         ),
       ],
     );
   }
 }
 
-// ── Option chip ───────────────────────────────────────────────────────────────
 class _OptionChip extends StatelessWidget {
   const _OptionChip({
     required this.label,
@@ -143,8 +297,8 @@ class _OptionChip extends StatelessWidget {
     required this.onTap,
   });
 
-  final String   label;
-  final bool     isSelected;
+  final String label;
+  final bool isSelected;
   final VoidCallback onTap;
 
   @override
@@ -152,8 +306,8 @@ class _OptionChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
         decoration: BoxDecoration(
           color: isSelected ? kAccent : kCard,
           borderRadius: BorderRadius.circular(12),
@@ -164,9 +318,9 @@ class _OptionChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color:      isSelected ? kBg : kTextPrimary,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            fontSize:   14,
+            color: isSelected ? kBg : kTextPrimary,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 14,
           ),
         ),
       ),
@@ -174,36 +328,148 @@ class _OptionChip extends StatelessWidget {
   }
 }
 
-// ── Summary card ──────────────────────────────────────────────────────────────
-class _SummaryCard extends StatelessWidget {
-  const _SummaryCard({required this.location, required this.type});
+class _WorkoutCard extends StatelessWidget {
+  const _WorkoutCard({
+    required this.workout,
+    required this.imageUrl,
+    required this.onTap,
+  });
 
-  final String location;
-  final String type;
+  final Workout workout;
+  final String imageUrl;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 220,
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          image: DecorationImage(
+            image: NetworkImage(imageUrl),
+            fit: BoxFit.cover,
+            colorFilter: ColorFilter.mode(
+              Colors.black.withAlpha(138),
+              BlendMode.darken,
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  _MetaPill(
+                    icon: Icons.location_on_outlined,
+                    label: _capitalize(workout.locationType),
+                    color: kAccent,
+                  ),
+                  const SizedBox(width: 8),
+                  _MetaPill(
+                    icon: Icons.category_outlined,
+                    label: _capitalize(workout.category),
+                    color: const Color(0xFF6BE5FF),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                workout.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: kTextPrimary,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  height: 1.15,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                workout.description,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  Text(
+                    '${_capitalize(workout.difficulty)} - ${workout.durationMinutes ?? 0} min - ${workout.exerciseCount} exercises',
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: kAccent,
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_rounded,
+                      color: kBg,
+                      size: 20,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _capitalize(String value) {
+    if (value.isEmpty) return '-';
+    return value[0].toUpperCase() + value.substring(1);
+  }
+}
+
+class _MetaPill extends StatelessWidget {
+  const _MetaPill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        color: Colors.white24,
+        borderRadius: BorderRadius.circular(14),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          const Text('Your Selection',
-              style: TextStyle(
-                  color: kTextMuted, fontSize: 12, letterSpacing: 0.8)),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _SummaryChip(icon: Icons.location_on_outlined, label: location),
-              const SizedBox(width: 12),
-              _SummaryChip(icon: Icons.fitness_center,       label: type),
-            ],
+          Icon(icon, color: color, size: 14),
+          const SizedBox(width: 5),
+          Text(
+            label,
+            style: const TextStyle(
+              color: kTextPrimary,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
           ),
         ],
       ),
@@ -211,31 +477,71 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({required this.icon, required this.label});
+class _MessageState extends StatelessWidget {
+  const _MessageState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
 
   final IconData icon;
-  final String   label;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: kAccent.withAlpha(31),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: kAccent, size: 16),
-          const SizedBox(width: 6),
-          Text(label,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: kCard,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Icon(icon, color: kTextMuted, size: 44),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              textAlign: TextAlign.center,
               style: const TextStyle(
-                  color:      kAccent,
-                  fontWeight: FontWeight.w600,
-                  fontSize:   13)),
-        ],
+                color: kTextPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: kTextMuted, height: 1.45),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(actionLabel!),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kAccent,
+                  foregroundColor: kBg,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }
