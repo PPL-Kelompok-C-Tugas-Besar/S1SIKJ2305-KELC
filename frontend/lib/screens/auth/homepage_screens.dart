@@ -360,20 +360,13 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(title,
-            style: const TextStyle(
-                color: kTextPrimary,
-                fontSize: 20,
-                fontWeight: FontWeight.bold)),
-        TextButton(
-          onPressed: () {},
-          child:
-              const Text('See All', style: TextStyle(color: kAccent)),
-        ),
-      ],
+    return Text(
+      title,
+      style: const TextStyle(
+        color: kTextPrimary,
+        fontSize: 20,
+        fontWeight: FontWeight.bold,
+      ),
     );
   }
 }
@@ -400,11 +393,16 @@ class _HotWorkoutListState extends State<_HotWorkoutList> {
       final user = context.read<AuthProvider>().user;
       final fitnessGoal = user?.goals?.isNotEmpty == true ? user!.goals![0].toLowerCase().replaceAll(' ', '_') : 'all';
       
-      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=workout&fitness_goal=$fitnessGoal'));
+      // Add limit parameter to fetch only 10 workouts
+      // If backend doesn't support limit parameter, take first 10 workouts
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=workout&fitness_goal=$fitnessGoal&limit=10'));
       if (response.statusCode == 200) {
         final body = json.decode(response.body);
         final List<dynamic> data = body['data'] ?? [];
-        return data.map((item) => Workout.fromJson(item)).toList();
+        final workouts = data.map((item) => Workout.fromJson(item)).toList();
+        
+        // If backend doesn't support limit parameter, take first 10 workouts
+        return workouts.take(10).toList();
       } else {
         throw Exception('Failed to load workouts. Status: ${response.statusCode}');
       }

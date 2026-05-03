@@ -19,6 +19,7 @@ class _CataloguePageState extends State<CataloguePage> {
   bool _hasError = false;
   String _selectedLocation = 'all';
   String _selectedCategory = 'all';
+  String _selectedDifficulty = 'all';
 
   static const _locations = [
     _FilterOption(label: 'All', value: 'all'),
@@ -31,6 +32,13 @@ class _CataloguePageState extends State<CataloguePage> {
     _FilterOption(label: 'All', value: 'all'),
     _FilterOption(label: 'Workout', value: 'workout'),
     _FilterOption(label: 'Warmup', value: 'warmup'),
+  ];
+
+  static const _difficulties = [
+    _FilterOption(label: 'All', value: 'all'),
+    _FilterOption(label: 'Beginner', value: 'beginner'),
+    _FilterOption(label: 'Intermediate', value: 'intermediate'),
+    _FilterOption(label: 'Advanced', value: 'advanced'),
   ];
 
   @override
@@ -51,9 +59,14 @@ class _CataloguePageState extends State<CataloguePage> {
         category: _selectedCategory,
       );
 
+      // Filter by difficulty if not 'all'
+      final filteredWorkouts = _selectedDifficulty == 'all'
+          ? workouts
+          : workouts.where((workout) => workout.difficulty.toLowerCase() == _selectedDifficulty).toList();
+
       if (!mounted) return;
       setState(() {
-        _workouts = workouts;
+        _workouts = filteredWorkouts;
         _isLoading = false;
       });
     } catch (_) {
@@ -74,6 +87,12 @@ class _CataloguePageState extends State<CataloguePage> {
   void _setCategory(String value) {
     if (_selectedCategory == value) return;
     setState(() => _selectedCategory = value);
+    _loadWorkouts();
+  }
+
+  void _setDifficulty(String value) {
+    if (_selectedDifficulty == value) return;
+    setState(() => _selectedDifficulty = value);
     _loadWorkouts();
   }
 
@@ -134,6 +153,14 @@ class _CataloguePageState extends State<CataloguePage> {
                       options: _categories,
                       selected: _selectedCategory,
                       onSelect: _setCategory,
+                    ),
+                    const SizedBox(height: 18),
+                    _FilterSection(
+                      label: 'Difficulty',
+                      icon: Icons.trending_up_outlined,
+                      options: _difficulties,
+                      selected: _selectedDifficulty,
+                      onSelect: _setDifficulty,
                     ),
                     const SizedBox(height: 24),
                     Row(
