@@ -92,11 +92,11 @@ class _HomePage extends StatelessWidget {
             const SizedBox(height: 16),
             _GoalList(),
             const SizedBox(height: 32),
-            const _SectionTitle(title: 'Rekomendasi Hari ini'),
+            const _SectionTitle(title: 'Recommended Today'),
             const SizedBox(height: 16),
             const _HotWorkoutList(), // Now fetches from DB
             const SizedBox(height: 32),
-            const _SectionTitle(title: 'Pemanasan & Peregangan'),
+            const _SectionTitle(title: 'Warm-up & Stretches'),
             const SizedBox(height: 16),
             _WarmUpList(),
             const SizedBox(height: 32),

@@ -1,0 +1,543 @@
+import 'package:flutter/material.dart';
+import '../../models/exercise_model.dart';
+import '../../services/exercise_service.dart';
+import '../../utils/palette.dart';
+
+class ExerciseSelectionPage extends StatefulWidget {
+  const ExerciseSelectionPage({
+    super.key,
+    this.workoutId,
+    required this.location,
+    required this.workoutType,
+  });
+
+  final String? workoutId;
+  final String location;
+  final String workoutType;
+
+  @override
+  State<ExerciseSelectionPage> createState() => _ExerciseSelectionPageState();
+}
+
+class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
+  final ExerciseService _exerciseService = ExerciseService();
+  final TextEditingController _searchController = TextEditingController();
+
+  List<Exercise> _exercises = [];
+  bool _isLoading = true;
+  bool _hasError = false;
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExercises();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadExercises() async {
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+
+    try {
+      final exercises = await _exerciseService.getExercises(
+        workoutId: widget.workoutId,
+        location: widget.location,
+        workoutType: widget.workoutType,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _exercises = exercises;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  List<Exercise> get _filteredExercises {
+    final query = _searchQuery.toLowerCase();
+
+    return _exercises.where((exercise) {
+      final matchesSearch = query.isEmpty ||
+          exercise.name.toLowerCase().contains(query) ||
+          exercise.workoutTitle.toLowerCase().contains(query) ||
+          exercise.equipmentRequired.toLowerCase().contains(query) ||
+          exercise.instructions.toLowerCase().contains(query);
+
+      return matchesSearch;
+    }).toList();
+  }
+
+  void _startSession() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Starting ${widget.workoutType}',
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredExercises = _filteredExercises;
+
+    return Scaffold(
+      backgroundColor: kBg,
+      bottomNavigationBar: _isLoading || _hasError || _exercises.isEmpty
+          ? null
+          : SafeArea(
+              minimum: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+              child: SizedBox(
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: _startSession,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kAccent,
+                    foregroundColor: kBg,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Start Session',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+      body: SafeArea(
+        child: RefreshIndicator(
+          color: kAccent,
+          backgroundColor: kCard,
+          onRefresh: _loadExercises,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () => Navigator.pop(context),
+                            icon: const Icon(
+                              Icons.arrow_back_rounded,
+                              color: kTextPrimary,
+                            ),
+                            tooltip: 'Back',
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Choose Exercises',
+                        style: TextStyle(
+                          color: kTextPrimary,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _InfoPill(
+                            icon: Icons.location_on_outlined,
+                            label: widget.location,
+                          ),
+                          _InfoPill(
+                            icon: Icons.accessibility_new_rounded,
+                            label: widget.workoutType,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      _SearchField(controller: _searchController),
+                    ],
+                  ),
+                ),
+              ),
+              if (_isLoading)
+                const SliverFillRemaining(
+                  child: Center(
+                    child: CircularProgressIndicator(color: kAccent),
+                  ),
+                )
+              else if (_hasError)
+                SliverFillRemaining(
+                  child: _MessageState(
+                    icon: Icons.wifi_off_rounded,
+                    title: 'Failed to load exercises',
+                    message: 'Check the server connection and try again.',
+                    actionLabel: 'Retry',
+                    onAction: _loadExercises,
+                  ),
+                )
+              else if (_exercises.isEmpty)
+                const SliverFillRemaining(
+                  child: _MessageState(
+                    icon: Icons.fitness_center,
+                    title: 'No exercises found',
+                    message: 'No database exercises match this workout option.',
+                  ),
+                )
+              else if (filteredExercises.isEmpty)
+                const SliverFillRemaining(
+                  child: _MessageState(
+                    icon: Icons.search_off_rounded,
+                    title: 'No matches',
+                    message: 'Try a different search.',
+                  ),
+                )
+              else
+                SliverPadding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    0,
+                    20,
+                    _exercises.isEmpty ? 24 : 96,
+                  ),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final exercise = filteredExercises[index];
+                        return _ExerciseCard(
+                          exercise: exercise,
+                        );
+                      },
+                      childCount: filteredExercises.length,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoPill extends StatelessWidget {
+  const _InfoPill({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: kAccent, size: 16),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: const TextStyle(
+              color: kTextPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(color: kTextPrimary),
+      decoration: InputDecoration(
+        hintText: 'Search exercises',
+        hintStyle: const TextStyle(color: kTextMuted),
+        prefixIcon: const Icon(Icons.search_rounded, color: kTextMuted),
+        filled: true,
+        fillColor: kCard,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white10),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: kAccent),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExerciseCard extends StatelessWidget {
+  const _ExerciseCard({
+    required this.exercise,
+  });
+
+  final Exercise exercise;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: kCard,
+          borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white10),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const _ExerciseThumb(),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          exercise.name.isEmpty
+                              ? 'Untitled Exercise'
+                              : exercise.name,
+                          style: const TextStyle(
+                            color: kTextPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  if (exercise.workoutTitle.isNotEmpty)
+                    Text(
+                      exercise.workoutTitle,
+                      style: const TextStyle(
+                        color: kTextMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  if (exercise.workoutTitle.isNotEmpty)
+                    const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      if (exercise.repsOrDuration.isNotEmpty)
+                        _ExercisePill(
+                          icon: Icons.repeat_rounded,
+                          label: exercise.repsOrDuration,
+                          color: kAccent,
+                        ),
+                      if (exercise.baseCaloriesBurn != null)
+                        _ExercisePill(
+                          icon: Icons.local_fire_department,
+                          label:
+                              '${exercise.baseCaloriesBurn!.toStringAsFixed(1)} kcal',
+                          color: const Color(0xFFFF7043),
+                        ),
+                    ],
+                  ),
+                  if (exercise.instructions.isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      exercise.instructions,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: kTextMuted,
+                        fontSize: 13,
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+    );
+  }
+}
+
+class _ExerciseThumb extends StatelessWidget {
+  const _ExerciseThumb();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 72,
+      height: 72,
+      decoration: BoxDecoration(
+        color: kBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: const Icon(Icons.fitness_center, color: kAccent, size: 28),
+    );
+  }
+}
+
+class _ExercisePill extends StatelessWidget {
+  const _ExercisePill({
+    required this.icon,
+    required this.label,
+    required this.color,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withAlpha(31),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 13),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MessageState extends StatelessWidget {
+  const _MessageState({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: kCard,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Icon(icon, color: kTextMuted, size: 44),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: kTextPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: kTextMuted,
+                height: 1.45,
+              ),
+            ),
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: Text(actionLabel!),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kAccent,
+                  foregroundColor: kBg,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

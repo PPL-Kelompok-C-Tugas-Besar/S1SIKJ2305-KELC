@@ -9,6 +9,8 @@ const { pool: db, testConnection } = require('./config/db');
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const exerciseRoutes = require('./routes/exerciseRoutes');
+const workoutRoutes = require('./routes/workoutRoutes');
 
 // 2. Media Tools
 const cloudinary = require('cloudinary').v2;
@@ -32,6 +34,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/exercises', exerciseRoutes);
 app.use('/api/workouts', require('./routes/workoutRoutes'));
 
 app.get('/', (req, res) => {
