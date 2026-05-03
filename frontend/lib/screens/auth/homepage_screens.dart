@@ -88,10 +88,6 @@ class _HomePage extends StatelessWidget {
             const SizedBox(height: 24),
             _WeeklyGoalCard(),
             const SizedBox(height: 32),
-            const _SectionTitle(title: 'Popular Goals'),
-            const SizedBox(height: 16),
-            _GoalList(),
-            const SizedBox(height: 32),
             const _SectionTitle(title: 'Recommended Today'),
             const SizedBox(height: 16),
             const _HotWorkoutList(), // Now fetches from DB
@@ -378,61 +374,6 @@ class _SectionTitle extends StatelessWidget {
               const Text('See All', style: TextStyle(color: kAccent)),
         ),
       ],
-    );
-  }
-}
-
-// ── Goal list ────────────────────────────────────────────────────────────────
-class _GoalList extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 100,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        clipBehavior: Clip.none,
-        children: const [
-          _GoalCard(title: 'Weight Loss', icon: Icons.monitor_weight_outlined),
-          SizedBox(width: 16),
-          _GoalCard(title: 'Muscle Gain', icon: Icons.fitness_center),
-          SizedBox(width: 16),
-          _GoalCard(title: 'Flexibility', icon: Icons.self_improvement),
-          SizedBox(width: 16),
-          _GoalCard(title: 'Endurance', icon: Icons.directions_run),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalCard extends StatelessWidget {
-  const _GoalCard({required this.title, required this.icon});
-  final String title;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 110,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-      decoration: BoxDecoration(
-        color: kCard,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: kAccent, size: 28),
-          const SizedBox(height: 12),
-          Text(title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                  color: kTextPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.bold)),
-        ],
-      ),
     );
   }
 }
