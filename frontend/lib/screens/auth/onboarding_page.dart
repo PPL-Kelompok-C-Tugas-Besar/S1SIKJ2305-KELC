@@ -285,35 +285,57 @@ class _OnboardingPageState extends State<OnboardingPage> {
             ),
             child: Column(
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _weightController,
-                        keyboardType: TextInputType.number,
-                        style: const TextStyle(color: kTextPrimary, fontSize: 24),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          hintText: '0.0',
-                          hintStyle: TextStyle(color: kTextMuted),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: kBg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _weightController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: kTextPrimary, fontSize: 24),
+                          decoration: const InputDecoration(
+                            border: InputBorder.none,
+                            hintText: 'Enter weight',
+                            hintStyle: TextStyle(color: kTextMuted),
+                          ),
+                          onChanged: (value) {
+                            final weight = double.tryParse(value);
+                            if (weight != null && weight >= 30 && weight <= 200) {
+                              setState(() => _currentWeight = weight);
+                            }
+                          },
+                          onEditingComplete: () {
+                            final weight = double.tryParse(_weightController.text);
+                            if (weight == null || weight < 30) {
+                              setState(() {
+                                _currentWeight = 30.0;
+                                _weightController.text = '30.0';
+                              });
+                            } else if (weight > 200) {
+                              setState(() {
+                                _currentWeight = 200.0;
+                                _weightController.text = '200.0';
+                              });
+                            }
+                          },
                         ),
-                        onChanged: (value) {
-                          final weight = double.tryParse(value);
-                          if (weight != null && weight > 0) {
-                            setState(() => _currentWeight = weight);
-                          }
-                        },
                       ),
-                    ),
-                    const Text(
-                      'kg',
-                      style: TextStyle(
-                        color: kTextPrimary,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                      const Text(
+                        'kg',
+                        style: TextStyle(
+                          color: kTextPrimary,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 20),
                 Slider(
@@ -329,6 +351,20 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       _weightController.text = value.toStringAsFixed(1);
                     });
                   },
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '30 kg',
+                      style: TextStyle(color: kTextMuted, fontSize: 12),
+                    ),
+                    Text(
+                      '200 kg',
+                      style: TextStyle(color: kTextMuted, fontSize: 12),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -475,6 +511,7 @@ class _GoalOption extends StatelessWidget {
     );
   }
 }
+
 
 class _SummaryItem extends StatelessWidget {
   const _SummaryItem({
