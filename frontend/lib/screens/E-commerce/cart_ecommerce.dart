@@ -92,7 +92,28 @@ class _CartPageState extends State<CartPage> {
   void updateQuantity(int index, int delta) async {
     int currentQty = cartItems[index]['quantity'];
     int newQty = currentQty + delta;
-    if (newQty <= 0) return;
+    if (newQty <= 0) {
+      ScaffoldMessenger.of(context).clearSnackBars();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.info_outline, color: Colors.white),
+              SizedBox(width: 10),
+              Text(
+                'Minimal pembelian 1 item',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade800,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     // optimistic update
     setState(() {
@@ -110,7 +131,27 @@ class _CartPageState extends State<CartPage> {
       if (response.statusCode != 200) {
         if (mounted) {
           setState(() => cartItems[index]['quantity'] = currentQty);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(data['message'] ?? 'Gagal update quantity'), backgroundColor: Colors.red));
+          ScaffoldMessenger.of(context).clearSnackBars();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      data['message'] ?? 'Gagal update quantity',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade800,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 3),
+            ),
+          );
         }
       }
     } catch (e) {
