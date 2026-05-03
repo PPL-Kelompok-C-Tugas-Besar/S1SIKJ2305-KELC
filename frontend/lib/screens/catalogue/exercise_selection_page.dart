@@ -21,26 +21,15 @@ class ExerciseSelectionPage extends StatefulWidget {
 
 class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
   final ExerciseService _exerciseService = ExerciseService();
-  final TextEditingController _searchController = TextEditingController();
 
   List<Exercise> _exercises = [];
   bool _isLoading = true;
   bool _hasError = false;
-  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadExercises();
-    _searchController.addListener(() {
-      setState(() => _searchQuery = _searchController.text.trim());
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadExercises() async {
@@ -70,20 +59,7 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
     }
   }
 
-  List<Exercise> get _filteredExercises {
-    final query = _searchQuery.toLowerCase();
-
-    return _exercises.where((exercise) {
-      final matchesSearch = query.isEmpty ||
-          exercise.name.toLowerCase().contains(query) ||
-          exercise.workoutTitle.toLowerCase().contains(query) ||
-          exercise.equipmentRequired.toLowerCase().contains(query) ||
-          exercise.instructions.toLowerCase().contains(query);
-
-      return matchesSearch;
-    }).toList();
-  }
-
+  
   void _startSession() {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -96,8 +72,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredExercises = _filteredExercises;
-
     return Scaffold(
       backgroundColor: kBg,
       bottomNavigationBar: _isLoading || _hasError || _exercises.isEmpty
@@ -154,7 +128,7 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                       ),
                       const SizedBox(height: 12),
                       const Text(
-                        'Choose Exercises',
+                        'Choosen Workout',
                         style: TextStyle(
                           color: kTextPrimary,
                           fontSize: 28,
@@ -176,8 +150,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
-                      _SearchField(controller: _searchController),
                     ],
                   ),
                 ),
@@ -206,14 +178,6 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                     message: 'No database exercises match this workout option.',
                   ),
                 )
-              else if (filteredExercises.isEmpty)
-                const SliverFillRemaining(
-                  child: _MessageState(
-                    icon: Icons.search_off_rounded,
-                    title: 'No matches',
-                    message: 'Try a different search.',
-                  ),
-                )
               else
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(
@@ -225,12 +189,12 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final exercise = filteredExercises[index];
+                        final exercise = _exercises[index];
                         return _ExerciseCard(
                           exercise: exercise,
                         );
                       },
-                      childCount: filteredExercises.length,
+                      childCount: _exercises.length,
                     ),
                   ),
                 ),
@@ -279,42 +243,6 @@ class _InfoPill extends StatelessWidget {
   }
 }
 
-class _SearchField extends StatelessWidget {
-  const _SearchField({required this.controller});
-
-  final TextEditingController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      style: const TextStyle(color: kTextPrimary),
-      decoration: InputDecoration(
-        hintText: 'Search exercises',
-        hintStyle: const TextStyle(color: kTextMuted),
-        prefixIcon: const Icon(Icons.search_rounded, color: kTextMuted),
-        filled: true,
-        fillColor: kCard,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 16,
-        ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.white10),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Colors.white10),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: kAccent),
-        ),
-      ),
-    );
-  }
-}
 
 class _ExerciseCard extends StatelessWidget {
   const _ExerciseCard({

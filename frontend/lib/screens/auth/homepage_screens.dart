@@ -9,7 +9,7 @@ import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
 import '../profile/profile_page.dart';
-import '../catalogue/workout_detail.dart';
+import '../catalogue/exercise_selection_page.dart';
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
@@ -456,10 +456,14 @@ class _HotWorkoutListState extends State<_HotWorkoutList> {
 
   Future<List<Workout>> fetchWorkouts() async {
     try {
-      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=workout'));
+      final user = context.read<AuthProvider>().user;
+      final fitnessGoal = user?.goals?.isNotEmpty == true ? user!.goals![0].toLowerCase().replaceAll(' ', '_') : 'all';
+      
+      final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=workout&fitness_goal=$fitnessGoal'));
       if (response.statusCode == 200) {
-        List jsonResponse = json.decode(response.body);
-        return jsonResponse.map((data) => Workout.fromJson(data)).toList();
+        final body = json.decode(response.body);
+        final List<dynamic> data = body['data'] ?? [];
+        return data.map((item) => Workout.fromJson(item)).toList();
       } else {
         throw Exception('Failed to load workouts. Status: ${response.statusCode}');
       }
@@ -500,13 +504,17 @@ class _HotWorkoutListState extends State<_HotWorkoutList> {
               return _WorkoutCard(
                 title: workout.title,
                 level: workout.difficulty[0].toUpperCase() + workout.difficulty.substring(1),
-                duration: '${workout.durationMinutes} min',
+                duration: '${workout.durationMinutes ?? 0} min',
                 imageUrl: imageUrl,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => WorkoutDetailPage(workout: workout),
+                      builder: (context) => ExerciseSelectionPage(
+                        workoutId: workout.id,
+                        location: workout.locationType,
+                        workoutType: workout.title,
+                      ),
                     ),
                   );
                 },
@@ -537,8 +545,9 @@ class _WarmUpListState extends State<_WarmUpList> {
     try {
       final response = await http.get(Uri.parse('${ApiConstants.baseUrl}/workouts?category=warmup'));
       if (response.statusCode == 200) {
-        List jsonResponse = json.decode(response.body);
-        return jsonResponse.map((data) => Workout.fromJson(data)).toList();
+        final body = json.decode(response.body);
+        final List<dynamic> data = body['data'] ?? [];
+        return data.map((item) => Workout.fromJson(item)).toList();
       } else {
         throw Exception('Failed to load warmups.');
       }
@@ -585,7 +594,11 @@ class _WarmUpListState extends State<_WarmUpList> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => WorkoutDetailPage(workout: warmup),
+                      builder: (context) => ExerciseSelectionPage(
+                        workoutId: warmup.id,
+                        location: warmup.locationType,
+                        workoutType: warmup.title,
+                      ),
                     ),
                   );
                 },

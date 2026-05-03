@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/user_model.dart';
 import 'api_constants.dart';
@@ -131,6 +132,42 @@ class AuthService {
         return {'success': false, 'message': body['message'] ?? 'Gagal memperbarui berat badan'};
       }
     } catch (e) {
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> profileData) async {
+    try {
+      debugPrint('AuthService - Updating profile with data: $profileData');
+      
+      final token = await getToken();
+      if (token == null) {
+        debugPrint('AuthService - No token found');
+        return {'success': false, 'message': 'Sesi telah habis. Silakan login kembali.'};
+      }
+      
+      debugPrint('AuthService - Making PUT request to ${ApiConstants.profile}');
+      
+      final response = await http.put(
+        Uri.parse(ApiConstants.profile),
+        headers: _headers(token: token),
+        body: jsonEncode(profileData),
+      );
+      
+      debugPrint('AuthService - Response status: ${response.statusCode}');
+      debugPrint('AuthService - Response body: ${response.body}');
+      
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        final user = UserModel.fromJson(body['data']);
+        debugPrint('AuthService - Profile updated successfully');
+        return {'success': true, 'user': user, 'message': body['message']};
+      } else {
+        debugPrint('AuthService - Profile update failed: ${body['message']}');
+        return {'success': false, 'message': body['message'] ?? 'Gagal memperbarui profil'};
+      }
+    } catch (e) {
+      debugPrint('AuthService - Exception during profile update: $e');
       return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
     }
   }
