@@ -30,6 +30,35 @@ class _ShopPageState extends State<ShopPage> {
   void initState() {
     super.initState();
     fetchProducts();
+    fetchCartCount();
+  }
+
+  Future<void> fetchCartCount() async {
+    try {
+      final token = await AuthService().getToken();
+      if (token == null) return;
+      
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/cart'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          int count = 0;
+          for (var item in data['data']) {
+            count += (item['quantity'] as num).toInt();
+          }
+          if (mounted) {
+            setState(() {
+              cartItemCount = count;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      // ignore error
+    }
   }
 
   // Fungsi buat ngerubah angka jadi format Rupiah (contoh: 850000 -> Rp 850.000)
@@ -119,36 +148,37 @@ class _ShopPageState extends State<ShopPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.bgColor,
-      floatingActionButton: cartItemCount > 0
-          ? FloatingActionButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
-                );
-              },
-              backgroundColor: Colors.white,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.shopping_bag_outlined, color: Colors.black, size: 28),
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2),
-                      ),
-                    ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CartPage()),
+          ).then((_) {
+            fetchCartCount();
+          });
+        },
+        backgroundColor: Colors.white,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(Icons.shopping_bag_outlined, color: Colors.black, size: 28),
+            if (cartItemCount > 0)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
-                ],
+                ),
               ),
-            )
-          : null,
+          ],
+        ),
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -253,6 +283,7 @@ class _ShopPageState extends State<ShopPage> {
                               final String imagePath = product['image_url'] ?? 'assets/whey.png';
                               final String priceFormatted = formatRupiah(product['price']);
                               final int stock = product['stock'] ?? 0;
+                              final int? weightGrams = product['weight_grams'];
 
                               return GestureDetector(
                                 onTap: () async {
@@ -264,6 +295,7 @@ class _ShopPageState extends State<ShopPage> {
                                         imagePath: imagePath,
                                         price: priceFormatted,
                                         stock: stock,
+                                        weightGrams: weightGrams,
                                       ),
                                     ),
                                   );

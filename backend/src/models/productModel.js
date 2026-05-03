@@ -7,7 +7,8 @@ const getAllProducts = async () => {
     return rows.map(row => ({
       ...row,
       price: parseInt(row.price, 10),
-      stock: parseInt(row.stock, 10)
+      stock: parseInt(row.stock, 10),
+      weight_grams: row.weight_grams ? parseInt(row.weight_grams, 10) : null
     }));
   } catch (err) {
     console.error('Error fetching products:', err);

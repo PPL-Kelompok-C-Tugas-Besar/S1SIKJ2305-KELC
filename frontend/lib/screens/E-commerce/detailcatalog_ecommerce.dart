@@ -12,13 +12,15 @@ class ProductDetailPage extends StatefulWidget {
   final String imagePath;
   final String price;
   final int stock;
+  final int? weightGrams;
   
   const ProductDetailPage({
     super.key, 
     required this.productName, 
     required this.imagePath, 
     required this.price,
-    required this.stock
+    required this.stock,
+    this.weightGrams,
   });
 
   @override
@@ -129,29 +131,52 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
               ),
               const SizedBox(height: 24.0),
               
-              // Product Name & Price
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              // Product Name, Price & Weight
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Text(
-                      widget.productName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 28,
-                        color: AppColors.textPrimary,
-                      ),
+                  Text(
+                    widget.productName,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 26,
+                      color: AppColors.textPrimary,
                     ),
                   ),
+                  const SizedBox(height: 6.0),
                   Text(
                     widget.price,
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 28,
+                      fontSize: 24,
                       color: AppColors.accentColor,
                     ),
                   ),
+                  const SizedBox(height: 10.0),
+                  if (widget.weightGrams != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardColor,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.scale_outlined, size: 14, color: AppColors.textSecondary),
+                          const SizedBox(width: 6),
+                          Text(
+                            '${widget.weightGrams! >= 1000 ? '${(widget.weightGrams! / 1000).toStringAsFixed(widget.weightGrams! % 1000 == 0 ? 0 : 1)} kg' : '${widget.weightGrams} g'}',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: 16.0),

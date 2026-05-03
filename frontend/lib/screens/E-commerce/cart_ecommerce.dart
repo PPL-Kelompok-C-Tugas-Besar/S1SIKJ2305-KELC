@@ -272,9 +272,8 @@ class _CartPageState extends State<CartPage> {
             ),
 
             // Bottom Summary Section
-            if (cartItems.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(24.0),
+            Container(
+              padding: const EdgeInsets.all(24.0),
               decoration: BoxDecoration(
                 color: AppColors.cardColor,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(30.0)),
