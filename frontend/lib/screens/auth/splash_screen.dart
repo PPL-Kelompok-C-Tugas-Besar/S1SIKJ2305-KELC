@@ -43,8 +43,8 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint('onboardingCompleted == true: ${user?.onboardingCompleted == true}');
       
       // Check if user needs onboarding
-      // Handle null, false, or undefined as needing onboarding
-      final needsOnboarding = user?.onboardingCompleted != true;
+      // Handle null, false, or undefined as needing onboarding (unless admin)
+      final needsOnboarding = !isAdmin && user?.onboardingCompleted != true;
       
       debugPrint('needsOnboarding: $needsOnboarding');
       

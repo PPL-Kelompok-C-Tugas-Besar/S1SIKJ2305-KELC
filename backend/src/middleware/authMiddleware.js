@@ -14,6 +14,7 @@ const verifyToken = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
+    console.error('JWT Verify Error:', err.message, 'Token:', token.substring(0, 20) + '...', 'Secret:', process.env.JWT_SECRET ? 'exists' : 'missing');
     if (err.name === 'TokenExpiredError') {
       return res.status(401).json({ success: false, message: 'Sesi telah habis. Silakan login kembali.', code: 'TOKEN_EXPIRED' });
     }
