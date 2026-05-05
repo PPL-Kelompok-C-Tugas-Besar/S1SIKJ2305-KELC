@@ -13,7 +13,8 @@ class AppColors {
 }
 
 class CartPage extends StatefulWidget {
-  const CartPage({super.key});
+  final List<Map<String, dynamic>>? manualCartItems; // Untuk testing
+  const CartPage({super.key, this.manualCartItems});
 
   @override
   State<CartPage> createState() => _CartPageState();
@@ -28,7 +29,12 @@ class _CartPageState extends State<CartPage> {
   @override
   void initState() {
     super.initState();
-    fetchCart();
+    if (widget.manualCartItems != null) {
+      cartItems = widget.manualCartItems!;
+      isLoading = false;
+    } else {
+      fetchCart();
+    }
   }
 
   Future<void> fetchCart() async {
@@ -121,6 +127,9 @@ class _CartPageState extends State<CartPage> {
       cartItems[index]['quantity'] = newQty;
     });
 
+    // Skip API if manual mode
+    if (widget.manualCartItems != null) return;
+
     try {
       final token = await AuthService().getToken();
       final response = await http.put(
@@ -128,32 +137,8 @@ class _CartPageState extends State<CartPage> {
         headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
         body: jsonEncode({'quantity': newQty}),
       );
-      final data = jsonDecode(response.body);
       if (response.statusCode != 200) {
-        if (mounted) {
-          setState(() => cartItems[index]['quantity'] = currentQty);
-          ScaffoldMessenger.of(context).clearSnackBars();
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.warning_amber_rounded, color: Colors.white),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      data['message'] ?? 'Gagal update quantity',
-                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.orange.shade800,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
+        if (mounted) setState(() => cartItems[index]['quantity'] = currentQty);
       }
     } catch (e) {
       if (mounted) setState(() => cartItems[index]['quantity'] = currentQty);
@@ -165,6 +150,9 @@ class _CartPageState extends State<CartPage> {
     setState(() {
       cartItems.removeAt(index);
     });
+
+    // Skip API if manual mode
+    if (widget.manualCartItems != null) return;
 
     try {
       final token = await AuthService().getToken();

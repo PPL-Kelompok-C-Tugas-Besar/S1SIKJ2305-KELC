@@ -14,7 +14,8 @@ class AppColors {
 }
 
 class ShopPage extends StatefulWidget {
-  const ShopPage({super.key});
+  final List<dynamic>? manualProducts; // Untuk testing
+  const ShopPage({super.key, this.manualProducts});
 
   @override
   State<ShopPage> createState() => _ShopPageState();
@@ -29,8 +30,13 @@ class _ShopPageState extends State<ShopPage> {
   @override
   void initState() {
     super.initState();
-    fetchProducts();
-    fetchCartCount();
+    if (widget.manualProducts != null) {
+      products = widget.manualProducts!;
+      isLoading = false;
+    } else {
+      fetchProducts();
+      fetchCartCount();
+    }
   }
 
   Future<void> fetchCartCount() async {
@@ -110,9 +116,15 @@ class _ShopPageState extends State<ShopPage> {
   Future<void> _addToCart(int productId, int quantity) async {
     try {
       final token = await AuthService().getToken();
-      if (token == null) {
+      if (token == null && widget.manualProducts == null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Silakan login terlebih dahulu')));
+        return;
+      }
+
+      // Skip API if manual mode
+      if (widget.manualProducts != null) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil menambahkan ke cart (Mock Mode)')));
         return;
       }
       

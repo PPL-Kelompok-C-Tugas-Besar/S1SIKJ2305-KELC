@@ -40,9 +40,9 @@ const addToCart = async (req, res) => {
 
     // 3. Validasi: Apakah total yang diminta melebihi stok yang ada?
     if (totalQuantity > availableStock) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Maaf, stok tidak mencukupi. Sisa stok: ${availableStock}. Di keranjang Anda sudah ada: ${currentQuantityInCart}.` 
+      return res.status(400).json({
+        success: false,
+        message: `Maaf, stok tidak mencukupi. Sisa stok: ${availableStock}. Di keranjang Anda sudah ada: ${currentQuantityInCart}.`
       });
     }
 
@@ -141,9 +141,20 @@ const removeCartItem = async (req, res) => {
   }
 };
 
+const clearCart = async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    await pool.execute('DELETE FROM defaultdb.carts WHERE user_id = ?', [user_id]);
+    return res.status(200).json({ success: true, message: 'Cart dikosongkan' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+};
+
 module.exports = {
   addToCart,
   getCart,
   updateCartItem,
-  removeCartItem
+  removeCartItem,
+  clearCart
 };
