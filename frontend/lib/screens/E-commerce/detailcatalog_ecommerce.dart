@@ -11,6 +11,7 @@ class AppColors {
 
 class ProductDetailPage extends StatefulWidget {
   final String productName;
+  final int productId; // Added productId
   final String imagePath;
   final String price;
   final int stock;
@@ -19,6 +20,7 @@ class ProductDetailPage extends StatefulWidget {
   const ProductDetailPage({
     super.key, 
     required this.productName, 
+    required this.productId, // Added productId
     required this.imagePath, 
     required this.price,
     required this.stock,
@@ -110,6 +112,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
     const int shippingCost = 50000; // flat rate
 
     final item = {
+      'product_id': widget.productId, // Added product_id
       'name': widget.productName,
       'image': widget.imagePath,
       'price': price,

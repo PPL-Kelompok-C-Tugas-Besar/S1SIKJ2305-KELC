@@ -212,7 +212,6 @@ class _CartPageState extends State<CartPage> {
           selectedItems: selectedItems,
           subtotal: subtotal,
           shippingCost: shippingCost,
-          useApiSummary: true, // fetch ulang dari /checkout/summary
         ),
       ),
     );

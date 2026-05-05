@@ -292,6 +292,7 @@ class _ShopPageState extends State<ShopPage> {
                                     MaterialPageRoute(
                                       builder: (context) => ProductDetailPage(
                                         productName: productName,
+                                        productId: productId,
                                         imagePath: imagePath,
                                         price: priceFormatted,
                                         stock: stock,
