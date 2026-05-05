@@ -10,6 +10,7 @@ void main() {
     return MaterialApp(
       home: ProductDetailPage(
         productName: 'Test Whey Protein',
+        productId: 123,
         imagePath: 'assets/whey.png',
         price: 'Rp 850.000',
         stock: stock,
