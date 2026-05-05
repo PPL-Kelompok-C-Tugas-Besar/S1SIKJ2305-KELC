@@ -15,12 +15,16 @@ class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> selectedItems;
   final int subtotal;
   final int shippingCost;
+  // Kalau true, halaman akan fetch ulang dari /checkout/summary (dari Cart)
+  // Kalau false, pakai data yang sudah dipass langsung (dari Detail/direct buy)
+  final bool useApiSummary;
 
   const CheckoutPage({
     super.key,
     required this.selectedItems,
     required this.subtotal,
     required this.shippingCost,
+    this.useApiSummary = false,
   });
 
   @override
@@ -29,7 +33,14 @@ class CheckoutPage extends StatefulWidget {
 
 class _CheckoutPageState extends State<CheckoutPage> {
   bool isOrdering = false;
+  bool isLoading  = false;
   String _selectedPayment = 'QRIS';
+  String? _errorMessage;
+
+  // State lokal — diisi dari API atau dari widget params
+  late List<Map<String, dynamic>> _items;
+  late int _subtotal;
+  late int _shippingCost;
 
   // Dummy address — address management is a future sprint
   final Map<String, String> _dummyAddress = {
@@ -39,7 +50,59 @@ class _CheckoutPageState extends State<CheckoutPage> {
     'city': 'Jakarta Selatan, 12345',
   };
 
-  int get totalCost => widget.subtotal + widget.shippingCost;
+  @override
+  void initState() {
+    super.initState();
+    // Inisialisasi dari data yang dipass dulu (jadi UI langsung bisa render)
+    _items        = List.from(widget.selectedItems);
+    _subtotal     = widget.subtotal;
+    _shippingCost = widget.shippingCost;
+
+    // Kalau datang dari Cart, fetch ulang dari API biar datanya fresh
+    if (widget.useApiSummary) {
+      _fetchCheckoutSummary();
+    }
+  }
+
+  Future<void> _fetchCheckoutSummary() async {
+    setState(() {
+      isLoading     = true;
+      _errorMessage = null;
+    });
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/checkout/summary'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      final data = jsonDecode(response.body);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        final summary = data['data'];
+        setState(() {
+          _items        = List<Map<String, dynamic>>.from(summary['items']);
+          _subtotal     = summary['subtotal'] as int;
+          _shippingCost = summary['shipping_cost'] as int;
+        });
+      } else {
+        setState(() {
+          _errorMessage = data['message'] ?? 'Gagal memuat ringkasan checkout';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Tidak bisa connect ke server';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  int get totalCost => _subtotal + _shippingCost;
 
   String formatRupiah(int number) {
     String numStr = number.toString();
@@ -64,13 +127,16 @@ class _CheckoutPageState extends State<CheckoutPage> {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'items': widget.selectedItems.map((item) => {
-            'id': item['id'],
+      body: jsonEncode({
+          'items': _items.map((item) => {
+            'id': item['cart_id'] ?? item['id'],
+            'product_id': item['product_id'],
             'quantity': item['quantity'],
           }).toList(),
           'payment_method': _selectedPayment,
           'shipping_address': _dummyAddress['address'],
+          'subtotal': _subtotal,
+          'shipping_cost': _shippingCost,
           'total': totalCost,
         }),
       );
@@ -222,7 +288,50 @@ class _CheckoutPageState extends State<CheckoutPage> {
         child: Column(
           children: [
             Expanded(
-              child: SingleChildScrollView(
+              child: isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppColors.accentColor),
+                    )
+                  : _errorMessage != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(32.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.cloud_off_rounded,
+                                    size: 64, color: AppColors.textSecondary),
+                                const SizedBox(height: 16),
+                                Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 15),
+                                ),
+                                const SizedBox(height: 24),
+                                OutlinedButton.icon(
+                                  onPressed: _fetchCheckoutSummary,
+                                  icon: const Icon(Icons.refresh_rounded,
+                                      color: AppColors.accentColor),
+                                  label: const Text('Coba Lagi',
+                                      style: TextStyle(
+                                          color: AppColors.accentColor,
+                                          fontWeight: FontWeight.bold)),
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(
+                                        color: AppColors.accentColor),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : SingleChildScrollView(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -237,10 +346,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                       child: Column(
                         children: [
-                          ...widget.selectedItems.asMap().entries.map((entry) {
+                          ..._items.asMap().entries.map((entry) {
                             final i = entry.key;
                             final item = entry.value;
-                            final isLast = i == widget.selectedItems.length - 1;
+                            final isLast = i == _items.length - 1;
                             return _buildOrderItem(item, isLast);
                           }),
                         ],
@@ -260,9 +369,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ),
                       child: Column(
                         children: [
-                          _buildPriceRow('Subtotal', formatRupiah(widget.subtotal), isTotal: false),
+                          _buildPriceRow('Subtotal', formatRupiah(_subtotal), isTotal: false),
                           const SizedBox(height: 10),
-                          _buildPriceRow('Shipping', formatRupiah(widget.shippingCost), isTotal: false),
+                          _buildPriceRow('Shipping', formatRupiah(_shippingCost), isTotal: false),
                           const Padding(
                             padding: EdgeInsets.symmetric(vertical: 14),
                             child: Divider(color: AppColors.textSecondary, height: 1),
