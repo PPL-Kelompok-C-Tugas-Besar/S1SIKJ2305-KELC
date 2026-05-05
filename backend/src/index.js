@@ -7,9 +7,10 @@ const fs = require('fs');
 const { pool: db, testConnection } = require('./config/db');
 
 // Routes
-const authRoutes = require('./routes/authRoutes');
-const userRoutes = require('./routes/userRoutes');
-const productRoutes = require('./routes/productRoutes');
+const authRoutes     = require('./routes/authRoutes');
+const userRoutes     = require('./routes/userRoutes');
+const productRoutes  = require('./routes/productRoutes');
+const checkoutRoutes = require('./routes/checkoutRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 
 // 2. Media Tools
@@ -32,9 +33,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.use('/auth', authRoutes);
-app.use('/users', userRoutes);
+app.use('/auth',     authRoutes);
+app.use('/users',    userRoutes);
 app.use('/products', productRoutes);
+app.use('/checkout', checkoutRoutes);
 app.use('/cart', cartRoutes);
 
 app.get('/', (req, res) => {
