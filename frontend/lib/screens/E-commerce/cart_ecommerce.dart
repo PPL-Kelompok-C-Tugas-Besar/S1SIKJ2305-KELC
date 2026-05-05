@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
+import 'checkout_ecommerce.dart';
 
 class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
@@ -179,72 +180,41 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
-  Future<void> _processCheckout() async {
+  void _goToCheckout() {
     final selectedItems = cartItems.where((item) => item['selected'] == true).toList();
-    if (selectedItems.isEmpty) return;
-
-    setState(() {
-      isCheckingOut = true;
-    });
-
-    try {
-      final response = await http.post(
-        Uri.parse('http://localhost:3000/products/validate-checkout'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'items': selectedItems.map((item) => {
-            'id': item['id'],
-            'quantity': item['quantity']
-          }).toList()
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 && data['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Checkout berhasil!'),
-            backgroundColor: Colors.green,
-          )
-        );
-        setState(() {
-          cartItems.removeWhere((item) => item['selected'] == true);
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    data['message'] ?? 'Checkout gagal',
-                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.orange.shade800,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            duration: const Duration(seconds: 3),
-          )
-        );
-      }
-    } catch (e) {
+    if (selectedItems.isEmpty) {
+      ScaffoldMessenger.of(context).clearSnackBars();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Terjadi kesalahan koneksi server'),
-          backgroundColor: Colors.red,
-        )
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.info_outline, color: Colors.white),
+              SizedBox(width: 10),
+              Text(
+                'Pilih minimal 1 produk dulu ya!',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ],
+          ),
+          backgroundColor: Colors.orange.shade800,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          duration: const Duration(seconds: 2),
+        ),
       );
-    } finally {
-      setState(() {
-        isCheckingOut = false;
-      });
+      return;
     }
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CheckoutPage(
+          selectedItems: selectedItems,
+          subtotal: subtotal,
+          shippingCost: shippingCost,
+        ),
+      ),
+    );
   }
 
   @override
@@ -366,7 +336,7 @@ class _CartPageState extends State<CartPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (cartItems.isEmpty || isCheckingOut) ? null : _processCheckout,
+                      onPressed: cartItems.isEmpty ? null : _goToCheckout,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accentColor,
                         foregroundColor: Colors.black,
