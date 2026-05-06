@@ -715,34 +715,4 @@ class _PlaceholderPage extends StatelessWidget {
           style: const TextStyle(color: kTextMuted, fontSize: 18)),
     );
   }
-}
-
-// ─── Admin dashboard ─────────────────────────────────────────────────────────
-class AdminDashboardScreen extends StatelessWidget {
-  const AdminDashboardScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final user = context.watch<AuthProvider>().user;
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await context.read<AuthProvider>().logout();
-              if (context.mounted) {
-                Navigator.pushReplacementNamed(context, '/login');
-              }
-            },
-          ),
-        ],
-      ),
-      body: Center(
-        child: Text('Admin: ${user?.fullName ?? 'Admin'}'),
-      ),
-    );
-  }
-}
+}

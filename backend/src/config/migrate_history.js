@@ -14,7 +14,7 @@ async function runMigration() {
                 -- [PKCTB-245] Relasi & Integritas Data: 
                 -- Memastikan riwayat_latihan terikat kuat dengan tabel USERS.
                 -- Jika user dihapus, riwayat ikut terhapus (ON DELETE CASCADE)
-                FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
                 
                 -- [PKCTB-244 & PKCTB-246] Optimasi Index: 
                 -- 1. Index spesifik pada user_id otomatis terbuat oleh Foreign Key di atas (mempercepat WHERE user_id).

@@ -37,7 +37,7 @@ router.get('/profile', verifyToken, async (req, res) => {
     return res.status(200).json({ success: true, data: user });
   } catch (err) {
     console.error('Get profile error:', err);
-    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server: ' + err.message });
   }
 });
 
