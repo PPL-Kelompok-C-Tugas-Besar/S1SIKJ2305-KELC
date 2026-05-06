@@ -1,9 +1,8 @@
 
+require('dotenv').config();
 const { pool } = require('../src/config/db');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
-require('dotenv').config();
-
 async function createAdmin() {
   try {
     const email = 'admin@gymbro.com';
