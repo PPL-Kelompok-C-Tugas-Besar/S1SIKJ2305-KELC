@@ -205,7 +205,7 @@ const deleteSupplement = async (req, res) => {
 const getAllExercises = async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const [rows] = await pool.query('SELECT * FROM exercises ORDER BY id DESC');
+    const [rows] = await pool.query('SELECT * FROM exercises ORDER BY created_at DESC');
     return res.status(200).json({ success: true, data: rows });
   } catch (err) {
     console.error('Get all exercises error:', err);
@@ -217,19 +217,20 @@ const getAllExercises = async (req, res) => {
 const createExercise = async (req, res) => {
   if (!requireAdmin(req, res)) return;
   try {
-    const { nama_latihan, tipe, target_otot, deskripsi_teknis } = req.body;
+    const { name, instructions, equipment_required, base_calories_burn } = req.body;
 
-    if (!nama_latihan || !tipe || !target_otot) {
-      return res.status(400).json({ success: false, message: 'nama_latihan, tipe, dan target_otot wajib diisi' });
+    if (!name) {
+      return res.status(400).json({ success: false, message: 'name wajib diisi' });
     }
 
-    const [result] = await pool.execute(
-      `INSERT INTO exercises (nama_latihan, tipe, target_otot, deskripsi_teknis)
-       VALUES (?, ?, ?, ?)`,
-      [nama_latihan, tipe, target_otot, deskripsi_teknis || null]
+    const id = randomUUID();
+    await pool.execute(
+      `INSERT INTO exercises (id, name, instructions, equipment_required, base_calories_burn)
+       VALUES (?, ?, ?, ?, ?)`,
+      [id, name, instructions || null, equipment_required || null, base_calories_burn || 0]
     );
 
-    const [[exercise]] = await pool.execute('SELECT * FROM exercises WHERE id = ?', [result.insertId]);
+    const [[exercise]] = await pool.execute('SELECT * FROM exercises WHERE id = ?', [id]);
     return res.status(201).json({ success: true, message: 'Latihan berhasil dibuat', data: exercise });
   } catch (err) {
     console.error('Create exercise error:', err);
