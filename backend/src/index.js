@@ -65,6 +65,9 @@ const start = async () => {
     const { runWorkoutsMigration } = require('./config/migrate_workouts');
     await runWorkoutsMigration();
 
+    const { runExercisesMigration } = require('./config/migrate_exercises');
+    await runExercisesMigration();
+
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
     });
