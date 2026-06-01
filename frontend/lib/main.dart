@@ -5,24 +5,16 @@ import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/homepage_screens.dart';
-<<<<<<< HEAD
 import 'screens/auth/catalogue.dart';
-import 'package:frontend/screens/auth/workout_screen.dart';
-=======
->>>>>>> 82db700 (PKCTB-85 Delete file code duplicate di luar frontend/lib, integrasi screen workout ke homepage & nyamain warna dan layoutnya)
 
 void main() {
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
-      child: const GymbroApp(),
-    ),
-  );
+  runApp(const MyApp());
 }
 
-class GymbroApp extends StatelessWidget {
-  const GymbroApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
+  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -35,11 +27,7 @@ class GymbroApp extends StatelessWidget {
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
         '/admin-dashboard': (_) => const AdminDashboardScreen(),
-<<<<<<< HEAD
         '/exercise-catalogue': (_) => const ExerciseCatalogueScreen(),
-        '/exercise-workout': (_) => const AlifWorkoutScreen(),
-=======
->>>>>>> 82db700 (PKCTB-85 Delete file code duplicate di luar frontend/lib, integrasi screen workout ke homepage & nyamain warna dan layoutnya)
       },
     );
   }
