@@ -4,6 +4,7 @@ import '../../models/workout_model.dart';
 import '../../services/exercise_service.dart';
 import '../../services/history_service.dart';
 import '../../utils/palette.dart';
+import 'workout_summary_screen.dart';
 
 class ExerciseSelectionPage extends StatefulWidget {
   const ExerciseSelectionPage({
@@ -90,16 +91,17 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
       
       if (success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Workout completed! $calories kcal burned in $duration minutes',
+          // Navigasi ke Halaman Ringkasan Latihan (PBI-1 Subtask 4)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkoutSummaryScreen(
+                workoutName: widget.workoutType,
+                durationMinutes: duration,
+                caloriesBurned: calories.toDouble(),
               ),
-              backgroundColor: Colors.green,
             ),
           );
-          // Navigate back to homepage using named route
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
         }
       } else {
         if (mounted) {
