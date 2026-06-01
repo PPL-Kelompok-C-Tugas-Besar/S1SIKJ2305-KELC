@@ -36,30 +36,17 @@ const computeCalories = (durationMinutes, metValue, weightKg) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const calculateCalories = async (req, res) => {
   try {
-    const userId = req.user.id; // didapat dari middleware verifyToken
+    // ── 1. Ekstrak input (sudah divalidasi oleh middleware) ────────────────
+    const { workout_id, user_id } = req.body;
+    const parsedDuration = req.parsedDuration;
 
-    // ── 1. Validasi input ──────────────────────────────────────────────────
-    const { workout_id, duration_minutes } = req.body;
-
-    if (!workout_id) {
-      return res.status(400).json({
-        success: false,
-        message: 'workout_id wajib diisi.',
-      });
-    }
-
-    const parsedDuration = parseFloat(duration_minutes);
-    if (!duration_minutes || isNaN(parsedDuration) || parsedDuration <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'duration_minutes wajib diisi dan harus berupa angka positif.',
-      });
-    }
+    // Mendukung user_id dari payload jika ada, fallback ke JWT token
+    const targetUserId = user_id || req.user.id;
 
     // ── 2. Ambil berat badan user dari database ───────────────────────────
     const [[user]] = await pool.execute(
       'SELECT id, full_name, weight FROM users WHERE id = ?',
-      [userId]
+      [targetUserId]
     );
 
     if (!user) {
