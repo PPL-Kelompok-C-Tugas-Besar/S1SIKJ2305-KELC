@@ -3,7 +3,9 @@ import '../../models/exercise_model.dart';
 import '../../models/workout_model.dart';
 import '../../services/exercise_service.dart';
 import '../../services/history_service.dart';
+import '../../services/calorie_service.dart';
 import '../../utils/palette.dart';
+import 'workout_summary_screen.dart';
 
 class ExerciseSelectionPage extends StatefulWidget {
   const ExerciseSelectionPage({
@@ -26,6 +28,7 @@ class ExerciseSelectionPage extends StatefulWidget {
 class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
   final ExerciseService _exerciseService = ExerciseService();
   final HistoryService _historyService = HistoryService();
+  final CalorieService _calorieService = CalorieService();
 
   List<Exercise> _exercises = [];
   bool _isLoading = true;
@@ -66,40 +69,54 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
 
   
   void _startSession() async {
-    // Use workout data if available, otherwise use defaults
-    final calories = widget.workout?.caloriesBurned?.round() ?? 0;
+    // Gunakan data workout (durasi) yang ada
     final duration = widget.workout?.durationMinutes ?? 0;
     
-    if (calories == 0 || duration == 0) {
+    if (duration == 0 || widget.workoutId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Workout data incomplete. Cannot save completion.'),
+          content: Text('Data workout tidak lengkap (durasi atau ID tidak ada).'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
     
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      // Save workout completion to history
+      // 1. Hitung estimasi kalori aktual memanggil API Backend (PBI-1 Subtask 5)
+      final calculatedCalories = await _calorieService.calculateCalories(
+        workoutId: widget.workoutId!,
+        durationMinutes: duration,
+      );
+
+      if (calculatedCalories == null) {
+        throw Exception('Gagal menghitung kalori. Pastikan profil berat badan Anda sudah diisi.');
+      }
+
+      // 2. Simpan ke history menggunakan kalori yang sudah dihitung (dibulatkan ke int untuk history)
       final success = await _historyService.addHistory(
         workoutName: widget.workoutType,
         durationMinutes: duration,
-        caloriesBurned: calories,
+        caloriesBurned: calculatedCalories.round(),
       );
       
       if (success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Workout completed! $calories kcal burned in $duration minutes',
+          // Navigasi ke Halaman Ringkasan Latihan (PBI-1 Subtask 4)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkoutSummaryScreen(
+                workoutName: widget.workoutType,
+                durationMinutes: duration,
+                caloriesBurned: calculatedCalories,
               ),
-              backgroundColor: Colors.green,
             ),
           );
-          // Navigate back to homepage using named route
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
         }
       } else {
         if (mounted) {
@@ -119,6 +136,12 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
