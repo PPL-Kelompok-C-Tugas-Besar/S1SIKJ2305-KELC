@@ -8,11 +8,15 @@ import 'api_constants.dart';
 class HistoryResult {
   final List<WorkoutHistory> data;
   final int total;
+  final int totalCalories;
+  final int totalMinutes;
   final bool hasMore;
 
   const HistoryResult({
     required this.data,
     required this.total,
+    this.totalCalories = 0,
+    this.totalMinutes = 0,
     required this.hasMore,
   });
 }
@@ -60,6 +64,8 @@ class HistoryService {
           return HistoryResult(
             data: raw.map((j) => WorkoutHistory.fromJson(j)).toList(),
             total: pagination['totalData'] ?? 0,
+            totalCalories: pagination['totalCalories'] ?? 0,
+            totalMinutes: pagination['totalMinutes'] ?? 0,
             hasMore: pagination['hasMore'] ?? false,
           );
         }

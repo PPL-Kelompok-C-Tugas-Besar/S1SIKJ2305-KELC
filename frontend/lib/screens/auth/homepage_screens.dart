@@ -209,27 +209,10 @@ class _DailyStatsRowState extends State<_DailyStatsRow> {
     try {
       final result = await _historyService.getHistory(page: 1);
       
-      // Get today's date at midnight for comparison
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
-      
-      int todayCalories = 0;
-      int todayMinutes = 0;
-      
-      for (final workout in result.data) {
-        // Get date at midnight for comparison
-        final workoutDay = DateTime(workout.date.year, workout.date.month, workout.date.day);
-        
-        if (workoutDay.isAtSameMomentAs(today)) {
-          todayCalories += workout.caloriesBurned.round();
-          todayMinutes += workout.durationMinutes;
-        }
-      }
-      
       if (mounted) {
         setState(() {
-          _totalCalories = todayCalories;
-          _totalMinutes = todayMinutes;
+          _totalCalories = result.totalCalories;
+          _totalMinutes = result.totalMinutes;
           _isLoading = false;
         });
       }

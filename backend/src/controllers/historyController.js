@@ -13,9 +13,9 @@ const getHistory = async (req, res) => {
         const page  = Math.max(parseInt(req.query.page) || 1, 1);
         const offset = (page - 1) * limit;
 
-        // Hitung total data milik user ini
-        const [[{ total }]] = await pool.execute(
-            'SELECT COUNT(*) AS total FROM workout_history WHERE user_id = ?',
+        // Hitung total data milik user ini, beserta total kalori dan menit
+        const [[{ total, total_calories, total_minutes }]] = await pool.execute(
+            'SELECT COUNT(*) AS total, SUM(calories_burned) AS total_calories, SUM(duration_minutes) AS total_minutes FROM workout_history WHERE user_id = ?',
             [userId]
         );
 
@@ -34,6 +34,8 @@ const getHistory = async (req, res) => {
             data: rows,
             pagination: {
                 totalData: total,
+                totalCalories: parseInt(total_calories) || 0,
+                totalMinutes: parseInt(total_minutes) || 0,
                 totalPages: totalPages,
                 currentPage: page,
                 limit: limit,
