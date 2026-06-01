@@ -11,6 +11,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
+const calorieRoutes = require('./routes/calorieRoutes'); // PBI-1 [Subtask 2]
 
 // 2. Media Tools
 const cloudinary = require('cloudinary').v2;
@@ -39,6 +40,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/workouts', require('./routes/workoutRoutes'));
 app.use('/api/admin', adminRoutes);
+app.use('/api/calories', calorieRoutes); // PBI-1 [Subtask 2] – Estimasi Kalori Terbakar
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Gymbro API is running 🚀' });
