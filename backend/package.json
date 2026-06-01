@@ -14,15 +14,22 @@
   "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
+<<<<<<< HEAD
     "body-parser": "^2.2.2",
     "cloudinary": "^2.9.0",
+=======
+>>>>>>> e72418f95e26de9bb37e33f5daec70e6ab24ae1f
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+<<<<<<< HEAD
     "multer": "^2.1.1",
     "mysql2": "^3.22.0",
     "sqlite3": "^6.0.1"
+=======
+    "mysql2": "^3.22.0"
+>>>>>>> e72418f95e26de9bb37e33f5daec70e6ab24ae1f
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
