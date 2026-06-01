@@ -21,13 +21,9 @@ class _HistoryPageState extends State<HistoryPage> {
   bool _hasMore = true;
   bool _hasError = false;        // flag error saat load gagal
   int _total = 0;
+  int _totalCalories = 0;
+  int _totalMinutes = 0;
   int _page = 1;
-
-  // --- Stat Getters (dari semua data yang sudah di-load) ---
-  int get _totalCalories =>
-      _histories.fold(0, (sum, h) => sum + h.caloriesBurned);
-  int get _totalMinutes =>
-      _histories.fold(0, (sum, h) => sum + h.durationMinutes);
 
   @override
   void initState() {
@@ -66,6 +62,8 @@ class _HistoryPageState extends State<HistoryPage> {
       setState(() {
         _histories = result.data;
         _total = result.total;
+        _totalCalories = result.totalCalories;
+        _totalMinutes = result.totalMinutes;
         _hasMore = result.hasMore;
         if (result.data.isNotEmpty) _page++;
         _isInitialLoading = false;
@@ -92,6 +90,8 @@ class _HistoryPageState extends State<HistoryPage> {
       setState(() {
         _histories.addAll(result.data);
         _total = result.total;
+        _totalCalories = result.totalCalories;
+        _totalMinutes = result.totalMinutes;
         _hasMore = result.hasMore;
         if (result.data.isNotEmpty) _page++;
         _isLoadingMore = false;
