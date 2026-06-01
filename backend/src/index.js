@@ -68,6 +68,10 @@ const start = async () => {
     const { runExercisesMigration } = require('./config/migrate_exercises');
     await runExercisesMigration();
 
+    // PBI-1 [Subtask 1] – Tambahkan kolom met_value ke tabel exercises
+    const { runMetMigration } = require('./config/migrate_met');
+    await runMetMigration();
+
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
     });
