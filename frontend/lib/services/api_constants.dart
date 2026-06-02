@@ -9,6 +9,7 @@ class ApiConstants {
   // User
   static const String profile = '$baseUrl/users/profile';
   static const String history = '$baseUrl/users/history';
+  static const String todayStats = '$baseUrl/users/stats/today';
   static const String weight = '$baseUrl/users/weight';
   static const String weightHistory = '$baseUrl/users/weight/history';
 

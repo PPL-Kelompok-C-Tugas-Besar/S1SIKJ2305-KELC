@@ -49,7 +49,13 @@ class _HomeScreenState extends State<HomeScreen> {
           showSelectedLabels: false,
           showUnselectedLabels: false,
           currentIndex: _selectedIndex,
-          onTap: (i) => setState(() => _selectedIndex = i),
+          onTap: (i) {
+            setState(() => _selectedIndex = i);
+            // If switching to Home tab, we can't easily call _loadData on _HomePageState
+            // without a key, but since the Scaffold rebuilds and _HomePage is built,
+            // we can rely on didChangeDependencies if we trigger a dependency change
+            // or just use a key to force recreation of the Home tab for simplicity.
+          },
           items: const [
             BottomNavigationBarItem(
                 icon: Icon(Icons.home_filled), label: 'Home'),
@@ -77,32 +83,79 @@ class _HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<_HomePage> {
+  final HistoryService _historyService = HistoryService();
+  TodayStats? _todayStats;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh data whenever the widget dependencies change (e.g. returning to this tab)
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    try {
+      final stats = await _historyService.getTodayStats();
+      debugPrint('Loaded TodayStats: streak=${stats?.streak}, hasWorkedOutToday=${stats?.hasWorkedOutToday}');
+      if (mounted) {
+        setState(() {
+          _todayStats = stats;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user      = context.watch<AuthProvider>().user;
     final firstName = user?.fullName.split(' ').first ?? 'User';
 
     return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _Header(firstName: firstName),
-            const SizedBox(height: 24),
-            _DailyStatsRow(),
-            const SizedBox(height: 24),
-            _WeeklyGoalCard(),
-            const SizedBox(height: 32),
-            const _SectionTitle(title: 'Recommended Today'),
-            const SizedBox(height: 16),
-            const _HotWorkoutList(), // Now fetches from DB
-            const SizedBox(height: 32),
-            const _SectionTitle(title: 'Warm-up & Stretches'),
-            const SizedBox(height: 16),
-            _WarmUpList(),
-            const SizedBox(height: 32),
-          ],
+      child: RefreshIndicator(
+        onRefresh: _loadData,
+        color: kAccent,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Header(
+                firstName: firstName,
+                streak: _todayStats?.streak ?? 0,
+                isLit: _todayStats?.hasWorkedOutToday ?? false,
+              ),
+              const SizedBox(height: 24),
+              _DailyStatsRow(
+                calories: _todayStats?.todayCalories ?? 0,
+                minutes: _todayStats?.todayMinutes ?? 0,
+                isLoading: _isLoading,
+              ),
+              const SizedBox(height: 24),
+              _WeeklyGoalCard(),
+              const SizedBox(height: 32),
+              const _SectionTitle(title: 'Recommended Today'),
+              const SizedBox(height: 16),
+              const _HotWorkoutList(), // Now fetches from DB
+              const SizedBox(height: 32),
+              const _SectionTitle(title: 'Warm-up & Stretches'),
+              const SizedBox(height: 16),
+              _WarmUpList(),
+              const SizedBox(height: 32),
+            ],
+          ),
         ),
       ),
     );
@@ -111,8 +164,14 @@ class _HomePageState extends State<_HomePage> {
 
 // ── Header ───────────────────────────────────────────────────────────────────
 class _Header extends StatelessWidget {
-  const _Header({required this.firstName});
+  const _Header({
+    required this.firstName,
+    required this.streak,
+    required this.isLit,
+  });
   final String firstName;
+  final int streak;
+  final bool isLit;
 
   @override
   Widget build(BuildContext context) {
@@ -134,7 +193,7 @@ class _Header extends StatelessWidget {
         ),
         Row(
           children: [
-            const _StreakBadge(),
+            _StreakBadge(streak: streak, isLit: isLit),
             IconButton(
               icon: const Icon(Icons.logout, color: kTextMuted),
               onPressed: () async {
@@ -152,7 +211,9 @@ class _Header extends StatelessWidget {
 }
 
 class _StreakBadge extends StatelessWidget {
-  const _StreakBadge();
+  const _StreakBadge({required this.streak, required this.isLit});
+  final int streak;
+  final bool isLit;
 
   @override
   Widget build(BuildContext context) {
@@ -163,15 +224,16 @@ class _StreakBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
-      child: const Row(
+      child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.local_fire_department,
-              color: Colors.orangeAccent, size: 20),
-          SizedBox(width: 4),
-          Text('3',
+              color: isLit ? Colors.deepOrange : kTextMuted,
+              size: 20),
+          const SizedBox(width: 4),
+          Text(streak.toString(),
               style: TextStyle(
-                  color: kTextPrimary,
+                  color: isLit ? kTextPrimary : kTextMuted,
                   fontWeight: FontWeight.bold,
                   fontSize: 16)),
         ],
@@ -181,49 +243,16 @@ class _StreakBadge extends StatelessWidget {
 }
 
 // ── Daily Stats ──────────────────────────────────────────────────────────────
-class _DailyStatsRow extends StatefulWidget {
-  @override
-  State<_DailyStatsRow> createState() => _DailyStatsRowState();
-}
+class _DailyStatsRow extends StatelessWidget {
+  const _DailyStatsRow({
+    required this.calories,
+    required this.minutes,
+    required this.isLoading,
+  });
 
-class _DailyStatsRowState extends State<_DailyStatsRow> {
-  final HistoryService _historyService = HistoryService();
-  int _totalCalories = 0;
-  int _totalMinutes = 0;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadTodayStats();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Refresh data when returning to homepage
-    _loadTodayStats();
-  }
-
-  Future<void> _loadTodayStats() async {
-    try {
-      final result = await _historyService.getHistory(page: 1);
-      
-      if (mounted) {
-        setState(() {
-          _totalCalories = result.totalCalories;
-          _totalMinutes = result.totalMinutes;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
+  final int calories;
+  final int minutes;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -232,16 +261,16 @@ class _DailyStatsRowState extends State<_DailyStatsRow> {
         Expanded(
           child: _StatCard(
             label: 'Calories',
-            value: _isLoading ? '...' : _totalCalories.toString(),
+            value: isLoading ? '...' : calories.toString(),
             unit: 'kcal',
             icon: Icons.local_fire_department,
           ),
         ),
-        SizedBox(width: 16),
+        const SizedBox(width: 16),
         Expanded(
           child: _StatCard(
             label: 'Time',
-            value: _isLoading ? '...' : _totalMinutes.toString(),
+            value: isLoading ? '...' : minutes.toString(),
             unit: 'min',
             icon: Icons.timer_outlined,
           ),
@@ -698,4 +727,4 @@ class _PlaceholderPage extends StatelessWidget {
           style: const TextStyle(color: kTextMuted, fontSize: 18)),
     );
   }
-}
+}

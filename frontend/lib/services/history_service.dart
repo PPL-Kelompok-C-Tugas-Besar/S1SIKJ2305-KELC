@@ -21,6 +21,29 @@ class HistoryResult {
   });
 }
 
+class TodayStats {
+  final int todayCalories;
+  final int todayMinutes;
+  final int streak;
+  final bool hasWorkedOutToday;
+
+  const TodayStats({
+    required this.todayCalories,
+    required this.todayMinutes,
+    required this.streak,
+    required this.hasWorkedOutToday,
+  });
+
+  factory TodayStats.fromJson(Map<String, dynamic> json) {
+    return TodayStats(
+      todayCalories: json['todayCalories'] ?? 0,
+      todayMinutes: json['todayMinutes'] ?? 0,
+      streak: json['streak'] ?? 0,
+      hasWorkedOutToday: json['hasWorkedOutToday'] ?? false,
+    );
+  }
+}
+
 class HistoryService {
   final _storage = const FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
@@ -73,6 +96,28 @@ class HistoryService {
       return const HistoryResult(data: [], total: 0, hasMore: false);
     } catch (e) {
       return const HistoryResult(data: [], total: 0, hasMore: false);
+    }
+  }
+
+  Future<TodayStats?> getTodayStats() async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConstants.todayStats),
+        headers: _headers(token),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          return TodayStats.fromJson(body['data']);
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
     }
   }
 

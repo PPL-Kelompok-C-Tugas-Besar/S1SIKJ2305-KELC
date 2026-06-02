@@ -2,8 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
-const { getHistory, addHistory } = require('../controllers/historyController');
+const { getHistory, addHistory, getTodayStats } = require('../controllers/historyController');
 const { updateWeight, getWeightHistory } = require('../controllers/profileController');
+
+// GET /users/stats/today
+router.get('/stats/today', verifyToken, getTodayStats);
 
 // GET /users/profile
 router.get('/profile', verifyToken, async (req, res) => {
