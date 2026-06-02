@@ -26,12 +26,16 @@ class TodayStats {
   final int todayMinutes;
   final int streak;
   final bool hasWorkedOutToday;
+  final int weeklyGoal;
+  final List<int> completedDays;
 
   const TodayStats({
     required this.todayCalories,
     required this.todayMinutes,
     required this.streak,
     required this.hasWorkedOutToday,
+    required this.weeklyGoal,
+    required this.completedDays,
   });
 
   factory TodayStats.fromJson(Map<String, dynamic> json) {
@@ -40,6 +44,10 @@ class TodayStats {
       todayMinutes: json['todayMinutes'] ?? 0,
       streak: json['streak'] ?? 0,
       hasWorkedOutToday: json['hasWorkedOutToday'] ?? false,
+      weeklyGoal: json['weeklyGoal'] ?? 3,
+      completedDays: json['completedDays'] != null
+          ? List<int>.from(json['completedDays'])
+          : [],
     );
   }
 }
@@ -118,6 +126,22 @@ class HistoryService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  Future<bool> updateWeeklyGoal(int goal) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/users/weekly-goal'),
+        headers: _headers(token),
+        body: jsonEncode({'goal': goal}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 

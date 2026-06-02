@@ -103,7 +103,7 @@ class _HomePageState extends State<_HomePage> {
   Future<void> _loadData() async {
     try {
       final stats = await _historyService.getTodayStats();
-      debugPrint('Loaded TodayStats: streak=${stats?.streak}, hasWorkedOutToday=${stats?.hasWorkedOutToday}');
+      debugPrint('Loaded TodayStats: streak=${stats?.streak}, hasWorkedOutToday=${stats?.hasWorkedOutToday}, completedDays=${stats?.completedDays}');
       if (mounted) {
         setState(() {
           _todayStats = stats;
@@ -111,6 +111,7 @@ class _HomePageState extends State<_HomePage> {
         });
       }
     } catch (e) {
+      debugPrint('Error loading stats: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -144,7 +145,10 @@ class _HomePageState extends State<_HomePage> {
                 isLoading: _isLoading,
               ),
               const SizedBox(height: 24),
-              _WeeklyGoalCard(),
+              _WeeklyGoalCard(
+                todayStats: _todayStats,
+                onGoalUpdated: _loadData,
+              ),
               const SizedBox(height: 32),
               const _SectionTitle(title: 'Recommended Today'),
               const SizedBox(height: 16),
@@ -338,13 +342,58 @@ class _StatCard extends StatelessWidget {
 
 // ── Weekly Goal Card ─────────────────────────────────────────────────────────
 class _WeeklyGoalCard extends StatelessWidget {
+  const _WeeklyGoalCard({
+    required this.todayStats,
+    required this.onGoalUpdated,
+  });
+
+  final TodayStats? todayStats;
+  final VoidCallback onGoalUpdated;
+
+  void _showGoalPicker(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _GoalPickerDialog(
+        currentGoal: todayStats?.weeklyGoal ?? 3,
+        onSave: (newGoal) async {
+          final success = await HistoryService().updateWeeklyGoal(newGoal);
+          if (success) {
+            onGoalUpdated();
+          }
+        },
+      ),
+    );
+  }
+
+  String _getMotivationalText(int completed, int goal) {
+    if (completed == 0) return "Let's get moving this week!";
+    if (completed >= goal) return "Goal Crushed! You're unstoppable 🔥";
+    if (completed >= goal / 2) return "Halfway there, keep it up!";
+    return "Great start, keep the momentum!";
+  }
+
   @override
   Widget build(BuildContext context) {
     final DateTime now = DateTime.now();
-    final int currentWeekday = now.weekday; 
-    final DateTime startOfWeek = now.subtract(Duration(days: currentWeekday - 1));
+    final int currentWeekday = now.weekday; // 1 = Mon, ..., 7 = Sun
+    final DateTime startOfWeek =
+        now.subtract(Duration(days: currentWeekday - 1));
 
-    final List<String> dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final List<String> dayNames = [
+      'Mon',
+      'Tue',
+      'Wed',
+      'Thu',
+      'Fri',
+      'Sat',
+      'Sun'
+    ];
+    final completedDays = todayStats?.completedDays ?? [];
+    final int goal = todayStats?.weeklyGoal ?? 3;
+    final int completedCount = completedDays.length;
+    
+    final bool isGoalAchieved = completedCount >= goal;
+    final double progress = (completedCount / goal).clamp(0.0, 1.0);
 
     return Container(
       width: double.infinity,
@@ -352,37 +401,79 @@ class _WeeklyGoalCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: kCard,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(
+            color: isGoalAchieved ? kAccent.withAlpha(150) : Colors.white10,
+            width: isGoalAchieved ? 2 : 1),
+        boxShadow: isGoalAchieved
+            ? [
+                BoxShadow(
+                  color: kAccent.withAlpha(30),
+                  blurRadius: 15,
+                  spreadRadius: 2,
+                )
+              ]
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text('Weekly Goal',
-                  style: TextStyle(
-                      color: kTextPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold)),
-              Text('3 of 4 days',
-                  style: TextStyle(
-                      color: kAccent,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold)),
-            ],
+          InkWell(
+            onTap: () => _showGoalPicker(context),
+            borderRadius: BorderRadius.circular(8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text('Weekly Goal',
+                        style: TextStyle(
+                            color: kTextPrimary,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        Text('$completedCount of $goal days',
+                            style: const TextStyle(
+                                color: kAccent,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold)),
+                        const Icon(Icons.chevron_right, color: kAccent, size: 18),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(_getMotivationalText(completedCount, goal),
+                    style: const TextStyle(color: kTextMuted, fontSize: 13)),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
+          // Progress Bar
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.white10,
+              color: kAccent,
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 24),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: List.generate(7, (index) {
+              final int dayIndex = index + 1; // 1-indexed (Mon-Sun)
               final DateTime date = startOfWeek.add(Duration(days: index));
-              final bool isActive = index == (currentWeekday - 1);
-              
+              final bool isActive = dayIndex == currentWeekday;
+              final bool isCompleted = completedDays.contains(dayIndex);
+
               return _DayBadge(
                 day: dayNames[index],
                 date: date.day.toString(),
                 isActive: isActive,
+                isCompleted: isCompleted,
               );
             }),
           ),
@@ -392,39 +483,144 @@ class _WeeklyGoalCard extends StatelessWidget {
   }
 }
 
+class _GoalPickerDialog extends StatefulWidget {
+  const _GoalPickerDialog({required this.currentGoal, required this.onSave});
+  final int currentGoal;
+  final Function(int) onSave;
+
+  @override
+  State<_GoalPickerDialog> createState() => _GoalPickerDialogState();
+}
+
+class _GoalPickerDialogState extends State<_GoalPickerDialog> {
+  late int _selectedGoal;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedGoal = widget.currentGoal;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: kCard,
+      title: const Text('Set Weekly Goal',
+          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('How many days per week do you want to workout?',
+              style: TextStyle(color: kTextMuted, fontSize: 14)),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(7, (index) {
+              final int goal = index + 1;
+              final bool isSelected = _selectedGoal == goal;
+              return GestureDetector(
+                onTap: () => setState(() => _selectedGoal = goal),
+                child: Container(
+                  width: 35,
+                  height: 35,
+                  decoration: BoxDecoration(
+                    color: isSelected ? kAccent : Colors.transparent,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white10),
+                  ),
+                  child: Center(
+                    child: Text(goal.toString(),
+                        style: TextStyle(
+                            color: isSelected ? kBg : kTextPrimary,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel', style: TextStyle(color: kTextMuted)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            widget.onSave(_selectedGoal);
+            Navigator.pop(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kAccent,
+            foregroundColor: kBg,
+          ),
+          child: const Text('Save'),
+        ),
+      ],
+    );
+  }
+}
+
 class _DayBadge extends StatelessWidget {
   const _DayBadge({
     required this.day,
     required this.date,
     required this.isActive,
+    required this.isCompleted,
   });
 
   final String day;
   final String date;
   final bool isActive;
+  final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
       decoration: BoxDecoration(
-        color: isActive ? kAccent : Colors.transparent,
+        color: isActive ? kAccent.withAlpha(20) : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
-        border: isActive ? null : Border.all(color: Colors.white10),
+        border: Border.all(
+          color: isActive
+              ? kAccent.withAlpha(150)
+              : (isCompleted ? kAccent.withAlpha(80) : Colors.white10),
+          width: isActive ? 2 : 1,
+        ),
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(day,
               style: TextStyle(
-                  color: isActive ? kBg : kTextMuted,
-                  fontSize: 12,
+                  color: isActive ? kAccent : kTextMuted,
+                  fontSize: 11,
                   fontWeight: FontWeight.w500)),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(date,
               style: TextStyle(
-                  color: isActive ? kBg : kTextPrimary,
-                  fontSize: 16,
+                  color: isActive
+                      ? kTextPrimary
+                      : (isCompleted ? kTextPrimary : kTextPrimary.withAlpha(150)),
+                  fontSize: 15,
                   fontWeight: FontWeight.bold)),
+          const SizedBox(height: 4),
+          // Checkmark for completed, empty space otherwise
+          SizedBox(
+            height: 12,
+            child: isCompleted
+                ? const Icon(Icons.check_circle, color: kAccent, size: 12)
+                : (isActive 
+                    ? Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: kTextMuted,
+                          shape: BoxShape.circle,
+                        ),
+                      ) 
+                    : null),
+          ),
         ],
       ),
     );
