@@ -22,15 +22,15 @@ class ExerciseExecutionItem {
   });
 }
 
-// ── Color Palette (Dark Mode) ─────────────────────────────────────────────────
+// ── Color Palette (Light Mode) ─────────────────────────────────────────────────
 
-const _bg = Color(0xFF0A0A0F);
-const _surface = Color(0xFF14141C);
-const _card = Color(0xFF1C1C28);
-const _border = Color(0xFF2A2A3A);
+const _bg = Colors.transparent;
+const _surface = Colors.white70;
+const _card = Colors.white;
+const _border = Color(0xFFE2E8F0);
 const _accent = Color(0xFFFF6B35);
-const _green = Color(0xFF00E676);
-const _white = Colors.white;
+const _green = Color(0xFF2E7D32);
+const _white = Color(0xFF2D2D2D);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -86,7 +86,7 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
+        statusBarIconBrightness: Brightness.dark,
       ),
     );
 
@@ -267,15 +267,27 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _bg,
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: _showingWarmupGroup
-            ? _buildWarmupGroupView()
-            : _isResting
-                ? _buildRestView()
-                : _buildExerciseView(),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF0F2F5), // Light Grey
+            Color(0xFFFFE5D9), // Soft Peach
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: _bg,
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          child: _showingWarmupGroup
+              ? _buildWarmupGroupView()
+              : _isResting
+                  ? _buildRestView()
+                  : _buildExerciseView(),
+        ),
       ),
     );
   }
@@ -460,7 +472,7 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
                 const SizedBox(height: 8),
                 const Text(
                   'Lakukan semua gerakan di atas',
-                  style: TextStyle(color: Colors.white54, fontSize: 12),
+                  style: TextStyle(color: Color(0xFF6C757D), fontSize: 12),
                 ),
                 const SizedBox(height: 6),
                 ScaleTransition(
@@ -477,14 +489,15 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
                 ),
                 const Text(
                   'detik',
-                  style: TextStyle(color: Colors.white38, fontSize: 13),
+                  style: TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
                 ),
                 const SizedBox(height: 12),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: _ActionButton(
                     label: 'SKIP PEMANASAN →',
-                    color: Colors.white12,
+                    color: Colors.black.withValues(alpha: 0.08),
+                    textColor: const Color(0xFF2D2D2D),
                     onTap: _skipWarmupGroup,
                   ),
                 ),
@@ -738,7 +751,7 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
             const SizedBox(height: 12),
             Text(
               'Berikutnya: ${next.name}',
-              style: const TextStyle(color: Colors.white54, fontSize: 15),
+              style: const TextStyle(color: Color(0xFF6C757D), fontSize: 15),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
@@ -1020,7 +1033,7 @@ class _ControlPanel extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               exercise.description!,
-              style: const TextStyle(color: Colors.white38, fontSize: 12),
+              style: const TextStyle(color: Color(0xFF6C757D), fontSize: 12),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -1049,7 +1062,8 @@ class _ControlPanel extends StatelessWidget {
                 : isTimer
                 ? 'SKIP ▶'
                 : '✓  SELESAI ${exercise.value} REPS',
-            color: isTimer && !isLast ? Colors.white24 : color,
+            color: isTimer && !isLast ? Colors.black.withValues(alpha: 0.08) : color,
+            textColor: isTimer && !isLast ? const Color(0xFF2D2D2D) : Colors.white,
             onTap: onDone,
           ),
         ],
@@ -1166,7 +1180,7 @@ class _RepsSection extends StatelessWidget {
           const SizedBox(width: 8),
           const Text(
             'reps',
-            style: TextStyle(color: Colors.white38, fontSize: 16),
+            style: TextStyle(color: Color(0xFF6C757D), fontSize: 16),
           ),
         ],
       ),
@@ -1292,7 +1306,7 @@ class _CompletionDialogState extends State<_CompletionDialog> {
             const SizedBox(height: 8),
             Text(
               widget.workoutTitle,
-              style: const TextStyle(color: Colors.white54, fontSize: 14),
+              style: const TextStyle(color: Color(0xFF6C757D), fontSize: 14),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
@@ -1355,7 +1369,7 @@ class _CompletionDialogState extends State<_CompletionDialog> {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(color: Colors.white38, fontSize: 12),
+          style: const TextStyle(color: Color(0xFF6C757D), fontSize: 12),
         ),
       ],
     );
