@@ -66,11 +66,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>Aplikasi ini memerlukan akses ke kamera untuk mengambil foto media latihan.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Aplikasi ini memerlukan akses ke galeri untuk memilih media latihan.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Aplikasi ini memerlukan akses ke mikrofon untuk merekam video latihan.</string>
 </dict>
 </plist>

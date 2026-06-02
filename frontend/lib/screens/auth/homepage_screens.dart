@@ -698,4 +698,4 @@ class _PlaceholderPage extends StatelessWidget {
           style: const TextStyle(color: kTextMuted, fontSize: 18)),
     );
   }
-}
+}

@@ -14,11 +14,6 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  // Prevent ECONNRESET on idle SSL connections
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000, // send keepalive ping every 10s
-  connectTimeout: 30000,        // 30s timeout saat koneksi baru
-  idleTimeout: 60000,           // tutup koneksi idle setelah 60s
 });
 
 const testConnection = async () => {
