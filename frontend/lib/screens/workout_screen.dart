@@ -632,12 +632,24 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      appBar: _buildAppBar(),
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 350),
-        child: _buildBody(),
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFF0F2F5), // Light Grey
+            Color(0xFFFFE5D9), // Soft Peach
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: _buildAppBar(),
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          child: _buildBody(),
+        ),
       ),
     );
   }
@@ -664,7 +676,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
             style: TextStyle(
               fontWeight: FontWeight.w900,
               fontSize: 20,
-              color: Colors.white,
+              color: Color(0xFF2D2D2D),
               letterSpacing: 3,
             ),
           ),
@@ -672,7 +684,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
       ),
       leading: showBack
           ? IconButton(
-              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white70),
+              icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF2D2D2D)),
               onPressed: _backToCategories,
             )
           : null,
@@ -851,7 +863,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
           const Text(
             'Pilih Level',
             style: TextStyle(
-              color: Colors.white54,
+              color: Color(0xFF6C757D),
               fontSize: 13,
               letterSpacing: 2,
             ),
@@ -860,7 +872,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
           const Text(
             'Workout Hari Ini',
             style: TextStyle(
-              color: Colors.white,
+              color: Color(0xFF2D2D2D),
               fontSize: 28,
               fontWeight: FontWeight.bold,
             ),
@@ -1035,9 +1047,16 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
                   vertical: 12,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: Colors.white.withValues(alpha: 0.8),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -1061,7 +1080,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
                           Text(
                             ex.name,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Color(0xFF2D2D2D),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1077,7 +1096,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
                     ),
                     Icon(
                       ex.type == ExerciseType.reps ? Icons.repeat : Icons.timer,
-                      color: Colors.white30,
+                      color: Colors.black38,
                       size: 20,
                     ),
                   ],
@@ -1267,13 +1286,13 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
           const SizedBox(height: 8),
           Text(
             'Latihan berikutnya: ${_selectedCategory!.exercises[_exerciseIndex + 1].name}',
-            style: const TextStyle(color: Colors.white54, fontSize: 14),
+            style: const TextStyle(color: Color(0xFF6C757D), fontSize: 14),
           ),
           const SizedBox(height: 32),
           Text(
             _timerSeconds.toString().padLeft(2, '0'),
             style: const TextStyle(
-              color: Colors.white,
+              color: Color(0xFF2D2D2D),
               fontSize: 90,
               fontWeight: FontWeight.w900,
               height: 1,
@@ -1281,7 +1300,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
           ),
           const Text(
             'detik',
-            style: TextStyle(color: Colors.white38, fontSize: 16),
+            style: TextStyle(color: Color(0xFF6C757D), fontSize: 16),
           ),
           const SizedBox(height: 40),
           _bigButton(
@@ -1310,7 +1329,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
             const Text(
               'SELESAI!',
               style: TextStyle(
-                color: Colors.white,
+                color: Color(0xFF2D2D2D),
                 fontSize: 36,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 4,
@@ -1319,16 +1338,23 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
             const SizedBox(height: 8),
             Text(
               'Kamu hebat! Workout ${cat.label} selesai.',
-              style: const TextStyle(color: Colors.white60, fontSize: 15),
+              style: const TextStyle(color: Color(0xFF6C757D), fontSize: 15),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
             Container(
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
               decoration: BoxDecoration(
-                color: const Color(0xFF1E1E1E),
+                color: Colors.white.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: cat.color.withValues(alpha: 0.4)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -1382,7 +1408,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
           children: [
             Text(
               'Latihan $current dari $total',
-              style: const TextStyle(color: Colors.white70, fontSize: 13),
+              style: const TextStyle(color: Color(0xFF6C757D), fontSize: 13),
             ),
             Text(
               '${(progress * 100).round()}%',
@@ -1400,7 +1426,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
           child: LinearProgressIndicator(
             value: progress,
             minHeight: 6,
-            backgroundColor: Colors.white12,
+            backgroundColor: Colors.black.withOpacity(0.08),
             valueColor: AlwaysStoppedAnimation(color),
           ),
         ),
@@ -1413,9 +1439,9 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
       height: 220,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
+        color: Colors.white.withValues(alpha: 0.8),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
@@ -1423,7 +1449,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
           path,
           fit: BoxFit.contain,
           errorBuilder: (_, _, _) => const Center(
-            child: Icon(Icons.fitness_center, color: Colors.white24, size: 64),
+            child: Icon(Icons.fitness_center, color: Colors.black26, size: 64),
           ),
         ),
       ),
@@ -1499,7 +1525,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
         Text(
           value,
           style: const TextStyle(
-            color: Colors.white,
+            color: Color(0xFF2D2D2D),
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -1507,7 +1533,7 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(color: Colors.white54, fontSize: 12),
+          style: const TextStyle(color: Color(0xFF6C757D), fontSize: 12),
         ),
       ],
     );
