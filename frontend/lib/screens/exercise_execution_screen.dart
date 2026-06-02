@@ -328,6 +328,7 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
       builder: (_) => _CompletionDialog(
         workoutTitle: widget.workoutTitle,
         totalExercises: widget.exercises.length,
+        exercises: widget.exercises,
         themeColor: widget.themeColor,
         workoutLevel: widget.workoutLevel,
         durationMinutes: widget.durationMinutes,
@@ -1308,11 +1309,12 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ── Completion Dialog ─────────────────────────────────────────────────────────
+// ── [PKCTB-384] Completion Dialog ─────────────────────────────────────────────
 
 class _CompletionDialog extends StatefulWidget {
   final String workoutTitle;
   final int totalExercises;
+  final List<ExerciseExecutionItem> exercises;
   final Color themeColor;
   final String workoutLevel;
   final int durationMinutes;
@@ -1321,6 +1323,7 @@ class _CompletionDialog extends StatefulWidget {
   const _CompletionDialog({
     required this.workoutTitle,
     required this.totalExercises,
+    required this.exercises,
     required this.themeColor,
     required this.workoutLevel,
     required this.durationMinutes,
@@ -1333,7 +1336,9 @@ class _CompletionDialog extends StatefulWidget {
 
 class _CompletionDialogState extends State<_CompletionDialog> {
   bool _isSaving = false;
+  bool _showBreakdown = false;
   late final int _caloriesBurned;
+  late final List<int> _perExerciseCalories;
 
   @override
   void initState() {
@@ -1341,6 +1346,19 @@ class _CompletionDialogState extends State<_CompletionDialog> {
     _caloriesBurned = CalorieCalculator.calculateCalories(
       durationMinutes: widget.durationMinutes,
       level: widget.workoutLevel,
+    );
+
+    // [PKCTB-384] Hitung distribusi kalori per exercise
+    final effortList = widget.exercises.map((ex) {
+      return CalorieCalculator.estimateEffortSeconds(
+        isTimed: ex.type == ExerciseExecutionType.timed,
+        value: ex.value,
+      );
+    }).toList();
+
+    _perExerciseCalories = CalorieCalculator.distributeCaloriesPerExercise(
+      totalCalories: _caloriesBurned,
+      effortSecondsPerExercise: effortList,
     );
   }
 
@@ -1362,70 +1380,263 @@ class _CompletionDialogState extends State<_CompletionDialog> {
     return Dialog(
       backgroundColor: _card,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('🏆', style: TextStyle(fontSize: 64)),
-            const SizedBox(height: 12),
-            const Text(
-              'WORKOUT SELESAI!',
-              style: TextStyle(
-                color: _white,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-                letterSpacing: 2,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              widget.workoutTitle,
-              style: const TextStyle(color: Color(0xFF6C757D), fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                _statChip('${widget.totalExercises}', 'Latihan', widget.themeColor),
-                _statChip('${widget.durationMinutes}', 'Menit', const Color(0xFF6BE5FF)),
-                _statChip('$_caloriesBurned', 'kkal', const Color(0xFFFF7043)),
+                const Text('🏆', style: TextStyle(fontSize: 64)),
+                const SizedBox(height: 12),
+                const Text(
+                  'WORKOUT SELESAI!',
+                  style: TextStyle(
+                    color: _white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  widget.workoutTitle,
+                  style: const TextStyle(color: Color(0xFF6C757D), fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 20),
+
+                // ── [PKCTB-384] Prominent Kalori Terbakar Section ──
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFF7043), Color(0xFFFF5722)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFFF7043).withValues(alpha: 0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text('🔥', style: TextStyle(fontSize: 20)),
+                          SizedBox(width: 8),
+                          Text(
+                            'Kalori Terbakar',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 1.2,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text('🔥', style: TextStyle(fontSize: 20)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '$_caloriesBurned',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 48,
+                              fontWeight: FontWeight.w900,
+                              height: 1.0,
+                            ),
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 6),
+                            child: Text(
+                              ' kkal',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── Stat Chips (Latihan & Menit) ──
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _statChip('${widget.totalExercises}', 'Latihan', widget.themeColor),
+                    _statChip('${widget.durationMinutes}', 'Menit', const Color(0xFF6BE5FF)),
+                  ],
+                ),
+
+                const SizedBox(height: 20),
+
+                // ── [PKCTB-384] Breakdown Per Latihan ──
+                GestureDetector(
+                  onTap: () => setState(() => _showBreakdown = !_showBreakdown),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE0E0E0)),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.local_fire_department, color: Color(0xFFFF7043), size: 18),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'Detail Per Latihan',
+                          style: TextStyle(
+                            color: Color(0xFF2D2D2D),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          _showBreakdown ? Icons.expand_less : Icons.expand_more,
+                          color: const Color(0xFF6C757D),
+                          size: 20,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                if (_showBreakdown) ...[
+                  const SizedBox(height: 12),
+                  ...List.generate(widget.exercises.length, (i) {
+                    final ex = widget.exercises[i];
+                    final cal = _perExerciseCalories[i];
+                    final isTimed = ex.type == ExerciseExecutionType.timed;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFEEEEEE)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF7043).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '${i + 1}',
+                                  style: const TextStyle(
+                                    color: Color(0xFFFF7043),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    ex.name,
+                                    style: const TextStyle(
+                                      color: Color(0xFF2D2D2D),
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  Text(
+                                    isTimed ? '${ex.value} detik' : '${ex.value} reps',
+                                    style: const TextStyle(
+                                      color: Color(0xFF9E9E9E),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Text(
+                              '~$cal kkal',
+                              style: const TextStyle(
+                                color: Color(0xFFFF7043),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+
+                const SizedBox(height: 28),
+                _ActionButton(
+                  label: 'KEMBALI KE MENU',
+                  color: widget.themeColor,
+                  isLoading: _isSaving,
+                  onTap: () async {
+                    if (_isSaving) return;
+                    setState(() => _isSaving = true);
+
+                    await _saveWorkoutHistory();
+
+                    if (!mounted) return;
+
+                    setState(() => _isSaving = false);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          '✓ Riwayat latihan berhasil disimpan!',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+
+                    widget.onDone();
+                  },
+                ),
               ],
             ),
-            const SizedBox(height: 28),
-            _ActionButton(
-              label: 'KEMBALI KE MENU',
-              color: widget.themeColor,
-              isLoading: _isSaving,
-              onTap: () async {
-                if (_isSaving) return;
-                setState(() => _isSaving = true);
-                
-                await _saveWorkoutHistory();
-                
-                if (!mounted) return;
-                
-                setState(() => _isSaving = false);
-                
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      '✓ Riwayat latihan berhasil disimpan!',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    backgroundColor: Colors.green,
-                    duration: Duration(seconds: 2),
-                  ),
-                );
-                
-                widget.onDone();
-              },
-            ),
-          ],
+          ),
         ),
       ),
     );
