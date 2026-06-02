@@ -235,6 +235,73 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
     });
   }
 
+  void _addRestSeconds(int seconds) {
+    setState(() {
+      _restSeconds += seconds;
+    });
+  }
+
+  void _showEditRestTimeDialog() {
+    final controller = TextEditingController(text: _restSeconds.toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Ubah Waktu Istirahat',
+          style: TextStyle(
+            color: Color(0xFF2D2D2D),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Color(0xFF2D2D2D)),
+          decoration: const InputDecoration(
+            labelText: 'Durasi',
+            labelStyle: TextStyle(color: Color(0xFF6C757D)),
+            suffixText: 'detik',
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF2E7D32)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Color(0xFF6C757D)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newSeconds = int.tryParse(controller.text);
+              if (newSeconds != null && newSeconds > 0) {
+                setState(() {
+                  _restSeconds = newSeconds;
+                });
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Simpan',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _skipRest() {
     _timer?.cancel();
     _goNextExercise();
@@ -313,7 +380,7 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
                     onTap: () => Navigator.of(context).pop(),
                     child: const Icon(
                       Icons.arrow_back_ios_new,
-                      color: Colors.white70,
+                      color: Color(0xFF2D2D2D),
                       size: 20,
                     ),
                   ),
@@ -613,120 +680,48 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
     final isWarmupDone =
         widget.warmupCount > 0 && _currentIndex == widget.warmupCount - 1;
 
-    if (isWarmupDone) {
-      // ── Layar Khusus: Pemanasan Selesai → Bersiap Latihan ────────────────
-      return Center(
-        key: const ValueKey('warmup_done'),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icon api / pemanasan
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      _green.withValues(alpha: 0.30),
-                      _green.withValues(alpha: 0.06),
-                    ],
-                  ),
-                  border: Border.all(color: _green, width: 2.5),
-                ),
-                child: const Icon(
-                  Icons.check_circle_outline_rounded,
-                  color: _green,
-                  size: 56,
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'PEMANASAN SELESAI!',
-                style: TextStyle(
-                  color: _green,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 3,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'Tubuhmu sudah siap.\nBersiap untuk sesi latihan utama!',
-                style: TextStyle(color: Colors.white60, fontSize: 14),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                decoration: BoxDecoration(
-                  color: widget.themeColor.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: widget.themeColor.withValues(alpha: 0.4),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.fitness_center,
-                        color: widget.themeColor, size: 14),
-                    const SizedBox(width: 6),
-                    Text(
-                      'Latihan pertama: ${next.name}',
-                      style: TextStyle(
-                        color: widget.themeColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 44),
-              ScaleTransition(
-                scale: _pulseAnim,
-                child: Text(
-                  '$_restSeconds',
-                  style: const TextStyle(
-                    color: _white,
-                    fontSize: 96,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
-                  ),
-                ),
-              ),
-              const Text(
-                'detik',
-                style: TextStyle(color: Colors.white38, fontSize: 16),
-              ),
-              const SizedBox(height: 40),
-              _ActionButton(
-                label: 'MULAI LATIHAN →',
-                color: widget.themeColor,
-                onTap: _skipRest,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // ── Layar Istirahat Normal antar latihan ─────────────────────────────────
     return Center(
-      key: const ValueKey('rest'),
+      key: ValueKey(isWarmupDone ? 'warmup_done' : 'rest'),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (isWarmupDone) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: _green.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: _green.withValues(alpha: 0.3), width: 1.5),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: const [
+                    Icon(
+                      Icons.check_circle_outline_rounded,
+                      color: _green,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'PEMANASAN SELESAI!',
+                      style: TextStyle(
+                        color: _green,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 30),
+            ],
+            // Meditating circle icon
             Container(
-              width: 100,
-              height: 100,
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _green.withValues(alpha: 0.12),
@@ -735,26 +730,30 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
               child: const Icon(
                 Icons.self_improvement,
                 color: _green,
-                size: 52,
+                size: 64,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             const Text(
               'ISTIRAHAT',
               style: TextStyle(
                 color: _green,
-                fontSize: 26,
+                fontSize: 28,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 4,
               ),
             ),
             const SizedBox(height: 12),
             Text(
-              'Berikutnya: ${next.name}',
-              style: const TextStyle(color: Color(0xFF6C757D), fontSize: 15),
+              isWarmupDone ? 'Latihan pertama: ${next.name}' : 'Berikutnya: ${next.name}',
+              style: const TextStyle(
+                color: Color(0xFF6C757D),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             ScaleTransition(
               scale: _pulseAnim,
               child: Text(
@@ -763,19 +762,70 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
                   color: _white,
                   fontSize: 96,
                   fontWeight: FontWeight.w900,
-                  height: 1,
+                  height: 1.0,
                 ),
               ),
             ),
             const Text(
               'detik',
-              style: TextStyle(color: Colors.white38, fontSize: 16),
+              style: TextStyle(
+                color: Color(0xFF6C757D),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 32),
+            // Side-by-side buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _showEditRestTimeDialog,
+                  icon: const Icon(Icons.edit_calendar_rounded, color: _green, size: 20),
+                  label: const Text(
+                    'Edit Waktu',
+                    style: TextStyle(
+                      color: _green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: _green, width: 1.5),
+                    backgroundColor: Colors.white.withValues(alpha: 0.9),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: () => _addRestSeconds(20),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: _green, width: 1.5),
+                    backgroundColor: Colors.white.withValues(alpha: 0.9),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '+ 20s',
+                    style: TextStyle(
+                      color: _green,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 36),
             _ActionButton(
-              label: 'SKIP ISTIRAHAT →',
-              color: _green,
-              textColor: Colors.black,
+              label: isWarmupDone ? 'MULAI LATIHAN →' : 'SKIP ISTIRAHAT →',
+              color: isWarmupDone ? widget.themeColor : _green,
+              textColor: Colors.white,
               onTap: _skipRest,
             ),
           ],
@@ -823,7 +873,7 @@ class _TopBar extends StatelessWidget {
               IconButton(
                 icon: const Icon(
                   Icons.arrow_back_ios_new,
-                  color: Colors.white70,
+                  color: Color(0xFF2D2D2D),
                   size: 20,
                 ),
                 onPressed: onBack,

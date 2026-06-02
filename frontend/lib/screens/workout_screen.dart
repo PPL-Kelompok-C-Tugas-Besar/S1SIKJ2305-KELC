@@ -587,6 +587,73 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
     });
   }
 
+  void _addRestSeconds(int seconds) {
+    setState(() {
+      _timerSeconds += seconds;
+    });
+  }
+
+  void _showEditRestTimeDialog() {
+    final controller = TextEditingController(text: _timerSeconds.toString());
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text(
+          'Ubah Waktu Istirahat',
+          style: TextStyle(
+            color: Color(0xFF2D2D2D),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Color(0xFF2D2D2D)),
+          decoration: const InputDecoration(
+            labelText: 'Durasi',
+            labelStyle: TextStyle(color: Color(0xFF6C757D)),
+            suffixText: 'detik',
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Color(0xFF2E7D32)),
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Batal',
+              style: TextStyle(color: Color(0xFF6C757D)),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final newSeconds = int.tryParse(controller.text);
+              if (newSeconds != null && newSeconds > 0) {
+                setState(() {
+                  _timerSeconds = newSeconds;
+                });
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            child: const Text(
+              'Simpan',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _doneReps() {
     _timer?.cancel();
     _afterExercise();
@@ -1263,53 +1330,128 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
   // ── 4. Rest Screen ────────────────────────────────────────────────────────
 
   Widget _restScreen() {
+    final next = _selectedCategory!.exercises[_exerciseIndex + 1];
+    const restGreen = Color(0xFF2E7D32);
+
     return Center(
       key: const ValueKey('rest'),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.self_improvement,
-            color: Colors.greenAccent,
-            size: 80,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'ISTIRAHAT',
-            style: TextStyle(
-              color: Colors.greenAccent,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 3,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Meditating circle icon
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: restGreen.withValues(alpha: 0.12),
+                border: Border.all(color: restGreen, width: 2),
+              ),
+              child: const Icon(
+                Icons.self_improvement,
+                color: restGreen,
+                size: 64,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Latihan berikutnya: ${_selectedCategory!.exercises[_exerciseIndex + 1].name}',
-            style: const TextStyle(color: Color(0xFF6C757D), fontSize: 14),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            _timerSeconds.toString().padLeft(2, '0'),
-            style: const TextStyle(
-              color: Color(0xFF2D2D2D),
-              fontSize: 90,
-              fontWeight: FontWeight.w900,
-              height: 1,
+            const SizedBox(height: 24),
+            const Text(
+              'ISTIRAHAT',
+              style: TextStyle(
+                color: restGreen,
+                fontSize: 28,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 4,
+              ),
             ),
-          ),
-          const Text(
-            'detik',
-            style: TextStyle(color: Color(0xFF6C757D), fontSize: 16),
-          ),
-          const SizedBox(height: 40),
-          _bigButton(
-            'SKIP ISTIRAHAT',
-            Colors.greenAccent,
-            _skipRest,
-            textColor: Colors.black,
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              'Berikutnya: ${next.name}',
+              style: const TextStyle(
+                color: Color(0xFF6C757D),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ScaleTransition(
+              scale: _pulseAnim,
+              child: Text(
+                '$_timerSeconds',
+                style: const TextStyle(
+                  color: Color(0xFF2D2D2D),
+                  fontSize: 96,
+                  fontWeight: FontWeight.w900,
+                  height: 1.0,
+                ),
+              ),
+            ),
+            const Text(
+              'detik',
+              style: TextStyle(
+                color: Color(0xFF6C757D),
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 32),
+            // Side-by-side buttons
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: _showEditRestTimeDialog,
+                  icon: const Icon(Icons.edit_calendar_rounded, color: restGreen, size: 20),
+                  label: const Text(
+                    'Edit Waktu',
+                    style: TextStyle(
+                      color: restGreen,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: restGreen, width: 1.5),
+                    backgroundColor: Colors.white.withValues(alpha: 0.9),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                OutlinedButton(
+                  onPressed: () => _addRestSeconds(20),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: restGreen, width: 1.5),
+                    backgroundColor: Colors.white.withValues(alpha: 0.9),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '+ 20s',
+                    style: TextStyle(
+                      color: restGreen,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 36),
+            _bigButton(
+              'SKIP ISTIRAHAT →',
+              restGreen,
+              _skipRest,
+              textColor: Colors.white,
+            ),
+          ],
+        ),
       ),
     );
   }
