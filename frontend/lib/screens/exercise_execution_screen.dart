@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../utils/calorie_calculator.dart';
+import '../../services/history_service.dart';
 
 // ── Data Models ──────────────────────────────────────────────────────────────
 
@@ -40,6 +42,8 @@ class ExerciseExecutionScreen extends StatefulWidget {
   final Color themeColor;
   /// Jumlah item pertama yang merupakan warmup (0 = tidak ada warmup)
   final int warmupCount;
+  final String workoutLevel;
+  final int durationMinutes;
 
   const ExerciseExecutionScreen({
     super.key,
@@ -47,6 +51,8 @@ class ExerciseExecutionScreen extends StatefulWidget {
     required this.workoutTitle,
     this.themeColor = _accent,
     this.warmupCount = 0,
+    this.workoutLevel = 'beginner',
+    this.durationMinutes = 15,
   });
 
   @override
@@ -323,6 +329,8 @@ class _ExerciseExecutionScreenState extends State<ExerciseExecutionScreen>
         workoutTitle: widget.workoutTitle,
         totalExercises: widget.exercises.length,
         themeColor: widget.themeColor,
+        workoutLevel: widget.workoutLevel,
+        durationMinutes: widget.durationMinutes,
         onDone: () => Navigator.of(context)
           ..pop()
           ..pop(),
@@ -1306,12 +1314,16 @@ class _CompletionDialog extends StatefulWidget {
   final String workoutTitle;
   final int totalExercises;
   final Color themeColor;
+  final String workoutLevel;
+  final int durationMinutes;
   final VoidCallback onDone;
 
   const _CompletionDialog({
     required this.workoutTitle,
     required this.totalExercises,
     required this.themeColor,
+    required this.workoutLevel,
+    required this.durationMinutes,
     required this.onDone,
   });
 
@@ -1321,15 +1333,28 @@ class _CompletionDialog extends StatefulWidget {
 
 class _CompletionDialogState extends State<_CompletionDialog> {
   bool _isSaving = false;
+  late final int _caloriesBurned;
+
+  @override
+  void initState() {
+    super.initState();
+    _caloriesBurned = CalorieCalculator.calculateCalories(
+      durationMinutes: widget.durationMinutes,
+      level: widget.workoutLevel,
+    );
+  }
 
   Future<void> _saveWorkoutHistory() async {
-    // Simulasi delay proses simpan
-    await Future.delayed(const Duration(seconds: 2));
-
-    debugPrint('--- Workout Summary ---');
-    debugPrint('Title: ${widget.workoutTitle}');
-    debugPrint('Total Latihan: ${widget.totalExercises}');
-    debugPrint('-----------------------');
+    try {
+      final ok = await HistoryService().addHistory(
+        workoutName: widget.workoutTitle,
+        durationMinutes: widget.durationMinutes,
+        caloriesBurned: _caloriesBurned,
+      );
+      debugPrint('Workout history save status: $ok');
+    } catch (e) {
+      debugPrint('Error saving workout history: $e');
+    }
   }
 
   @override
@@ -1364,7 +1389,8 @@ class _CompletionDialogState extends State<_CompletionDialog> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 _statChip('${widget.totalExercises}', 'Latihan', widget.themeColor),
-                _statChip('✓', 'Selesai', _green),
+                _statChip('${widget.durationMinutes}', 'Menit', const Color(0xFF6BE5FF)),
+                _statChip('$_caloriesBurned', 'kkal', const Color(0xFFFF7043)),
               ],
             ),
             const SizedBox(height: 28),

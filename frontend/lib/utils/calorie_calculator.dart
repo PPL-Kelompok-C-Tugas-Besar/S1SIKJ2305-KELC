@@ -1,14 +1,14 @@
-/// [PKCTB-383] Rumus hitung kalori berdasarkan durasi dan level workout.
-///
-/// Rumus:
-///   kalori = durasi (menit) × MET × berat badan (kg) × 3.5 / 200
-///
-/// MET (Metabolic Equivalent of Task) disesuaikan berdasarkan level:
-///   - Beginner     → MET 3.5  (latihan ringan, pemanasan)
-///   - Intermediate → MET 5.0  (latihan sedang, kardio moderat)
-///   - Advanced     → MET 8.0  (latihan berat, HIIT / angkat beban)
-///
-/// Jika berat badan tidak tersedia, digunakan default 70 kg (rata-rata).
+// [PKCTB-383] Rumus hitung kalori berdasarkan durasi dan level workout.
+//
+// Rumus:
+//   kalori = durasi (menit) × MET × berat badan (kg) × 3.5 / 200
+//
+// MET (Metabolic Equivalent of Task) disesuaikan berdasarkan level:
+//   - Beginner     → MET 3.5  (latihan ringan, pemanasan)
+//   - Intermediate → MET 5.0  (latihan sedang, kardio moderat)
+//   - Advanced     → MET 8.0  (latihan berat, HIIT / angkat beban)
+//
+// Jika berat badan tidak tersedia, digunakan default 70 kg (rata-rata).
 
 class CalorieCalculator {
   CalorieCalculator._(); // prevent instantiation

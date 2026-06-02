@@ -564,6 +564,8 @@ class _AlifWorkoutScreenState extends State<AlifWorkoutScreen>
               workoutTitle: '${cat.label} Workout',
               themeColor: cat.color,
               warmupCount: warmupItems.length,
+              workoutLevel: cat.level.name,
+              durationMinutes: cat.totalMinutes,
             ),
           ),
         )
