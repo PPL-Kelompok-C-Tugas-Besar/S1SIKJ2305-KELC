@@ -1,3 +1,4 @@
+
 # Gymbro - PPL Kelompok C
 
 # Panduan Kolaborasi Git - Proyek S1SIKJ2305-KELC
@@ -11,7 +12,7 @@ Berikut adalah instruksi setup awal dan alur kerja harian untuk pengembangan pro
 Gunakan perintah ini saat pertama kali menyiapkan repositori di lokal:
 
 ```bash
-# Lakukan Clone repositori ke mesin lokal
+# Clone repositori ke mesin lokal
 git clone https://github.com/PPL-Kelompok-C-Tugas-Besar/S1SIKJ2305-KELC.git
 
 # Masuk ke direktori proyek
