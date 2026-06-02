@@ -5,6 +5,7 @@ import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/placeholder_screens.dart';
+import 'screens/profile/profile_screen.dart';
 
 void main() {
   runApp(
@@ -30,6 +31,7 @@ class GymbroApp extends StatelessWidget {
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
         '/admin-dashboard': (_) => const AdminDashboardScreen(),
+        '/profile': (_) => const ProfileScreen(),
       },
     );
   }
