@@ -60,4 +60,30 @@ class CalorieCalculator {
 
   /// Daftar level workout yang didukung.
   static List<String> get supportedLevels => _metValues.keys.toList();
+
+  /// [PKCTB-384] Memperkirakan durasi effort (detik) dari sebuah exercise.
+  /// - Timed exercise: langsung gunakan nilainya (detik).
+  /// - Reps exercise: estimasi ~3 detik per rep.
+  static int estimateEffortSeconds({
+    required bool isTimed,
+    required int value,
+  }) {
+    if (value <= 0) return 0;
+    return isTimed ? value : value * 3;
+  }
+
+  /// [PKCTB-384] Mendistribusikan total kalori secara proporsional
+  /// ke masing-masing exercise berdasarkan effort-nya.
+  static List<int> distributeCaloriesPerExercise({
+    required int totalCalories,
+    required List<int> effortSecondsPerExercise,
+  }) {
+    final totalEffort = effortSecondsPerExercise.fold(0, (a, b) => a + b);
+    if (totalEffort == 0) {
+      return List.filled(effortSecondsPerExercise.length, 0);
+    }
+    return effortSecondsPerExercise
+        .map((s) => (totalCalories * s / totalEffort).round())
+        .toList();
+  }
 }
