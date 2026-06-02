@@ -21,4 +21,5 @@ class ApiConstants {
   static const String adminWorkouts = '$baseUrl/admin/workouts';
   static const String adminSupplements = '$baseUrl/admin/supplements';
   static const String adminExercises = '$baseUrl/admin/exercises';
+  static const String adminVouchers = '$baseUrl/admin/vouchers';
 }

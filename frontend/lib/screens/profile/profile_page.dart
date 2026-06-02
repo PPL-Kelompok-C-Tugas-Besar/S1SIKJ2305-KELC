@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/palette.dart';
 import 'weight_tracking_page.dart';
+import '../marketplace/purchase_history_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -334,6 +335,27 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: const Icon(Icons.history_rounded, color: kTextMuted),
                 label: const Text(
                   'Lihat Riwayat Berat Badan',
+                  style: TextStyle(color: kTextMuted),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Tombol Riwayat Pembelian
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const PurchaseHistoryPage()),
+                  );
+                },
+                icon: const Icon(Icons.shopping_bag_outlined, color: kTextMuted),
+                label: const Text(
+                  'Lihat Riwayat Pembelian',
                   style: TextStyle(color: kTextMuted),
                 ),
               ),

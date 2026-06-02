@@ -11,6 +11,7 @@ import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
 import '../profile/profile_page.dart';
 import '../catalogue/exercise_selection_page.dart';
+import '../marketplace/marketplace_page.dart';
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _pages = [
     _HomePage(),
     CataloguePage(),
-    _PlaceholderPage(label: 'Marketplace'),
+    MarketplacePage(),
     HistoryPage(),
     ProfilePage(),
   ];
@@ -703,16 +704,4 @@ class _WorkoutCard extends StatelessWidget {
   }
 }
 
-// ─── Placeholder tabs ─────────────────────────────────────────────────────────
-class _PlaceholderPage extends StatelessWidget {
-  const _PlaceholderPage({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(label,
-          style: const TextStyle(color: kTextMuted, fontSize: 18)),
-    );
-  }
-}
+
