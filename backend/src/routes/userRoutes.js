@@ -2,8 +2,14 @@ const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
-const { getHistory, addHistory } = require('../controllers/historyController');
-const { updateWeight, getWeightHistory } = require('../controllers/profileController');
+const { getHistory, addHistory, getTodayStats } = require('../controllers/historyController');
+const { updateWeight, getWeightHistory, updateWeeklyGoal } = require('../controllers/profileController');
+
+// GET /users/stats/today
+router.get('/stats/today', verifyToken, getTodayStats);
+
+// POST /users/weekly-goal
+router.post('/weekly-goal', verifyToken, updateWeeklyGoal);
 
 // GET /users/profile
 router.get('/profile', verifyToken, async (req, res) => {
@@ -11,7 +17,7 @@ router.get('/profile', verifyToken, async (req, res) => {
     console.log('Getting profile for user ID:', req.user.id);
     
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, date_created FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created FROM users WHERE id = ?',
       [req.user.id]
     );
     
