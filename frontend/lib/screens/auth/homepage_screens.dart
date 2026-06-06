@@ -11,6 +11,7 @@ import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
 import '../profile/profile_page.dart';
 import '../catalogue/exercise_selection_page.dart';
+import '../E-commerce/catalog_ecommerce.dart';
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _pages = [
     _HomePage(),
     CataloguePage(),
-    _PlaceholderPage(label: 'Marketplace'),
+    ShopPage(),
     HistoryPage(),
     ProfilePage(),
   ];
