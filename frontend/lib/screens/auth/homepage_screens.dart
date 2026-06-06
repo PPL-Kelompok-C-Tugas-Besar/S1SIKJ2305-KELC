@@ -913,15 +913,15 @@ class _WorkoutCard extends StatelessWidget {
 }
 
 // ─── Placeholder tabs ─────────────────────────────────────────────────────────
-class _PlaceholderPage extends StatelessWidget {
-  const _PlaceholderPage({required this.label});
-  final String label;
+// class _PlaceholderPage extends StatelessWidget {
+//   const _PlaceholderPage({required this.label});
+//   final String label;
 
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(label,
-          style: const TextStyle(color: kTextMuted, fontSize: 18)),
-    );
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     return Center(
+//       child: Text(label,
+//           style: const TextStyle(color: kTextMuted, fontSize: 18)),
+//     );
+//   }
+// }

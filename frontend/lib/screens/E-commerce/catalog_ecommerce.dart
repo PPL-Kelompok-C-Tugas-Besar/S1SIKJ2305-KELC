@@ -124,6 +124,7 @@ class _ShopPageState extends State<ShopPage> {
 
       // Skip API if manual mode
       if (widget.manualProducts != null) {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil menambahkan ke cart (Mock Mode)')));
         return;
       }
@@ -322,7 +323,7 @@ class _ShopPageState extends State<ShopPage> {
                                     borderRadius: BorderRadius.circular(16.0),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
+                                        color: Colors.black.withValues(alpha: 0.2),
                                         blurRadius: 10,
                                         offset: const Offset(0, 5),
                                       ),

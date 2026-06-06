@@ -166,7 +166,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     borderRadius: BorderRadius.circular(20.0),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.accentColor.withOpacity(0.05),
+                        color: AppColors.accentColor.withValues(alpha: 0.05),
                         blurRadius: 30,
                         spreadRadius: 5,
                       ),
@@ -222,7 +222,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                       decoration: BoxDecoration(
                         color: AppColors.cardColor,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
+                        border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -230,7 +230,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                           const Icon(Icons.scale_outlined, size: 14, color: AppColors.textSecondary),
                           const SizedBox(width: 6),
                           Text(
-                            '${widget.weightGrams! >= 1000 ? '${(widget.weightGrams! / 1000).toStringAsFixed(widget.weightGrams! % 1000 == 0 ? 0 : 1)} kg' : '${widget.weightGrams} g'}',
+                            widget.weightGrams! >= 1000 ? '${(widget.weightGrams! / 1000).toStringAsFixed(widget.weightGrams! % 1000 == 0 ? 0 : 1)} kg' : '${widget.weightGrams} g',
                             style: const TextStyle(
                               color: AppColors.textSecondary,
                               fontSize: 13,
@@ -255,7 +255,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                     decoration: BoxDecoration(
                       color: AppColors.cardColor,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.textSecondary.withOpacity(0.3)),
+                      border: Border.all(color: AppColors.textSecondary.withValues(alpha: 0.3)),
                     ),
                     child: IconButton(
                       onPressed: _decrement,
@@ -328,7 +328,7 @@ class _ProductDetailPageState extends State<ProductDetailPage> {
                         foregroundColor: Colors.black, // High contrast text on neon background
                         padding: const EdgeInsets.symmetric(vertical: 18.0),
                         elevation: 8,
-                        shadowColor: AppColors.accentColor.withOpacity(0.3),
+                        shadowColor: AppColors.accentColor.withValues(alpha: 0.3),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12.0),
                         ),

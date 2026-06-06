@@ -122,7 +122,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: AppColors.accentColor.withOpacity(0.15),
+                      color: AppColors.accentColor.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(Icons.check_circle_rounded,
@@ -280,7 +280,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         color: AppColors.cardColor,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: AppColors.accentColor.withOpacity(0.3),
+                          color: AppColors.accentColor.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -289,7 +289,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.accentColor.withOpacity(0.15),
+                              color: AppColors.accentColor.withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(Icons.location_on_rounded,
@@ -365,7 +365,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -402,10 +402,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.accentColor,
                         foregroundColor: Colors.black,
-                        disabledBackgroundColor: AppColors.textSecondary.withOpacity(0.4),
+                        disabledBackgroundColor: AppColors.textSecondary.withValues(alpha: 0.4),
                         padding: const EdgeInsets.symmetric(vertical: 18.0),
                         elevation: 8,
-                        shadowColor: AppColors.accentColor.withOpacity(0.3),
+                        shadowColor: AppColors.accentColor.withValues(alpha: 0.3),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16.0),
                         ),
@@ -470,7 +470,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       ? Image.network(
                           item['image'],
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
+                          errorBuilder: (_, _, _) => const Center(
                             child: Icon(Icons.fitness_center,
                                 color: AppColors.textSecondary),
                           ),
@@ -478,7 +478,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       : Image.asset(
                           item['image'] ?? 'assets/whey.png',
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Center(
+                          errorBuilder: (_, _, _) => const Center(
                             child: Icon(Icons.fitness_center,
                                 color: AppColors.textSecondary),
                           ),
@@ -605,7 +605,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? AppColors.accentColor.withOpacity(0.15)
+                    ? AppColors.accentColor.withValues(alpha: 0.15)
                     : AppColors.bgColor,
                 borderRadius: BorderRadius.circular(12),
               ),
