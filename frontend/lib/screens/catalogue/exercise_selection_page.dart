@@ -27,17 +27,28 @@ class ExerciseSelectionPage extends StatefulWidget {
 
 class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
   final ExerciseService _exerciseService = ExerciseService();
+  final TextEditingController _searchController = TextEditingController();
   final HistoryService _historyService = HistoryService();
   final CalorieService _calorieService = CalorieService();
 
   List<Exercise> _exercises = [];
   bool _isLoading = true;
   bool _hasError = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadExercises();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadExercises() async {
@@ -146,8 +157,22 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
     }
   }
 
+  List<Exercise> get _filteredExercises {
+    final query = _searchQuery.toLowerCase();
+    if (query.isEmpty) return _exercises;
+
+    return _exercises.where((exercise) {
+      return exercise.name.toLowerCase().contains(query) ||
+          exercise.workoutTitle.toLowerCase().contains(query) ||
+          exercise.repsOrDuration.toLowerCase().contains(query) ||
+          exercise.instructions.toLowerCase().contains(query);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final filteredExercises = _filteredExercises;
+
     return Scaffold(
       backgroundColor: kBg,
       bottomNavigationBar: _isLoading || _hasError || _exercises.isEmpty
@@ -226,6 +251,8 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 24),
+                      _SearchField(controller: _searchController),
                     ],
                   ),
                 ),
@@ -254,6 +281,14 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                     message: 'No database exercises match this workout option.',
                   ),
                 )
+              else if (filteredExercises.isEmpty)
+                const SliverFillRemaining(
+                  child: _MessageState(
+                    icon: Icons.search_off_rounded,
+                    title: 'No matches',
+                    message: 'Try another exercise keyword.',
+                  ),
+                )
               else
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(
@@ -265,17 +300,54 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final exercise = _exercises[index];
+                        final exercise = filteredExercises[index];
                         return _ExerciseCard(
                           exercise: exercise,
                         );
                       },
-                      childCount: _exercises.length,
+                      childCount: filteredExercises.length,
                     ),
                   ),
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(color: kTextPrimary),
+      decoration: InputDecoration(
+        hintText: 'Search exercises',
+        hintStyle: const TextStyle(color: kTextMuted),
+        prefixIcon: const Icon(Icons.search_rounded, color: kTextMuted),
+        filled: true,
+        fillColor: kCard,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white10),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: kAccent),
         ),
       ),
     );
