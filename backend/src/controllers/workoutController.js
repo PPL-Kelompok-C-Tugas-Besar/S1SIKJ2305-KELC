@@ -1,5 +1,18 @@
 const { pool } = require('../config/db');
 
+const ensureSavedWorkoutsTable = async () => {
+  await pool.execute(`
+    CREATE TABLE IF NOT EXISTS saved_workouts (
+      user_id VARCHAR(255) NOT NULL,
+      workout_id VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id, workout_id),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (workout_id) REFERENCES workouts(id) ON DELETE CASCADE
+    )
+  `);
+};
+
 exports.getWorkouts = async (req, res) => {
   try {
     const { location, category, fitness_goal } = req.query;
@@ -70,6 +83,74 @@ exports.getWorkouts = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Error fetching workouts',
+    });
+  }
+};
+
+exports.getSavedWorkouts = async (req, res) => {
+  try {
+    await ensureSavedWorkoutsTable();
+
+    const [rows] = await pool.execute(
+      'SELECT workout_id FROM saved_workouts WHERE user_id = ? ORDER BY created_at DESC',
+      [req.user.id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: rows.map((row) => row.workout_id),
+    });
+  } catch (error) {
+    console.error('Get saved workouts error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve saved workouts',
+    });
+  }
+};
+
+exports.saveWorkout = async (req, res) => {
+  try {
+    await ensureSavedWorkoutsTable();
+
+    const { id } = req.params;
+    await pool.execute(
+      'INSERT IGNORE INTO saved_workouts (user_id, workout_id) VALUES (?, ?)',
+      [req.user.id, id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Workout saved',
+    });
+  } catch (error) {
+    console.error('Save workout error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to save workout',
+    });
+  }
+};
+
+exports.unsaveWorkout = async (req, res) => {
+  try {
+    await ensureSavedWorkoutsTable();
+
+    const { id } = req.params;
+    await pool.execute(
+      'DELETE FROM saved_workouts WHERE user_id = ? AND workout_id = ?',
+      [req.user.id, id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Workout removed from saved list',
+    });
+  } catch (error) {
+    console.error('Unsave workout error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to remove saved workout',
     });
   }
 };

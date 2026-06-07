@@ -9,6 +9,7 @@ class Workout {
   final int exerciseCount;
   final String equipmentSummary;
   final String? fitnessGoal;
+  final bool isSaved;
   final double? caloriesBurned;
 
   const Workout({
@@ -21,6 +22,7 @@ class Workout {
     this.durationMinutes,
     required this.exerciseCount,
     required this.equipmentSummary,
+    this.isSaved = false,
     this.fitnessGoal,
     this.caloriesBurned,
   });
@@ -36,6 +38,7 @@ class Workout {
     int? exerciseCount,
     String? equipmentSummary,
     String? fitnessGoal,
+    bool? isSaved,
     double? caloriesBurned,
   }) {
     return Workout(
@@ -49,6 +52,7 @@ class Workout {
       exerciseCount: exerciseCount ?? this.exerciseCount,
       equipmentSummary: equipmentSummary ?? this.equipmentSummary,
       fitnessGoal: fitnessGoal ?? this.fitnessGoal,
+      isSaved: isSaved ?? this.isSaved,
       caloriesBurned: caloriesBurned ?? this.caloriesBurned,
     );
   }
