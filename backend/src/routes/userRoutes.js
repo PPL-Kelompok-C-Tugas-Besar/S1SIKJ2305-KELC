@@ -18,7 +18,7 @@ router.get('/profile', verifyToken, async (req, res) => {
     console.log('Getting profile for user ID:', req.user.id);
     
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created, photo_url FROM users WHERE id = ?',
       [req.user.id]
     );
     
@@ -113,6 +113,31 @@ router.get('/history', verifyToken, getHistory);
 
 // POST /users/history
 router.post('/history', verifyToken, addHistory);
+
+// PUT /users/photo
+router.put('/photo', verifyToken, async (req, res) => {
+  const { photo_base64 } = req.body;
+
+  if (!photo_base64) {
+    return res.status(400).json({ success: false, message: 'Foto wajib diisi' });
+  }
+
+  const sizeInBytes = Buffer.byteLength(photo_base64, 'utf8');
+  if (sizeInBytes > 2 * 1024 * 1024) {
+    return res.status(400).json({ success: false, message: 'Ukuran foto maksimal 2MB' });
+  }
+
+  try {
+    await pool.execute(
+      'UPDATE users SET photo_url = ? WHERE id = ?',
+      [photo_base64, req.user.id]
+    );
+    return res.status(200).json({ success: true, message: 'Foto profil berhasil diperbarui' });
+  } catch (err) {
+    console.error('Update photo error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+});
 
 // PUT /users/password
 router.put('/password', verifyToken, async (req, res) => {
