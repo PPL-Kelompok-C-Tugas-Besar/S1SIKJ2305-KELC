@@ -4,8 +4,11 @@ import 'providers/auth_provider.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
-import 'screens/auth/placeholder_screens.dart';
-import 'screens/profile/profile_screen.dart';
+import 'screens/auth/homepage_screens.dart';
+import 'screens/E-commerce/catalog_ecommerce.dart';
+import 'screens/auth/onboarding_page.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'screens/admin/admin_dashboard_screen.dart';
 
 void main() {
   runApp(
@@ -31,7 +34,7 @@ class GymbroApp extends StatelessWidget {
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const HomeScreen(),
         '/admin-dashboard': (_) => const AdminDashboardScreen(),
-        '/profile': (_) => const ProfileScreen(),
+        '/shop': (_) => const ShopPage(),
       },
     );
   }

@@ -3,12 +3,20 @@ const router = express.Router();
 const bcrypt = require('bcrypt');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
+const { getHistory, addHistory, getTodayStats } = require('../controllers/historyController');
+const { updateWeight, getWeightHistory, updateWeeklyGoal } = require('../controllers/profileController');
+
+// GET /users/stats/today
+router.get('/stats/today', verifyToken, getTodayStats);
+
+// POST /users/weekly-goal
+router.post('/weekly-goal', verifyToken, updateWeeklyGoal);
 
 // GET /users/profile
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, date_created FROM USERS WHERE id = ?',
+      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created FROM users WHERE id = ?',
       [req.user.id]
     );
     if (rows.length === 0) {
