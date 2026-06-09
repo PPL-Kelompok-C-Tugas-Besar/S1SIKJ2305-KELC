@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 import '../../utils/palette.dart';
 import 'weight_tracking_page.dart';
+import 'change_password_screen.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -335,6 +336,31 @@ class _ProfilePageState extends State<ProfilePage> {
                 label: const Text(
                   'Lihat Riwayat Berat Badan',
                   style: TextStyle(color: kTextMuted),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Tombol Ubah Password
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const ChangePasswordScreen()),
+                  );
+                },
+                icon: const Icon(Icons.lock_outline_rounded),
+                label: const Text('Ubah Password'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kTextPrimary,
+                  side: const BorderSide(color: Colors.white24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
             ),
