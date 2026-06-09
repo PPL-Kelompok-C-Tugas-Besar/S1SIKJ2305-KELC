@@ -9,6 +9,7 @@ class UserModel {
   final double? targetWeight;
   final bool onboardingCompleted;
   final int weeklyWorkoutGoal;
+  final String? photoUrl;
 
   UserModel({
     required this.id,
@@ -21,6 +22,7 @@ class UserModel {
     this.targetWeight,
     this.onboardingCompleted = false,
     this.weeklyWorkoutGoal = 3,
+    this.photoUrl,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +37,7 @@ class UserModel {
       targetWeight: _parseDouble(json['target_weight']),
       onboardingCompleted: json['onboarding_completed'] == 1 || json['onboarding_completed'] == true,
       weeklyWorkoutGoal: json['weekly_workout_goal'] ?? 3,
+      photoUrl: json['photo_url'],
     );
   }
 
@@ -49,6 +52,7 @@ class UserModel {
     double? targetWeight,
     bool? onboardingCompleted,
     int? weeklyWorkoutGoal,
+    String? photoUrl,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -61,6 +65,7 @@ class UserModel {
       targetWeight: targetWeight ?? this.targetWeight,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       weeklyWorkoutGoal: weeklyWorkoutGoal ?? this.weeklyWorkoutGoal,
+      photoUrl: photoUrl ?? this.photoUrl,
     );
   }
 

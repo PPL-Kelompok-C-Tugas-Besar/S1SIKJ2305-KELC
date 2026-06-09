@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -17,6 +19,37 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final AuthService _authService = AuthService();
   bool _isSubmitting = false;
+  bool _isUploadingPhoto = false;
+
+  Future<void> _pickAndUploadPhoto() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+      maxWidth: 400,
+      maxHeight: 400,
+    );
+    if (picked == null) return;
+
+    setState(() => _isUploadingPhoto = true);
+
+    final bytes = await picked.readAsBytes();
+    final base64Photo = base64Encode(bytes);
+
+    final result = await context.read<AuthProvider>().uploadPhoto(base64Photo);
+
+    setState(() => _isUploadingPhoto = false);
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message'] ?? (result['success'] == true
+            ? 'Foto berhasil diperbarui'
+            : 'Gagal upload foto')),
+        backgroundColor: result['success'] == true ? Colors.green : Colors.redAccent,
+      ),
+    );
+  }
 
   void _showWeightDialog(BuildContext context) {
     final TextEditingController weightController = TextEditingController();
@@ -222,10 +255,44 @@ class _ProfilePageState extends State<ProfilePage> {
         child: Column(
           children: [
             // Header Profile
-            const CircleAvatar(
-              radius: 50,
-              backgroundColor: kCard,
-              child: Icon(Icons.person, size: 50, color: kTextMuted),
+            Stack(
+              children: [
+                CircleAvatar(
+                  radius: 50,
+                  backgroundColor: kCard,
+                  backgroundImage: user.photoUrl != null
+                      ? MemoryImage(base64Decode(user.photoUrl!))
+                      : null,
+                  child: user.photoUrl == null
+                      ? const Icon(Icons.person, size: 50, color: kTextMuted)
+                      : null,
+                ),
+                Positioned(
+                  bottom: 0,
+                  right: 0,
+                  child: GestureDetector(
+                    onTap: _isUploadingPhoto ? null : _pickAndUploadPhoto,
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: kAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: kBg, width: 2),
+                      ),
+                      child: _isUploadingPhoto
+                          ? const Padding(
+                              padding: EdgeInsets.all(6),
+                              child: CircularProgressIndicator(
+                                color: kBg,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.camera_alt, size: 16, color: kBg),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Text(

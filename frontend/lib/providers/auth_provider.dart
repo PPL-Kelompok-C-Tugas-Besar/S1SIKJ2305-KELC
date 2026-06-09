@@ -117,6 +117,15 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<String, dynamic>> uploadPhoto(String base64Photo) async {
+    final result = await _authService.uploadPhoto(base64Photo);
+    if (result['success'] == true) {
+      _user = _user?.copyWith(photoUrl: base64Photo);
+      notifyListeners();
+    }
+    return result;
+  }
+
   Future<Map<String, dynamic>> changePassword({
     required String oldPassword,
     required String newPassword,
