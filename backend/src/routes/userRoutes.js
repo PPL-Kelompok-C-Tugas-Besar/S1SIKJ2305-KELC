@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt');
 const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
 const { getHistory, addHistory, getTodayStats } = require('../controllers/historyController');
@@ -112,5 +113,46 @@ router.get('/history', verifyToken, getHistory);
 
 // POST /users/history
 router.post('/history', verifyToken, addHistory);
+
+// PUT /users/password
+router.put('/password', verifyToken, async (req, res) => {
+  const { old_password, new_password, confirm_password } = req.body;
+
+  if (!old_password || !new_password || !confirm_password) {
+    return res.status(400).json({ success: false, message: 'Semua field wajib diisi' });
+  }
+  if (new_password.length < 6) {
+    return res.status(400).json({ success: false, message: 'Password baru minimal 6 karakter' });
+  }
+  if (new_password !== confirm_password) {
+    return res.status(400).json({ success: false, message: 'Konfirmasi password tidak cocok' });
+  }
+
+  try {
+    const [rows] = await pool.execute(
+      'SELECT password FROM users WHERE id = ?',
+      [req.user.id]
+    );
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
+    }
+
+    const isMatch = await bcrypt.compare(old_password, rows[0].password);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: 'Password lama tidak sesuai' });
+    }
+
+    const hashedPassword = await bcrypt.hash(new_password, 10);
+    await pool.execute(
+      'UPDATE users SET password = ? WHERE id = ?',
+      [hashedPassword, req.user.id]
+    );
+
+    return res.status(200).json({ success: true, message: 'Password berhasil diubah' });
+  } catch (err) {
+    console.error('Change password error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+});
 
 module.exports = router;

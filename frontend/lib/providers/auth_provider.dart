@@ -117,6 +117,18 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<String, dynamic>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    return await _authService.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    );
+  }
+
   Future<bool> completeOnboarding(Map<String, dynamic> onboardingData) async {
     _setLoading(true);
     _clearError();
