@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -63,6 +64,22 @@ class ProfileScreen extends StatelessWidget {
                             : 'Belum diisi',
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 12),
+                  ListTile(
+                    leading: const Icon(Icons.lock_outline),
+                    title: const Text('Ubah Password'),
+                    trailing: const Icon(Icons.chevron_right),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                    ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ChangePasswordScreen()),
+                      );
+                    },
                   ),
                 ],
               ),
