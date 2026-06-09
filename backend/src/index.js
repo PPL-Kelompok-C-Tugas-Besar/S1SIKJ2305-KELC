@@ -9,9 +9,15 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Gymbro API is running' });
 });
+
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 
 const start = async () => {
   await testConnection();
