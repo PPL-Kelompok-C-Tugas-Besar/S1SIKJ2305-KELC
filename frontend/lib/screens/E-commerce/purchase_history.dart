@@ -1,0 +1,839 @@
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
+class AppColors {
+  static const Color bgColor = Color(0xFF1A1A1A);
+  static const Color cardColor = Color(0xFF292929);
+  static const Color accentColor = Color(0xFFCCFF00);
+  static const Color textPrimary = Colors.white;
+  static const Color textSecondary = Color(0xFF9E9E9E);
+}
+
+class PurchaseHistoryPage extends StatefulWidget {
+  const PurchaseHistoryPage({super.key});
+
+  @override
+  State<PurchaseHistoryPage> createState() => _PurchaseHistoryPageState();
+}
+
+class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
+  String _selectedFilter = 'Semua';
+  final List<String> _filters = ['Semua', 'Pending', 'Diproses', 'Selesai', 'Dibatalkan'];
+
+  // Mock data representing standard database orders & order_items structure
+  final List<Map<String, dynamic>> _mockOrders = [
+    {
+      'id': 'INV/20260610/0089',
+      'date': '10 Juni 2026, 20:45',
+      'status': 'Pending',
+      'payment_method': 'QRIS',
+      'shipping_address': 'Nadya, +62 123456789, Jl. Merdeka Belajar No. 99 Bandung, Jawa Barat, 40111',
+      'shipping_cost': 50000,
+      'items': [
+        {
+          'product_id': 1,
+          'name': 'Optimum Nutrition Whey Protein',
+          'image': 'assets/whey.png',
+          'quantity': 2,
+          'price': 450000,
+        },
+        {
+          'product_id': 2,
+          'name': 'Creatine Monohydrate',
+          'image': 'assets/creatine.png',
+          'quantity': 1,
+          'price': 350000,
+        }
+      ],
+    },
+    {
+      'id': 'INV/20260608/0042',
+      'date': '08 Juni 2026, 14:15',
+      'status': 'Diproses',
+      'payment_method': 'QRIS',
+      'shipping_address': 'Nadya, +62 123456789, Jl. Merdeka Belajar No. 99 Bandung, Jawa Barat, 40111',
+      'shipping_cost': 50000,
+      'items': [
+        {
+          'product_id': 3,
+          'name': 'Pre-Workout Cafein Maximum',
+          'image': 'assets/preworkout.png',
+          'quantity': 1,
+          'price': 280000,
+        }
+      ],
+    },
+    {
+      'id': 'INV/20260605/0017',
+      'date': '05 Juni 2026, 09:30',
+      'status': 'Selesai',
+      'payment_method': 'COD',
+      'shipping_address': 'Samuel Armando, +62 876543210, Kost Barokah No. 5, Coblong, Bandung, Jawa Barat, 40135',
+      'shipping_cost': 50000,
+      'items': [
+        {
+          'product_id': 2,
+          'name': 'Creatine Monohydrate',
+          'image': 'assets/creatine.png',
+          'quantity': 1,
+          'price': 350000,
+        }
+      ],
+    },
+    {
+      'id': 'INV/20260601/0005',
+      'date': '01 Juni 2026, 11:20',
+      'status': 'Dibatalkan',
+      'payment_method': 'QRIS',
+      'shipping_address': 'Nadya, +62 123456789, Jl. Merdeka Belajar No. 99 Bandung, Jawa Barat, 40111',
+      'shipping_cost': 50000,
+      'items': [
+        {
+          'product_id': 4,
+          'name': 'BCAA Powder Recovery',
+          'image': 'assets/bcaa.png',
+          'quantity': 3,
+          'price': 190000,
+        }
+      ],
+    },
+  ];
+
+  List<Map<String, dynamic>> get _filteredOrders {
+    if (_selectedFilter == 'Semua') {
+      return _mockOrders;
+    }
+    return _mockOrders.where((order) => order['status'] == _selectedFilter).toList();
+  }
+
+  String _formatRupiah(int price) {
+    final formatter = NumberFormat.currency(
+      locale: 'id_ID',
+      symbol: 'Rp ',
+      decimalDigits: 0,
+    );
+    return formatter.format(price);
+  }
+
+  int _calculateOrderTotal(Map<String, dynamic> order) {
+    int subtotal = 0;
+    final List<dynamic> items = order['items'];
+    for (var item in items) {
+      subtotal += (item['price'] as int) * (item['quantity'] as int);
+    }
+    return subtotal + (order['shipping_cost'] as int);
+  }
+
+  int _calculateOrderSubtotal(Map<String, dynamic> order) {
+    int subtotal = 0;
+    final List<dynamic> items = order['items'];
+    for (var item in items) {
+      subtotal += (item['price'] as int) * (item['quantity'] as int);
+    }
+    return subtotal;
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case 'Pending':
+        return Colors.orangeAccent;
+      case 'Diproses':
+        return Colors.blueAccent;
+      case 'Selesai':
+        return AppColors.accentColor;
+      case 'Dibatalkan':
+        return Colors.redAccent;
+      default:
+        return AppColors.textSecondary;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final orders = _filteredOrders;
+
+    return Scaffold(
+      backgroundColor: AppColors.bgColor,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'BELANJA',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            Text(
+              'RIWAYAT TRANSAKSI',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                fontSize: 22,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
+        titleSpacing: 0,
+      ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Filter horizontal row
+            Container(
+              height: 60,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: _filters.length,
+                separatorBuilder: (context, index) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final filter = _filters[index];
+                  final isSelected = _selectedFilter == filter;
+                  return ChoiceChip(
+                    label: Text(
+                      filter.toUpperCase(),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                        color: isSelected ? Colors.black : AppColors.textPrimary,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                    selected: isSelected,
+                    onSelected: (selected) {
+                      if (selected) {
+                        setState(() {
+                          _selectedFilter = filter;
+                        });
+                      }
+                    },
+                    selectedColor: AppColors.accentColor,
+                    backgroundColor: AppColors.cardColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isSelected ? AppColors.accentColor : Colors.white.withValues(alpha: 0.05),
+                        width: 1,
+                      ),
+                    ),
+                    showCheckmark: false,
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Order lists
+            Expanded(
+              child: orders.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white10),
+                            ),
+                            child: const Icon(
+                              Icons.receipt_long_outlined,
+                              color: AppColors.textSecondary,
+                              size: 56,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Text(
+                            'Belum Ada Riwayat Belanja',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Status filter: $_selectedFilter.\nYuk, belanja suplemen kesehatan Anda sekarang!',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 28),
+                          ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accentColor,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 4,
+                            ),
+                            child: const Text(
+                              'BELANJA SEKARANG',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: orders.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 16),
+                      itemBuilder: (context, index) {
+                        final order = orders[index];
+                        final items = order['items'] as List<Map<String, dynamic>>;
+                        final firstItem = items.first;
+                        final totalItems = items.fold<int>(0, (sum, item) => sum + (item['quantity'] as int));
+                        final totalPayment = _calculateOrderTotal(order);
+
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.cardColor,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.05),
+                              width: 1,
+                            ),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => _showOrderDetailBottomSheet(context, order),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Invoice ID and Status Row
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            order['id'],
+                                            style: const TextStyle(
+                                              color: AppColors.textPrimary,
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.bold,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            order['date'],
+                                            style: const TextStyle(
+                                              color: AppColors.textSecondary,
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                        decoration: BoxDecoration(
+                                          color: _getStatusColor(order['status']).withValues(alpha: 0.12),
+                                          borderRadius: BorderRadius.circular(8),
+                                          border: Border.all(
+                                            color: _getStatusColor(order['status']),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          order['status'].toUpperCase(),
+                                          style: TextStyle(
+                                            color: _getStatusColor(order['status']),
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w900,
+                                            letterSpacing: 0.8,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12.0),
+                                    child: Divider(color: Colors.white10, height: 1),
+                                  ),
+
+                                  // First Product Info
+                                  Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      // Product Image Thumbnail
+                                      Container(
+                                        width: 50,
+                                        height: 50,
+                                        decoration: BoxDecoration(
+                                          color: AppColors.bgColor,
+                                          borderRadius: BorderRadius.circular(10),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(10),
+                                          child: firstItem['image'].toString().startsWith('http')
+                                              ? Image.network(
+                                                  firstItem['image'],
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) => const Center(
+                                                    child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 20),
+                                                  ),
+                                                )
+                                              : Image.asset(
+                                                  firstItem['image'],
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error, stackTrace) => const Center(
+                                                    child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 20),
+                                                  ),
+                                                ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 14),
+
+                                      // Product details
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              firstItem['name'],
+                                              style: const TextStyle(
+                                                color: AppColors.textPrimary,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 14,
+                                              ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '${firstItem['quantity']} barang x ${_formatRupiah(firstItem['price'])}',
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  // More Items hint
+                                  if (items.length > 1) ...[
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '+ ${items.length - 1} barang lainnya',
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12,
+                                        fontStyle: FontStyle.italic,
+                                      ),
+                                    ),
+                                  ],
+
+                                  const Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 12.0),
+                                    child: Divider(color: Colors.white10, height: 1),
+                                  ),
+
+                                  // Summary & Total
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Total ($totalItems Barang)',
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatRupiah(totalPayment),
+                                        style: const TextStyle(
+                                          color: AppColors.accentColor,
+                                          fontWeight: FontWeight.w900,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showOrderDetailBottomSheet(BuildContext context, Map<String, dynamic> order) {
+    final items = order['items'] as List<Map<String, dynamic>>;
+    final subtotal = _calculateOrderSubtotal(order);
+    final totalPayment = _calculateOrderTotal(order);
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          maxChildSize: 0.9,
+          minChildSize: 0.5,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Handle indicator
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[700],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Title header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'DETAIL TRANSAKSI',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(order['status']).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: _getStatusColor(order['status']),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          order['status'].toUpperCase(),
+                          style: TextStyle(
+                            color: _getStatusColor(order['status']),
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    order['id'],
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    'Dibuat pada: ${order['date']}',
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(color: Colors.white10, height: 1),
+                  const SizedBox(height: 16),
+
+                  // Shipping Address
+                  const Text(
+                    'ALAMAT PENGIRIMAN',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Icon(Icons.location_on_rounded, color: AppColors.accentColor, size: 20),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            order['shipping_address'],
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Products List
+                  const Text(
+                    'RINCIAN PRODUK',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ListView.separated(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: items.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      final item = items[index];
+                      return Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: AppColors.bgColor,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: item['image'].toString().startsWith('http')
+                                    ? Image.network(
+                                        item['image'],
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => const Center(
+                                          child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 20),
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        item['image'],
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) => const Center(
+                                          child: Icon(Icons.fitness_center, color: AppColors.textSecondary, size: 20),
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item['name'],
+                                    style: const TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'x${item['quantity']}',
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                      Text(
+                                        _formatRupiah(item['price'] * (item['quantity'] as int)),
+                                        style: const TextStyle(
+                                          color: AppColors.accentColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Payment Details
+                  const Text(
+                    'RINCIAN PEMBAYARAN',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Metode Pembayaran',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            ),
+                            Text(
+                              order['payment_method'],
+                              style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Subtotal',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            ),
+                            Text(
+                              _formatRupiah(subtotal),
+                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Ongkos Kirim',
+                              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                            ),
+                            Text(
+                              _formatRupiah(order['shipping_cost']),
+                              style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12.0),
+                          child: Divider(color: Colors.white10, height: 1),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Pembayaran',
+                              style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontSize: 14),
+                            ),
+                            Text(
+                              _formatRupiah(totalPayment),
+                              style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.w900, fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Close button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.accentColor,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'TUTUP',
+                        style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+}

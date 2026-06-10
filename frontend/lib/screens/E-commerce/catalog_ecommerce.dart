@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'detailcatalog_ecommerce.dart';
 import 'cart_ecommerce.dart';
+import 'purchase_history.dart';
 import '../../services/auth_service.dart';
 
 class AppColors {
@@ -242,7 +243,14 @@ class _ShopPageState extends State<ShopPage> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.receipt_long_outlined, color: AppColors.textPrimary),
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PurchaseHistoryPage(),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),
