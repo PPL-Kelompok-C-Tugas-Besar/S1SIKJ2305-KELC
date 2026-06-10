@@ -83,6 +83,9 @@ const start = async () => {
     const { runPhotoMigration } = require('./config/migrate_photo');
     await runPhotoMigration();
 
+    const { runAddressesMigration } = require('./config/migrate_addresses');
+    await runAddressesMigration();
+
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
     });

@@ -5,6 +5,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
 const { getHistory, addHistory, getTodayStats } = require('../controllers/historyController');
 const { updateWeight, getWeightHistory, updateWeeklyGoal } = require('../controllers/profileController');
+const { getAddresses, addAddress, updateAddress, deleteAddress } = require('../controllers/addressController');
 
 // GET /users/stats/today
 router.get('/stats/today', verifyToken, getTodayStats);
@@ -113,6 +114,18 @@ router.get('/history', verifyToken, getHistory);
 
 // POST /users/history
 router.post('/history', verifyToken, addHistory);
+
+// GET /users/addresses
+router.get('/addresses', verifyToken, getAddresses);
+
+// POST /users/addresses
+router.post('/addresses', verifyToken, addAddress);
+
+// PUT /users/addresses/:id
+router.put('/addresses/:id', verifyToken, updateAddress);
+
+// DELETE /users/addresses/:id
+router.delete('/addresses/:id', verifyToken, deleteAddress);
 
 // PUT /users/photo
 router.put('/photo', verifyToken, async (req, res) => {
