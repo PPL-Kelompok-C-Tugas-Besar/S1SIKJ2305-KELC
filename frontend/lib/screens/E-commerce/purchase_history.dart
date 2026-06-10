@@ -21,7 +21,7 @@ class PurchaseHistoryPage extends StatefulWidget {
 
 class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
   String _selectedFilter = 'Semua';
-  final List<String> _filters = ['Semua', 'Pending', 'Diproses', 'Selesai', 'Dibatalkan'];
+  final List<String> _filters = ['Semua', 'Pending', 'Diproses', 'Dikirim', 'Selesai', 'Dibatalkan'];
 
   List<Map<String, dynamic>> _orders = [];
   bool _isLoading = true;
@@ -111,6 +111,8 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
         return Colors.orangeAccent;
       case 'Diproses':
         return Colors.blueAccent;
+      case 'Dikirim':
+        return Colors.cyanAccent;
       case 'Selesai':
         return AppColors.accentColor;
       case 'Dibatalkan':
@@ -596,6 +598,30 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
                       fontSize: 12,
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () => _showOrderStatusTrackerBottomSheet(context, order),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accentColor,
+                        side: const BorderSide(color: AppColors.accentColor, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon: const Icon(Icons.local_shipping_outlined, size: 18),
+                      label: const Text(
+                        'LACAK STATUS PESANAN',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   const Divider(color: Colors.white10, height: 1),
                   const SizedBox(height: 16),
@@ -843,6 +869,257 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
           },
         );
       },
+    );
+  }
+
+  void _showOrderStatusTrackerBottomSheet(BuildContext context, Map<String, dynamic> order) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        final status = order['status'] ?? 'Pending';
+        final orderDate = order['date'] ?? '';
+
+        final isPending = status == 'Pending';
+        final isDiproses = status == 'Diproses';
+        final isDikirim = status == 'Dikirim';
+        final isSelesai = status == 'Selesai';
+        final isDibatalkan = status == 'Dibatalkan';
+
+        // Generate deterministic tracking number using numerical digits of order id
+        final rawIdDigits = order['id']?.toString().replaceAll(RegExp(r'\D'), '') ?? '12345';
+        final trackingNumber = 'GBR-$rawIdDigits-EXP';
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[700],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'STATUS PENGIRIMAN',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    constraints: const BoxConstraints(),
+                    padding: EdgeInsets.zero,
+                    splashRadius: 20,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                order['id'] ?? '',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              if (isDibatalkan) ...[
+                _buildTimelineStep(
+                  title: 'Order Dibuat',
+                  description: 'Pesanan berhasil dibuat.',
+                  time: orderDate,
+                  isActive: false,
+                  isCompleted: true,
+                  isLast: false,
+                ),
+                _buildTimelineStep(
+                  title: 'Pesanan Dibatalkan',
+                  description: 'Pesanan telah dibatalkan oleh pengguna atau sistem.',
+                  time: '',
+                  isActive: true,
+                  isCompleted: false,
+                  isLast: true,
+                  activeColor: Colors.redAccent,
+                ),
+              ] else ...[
+                _buildTimelineStep(
+                  title: 'Order Dibuat',
+                  description: 'Pesanan berhasil dibuat dan menunggu proses berikutnya.',
+                  time: orderDate,
+                  isActive: isPending,
+                  isCompleted: isDiproses || isDikirim || isSelesai,
+                  isLast: false,
+                ),
+                _buildTimelineStep(
+                  title: 'Pembayaran Dikonfirmasi',
+                  description: 'Pembayaran Anda telah sukses diverifikasi.',
+                  time: '',
+                  isActive: false,
+                  isCompleted: isDiproses || isDikirim || isSelesai,
+                  isLast: false,
+                ),
+                _buildTimelineStep(
+                  title: 'Pesanan Diproses',
+                  description: 'Penjual sedang menyiapkan suplemen kesehatan Anda.',
+                  time: '',
+                  isActive: isDiproses,
+                  isCompleted: isDikirim || isSelesai,
+                  isLast: false,
+                ),
+                _buildTimelineStep(
+                  title: 'Sedang Dikirim',
+                  description: isDikirim || isSelesai
+                      ? 'Pesanan dalam perjalanan oleh kurir ekspedisi.\nNo. Resi: $trackingNumber'
+                      : 'Pesanan akan segera diserahkan ke kurir.',
+                  time: '',
+                  isActive: isDikirim,
+                  isCompleted: isSelesai,
+                  isLast: false,
+                ),
+                _buildTimelineStep(
+                  title: 'Pesanan Selesai',
+                  description: 'Barang telah sukses sampai di alamat tujuan.',
+                  time: '',
+                  isActive: isSelesai,
+                  isCompleted: isSelesai,
+                  isLast: true,
+                ),
+              ],
+
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentColor,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'KEMBALI',
+                    style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.0),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTimelineStep({
+    required String title,
+    required String description,
+    required String time,
+    required bool isActive,
+    required bool isCompleted,
+    required bool isLast,
+    Color activeColor = AppColors.accentColor,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCompleted
+                    ? activeColor
+                    : isActive
+                        ? activeColor.withValues(alpha: 0.15)
+                        : Colors.transparent,
+                border: Border.all(
+                  color: isCompleted || isActive ? activeColor : Colors.grey[700]!,
+                  width: 2,
+                ),
+              ),
+              child: isCompleted
+                  ? Icon(Icons.check, size: 12, color: activeColor == AppColors.accentColor ? Colors.black : Colors.white)
+                  : isActive
+                      ? Center(
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: activeColor,
+                            ),
+                          ),
+                        )
+                      : null,
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 56,
+                color: isCompleted ? activeColor : Colors.grey[800],
+              ),
+          ],
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: isCompleted || isActive ? AppColors.textPrimary : AppColors.textSecondary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                description,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+              if (time.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  time,
+                  style: TextStyle(
+                    color: isCompleted || isActive ? AppColors.accentColor.withValues(alpha: 0.8) : AppColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
