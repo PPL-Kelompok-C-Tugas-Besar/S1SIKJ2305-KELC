@@ -31,13 +31,26 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool isOrdering = false;
   String _selectedPayment = 'QRIS';
 
-  // Dummy address — address management is a future sprint
-  final Map<String, String> _dummyAddress = {
-    'name': 'John Doe',
-    'phone': '+62 812-3456-7890',
-    'address': 'Jl. Agartha No. 9, Kel. Sehat, Kec. Fit',
-    'city': 'Jakarta Selatan, 12345',
-  };
+  int _selectedAddressIndex = 0;
+
+  final List<Map<String, String>> _addresses = [
+    {
+      'name': 'John Doe (Rumah)',
+      'phone': '+62 812-3456-7890',
+      'address': 'Jl. Agartha No. 9, Kel. Sehat, Kec. Fit',
+      'city': 'Jakarta Selatan',
+      'postalCode': '12345',
+    },
+    {
+      'name': 'John Doe (Kantor)',
+      'phone': '+62 812-9876-5432',
+      'address': 'Gedung Gymbro Lt. 5, Jl. Atletik No. 12',
+      'city': 'Jakarta Pusat',
+      'postalCode': '10110',
+    },
+  ];
+
+  Map<String, String> get _currentAddress => _addresses[_selectedAddressIndex];
 
   int get totalCost => widget.subtotal + widget.shippingCost;
 
@@ -72,7 +85,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             'cart_id': item['id'], // item['id'] is cart_id in cart_ecommerce
           }).toList(),
           'payment_method': _selectedPayment,
-          'shipping_address': _dummyAddress['address'],
+          'shipping_address': _currentAddress['address'],
           'total': totalCost,
         }),
       );
@@ -92,6 +105,342 @@ class _CheckoutPageState extends State<CheckoutPage> {
     } finally {
       if (mounted) setState(() => isOrdering = false);
     }
+  }
+
+  void _showAddressSelectionBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[700],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'PILIH ALAMAT',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.4,
+                    ),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: _addresses.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final address = _addresses[index];
+                        final isSelected = _selectedAddressIndex == index;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedAddressIndex = index;
+                            });
+                            setModalState(() {});
+                            Navigator.pop(context);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.cardColor,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? AppColors.accentColor : Colors.transparent,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  margin: const EdgeInsets.only(top: 2),
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: isSelected ? AppColors.accentColor : AppColors.textSecondary,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: isSelected
+                                      ? Center(
+                                          child: Container(
+                                            width: 10,
+                                            height: 10,
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.accentColor,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        address['name']!,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        address['phone']!,
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '${address['address']!}\n${address['city']!}, ${address['postalCode']!}',
+                                        style: const TextStyle(
+                                          color: AppColors.textSecondary,
+                                          fontSize: 12,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (_addresses.length > 1)
+                                  IconButton(
+                                    onPressed: () {
+                                      setState(() {
+                                        _addresses.removeAt(index);
+                                        if (_selectedAddressIndex == index) {
+                                          if (_selectedAddressIndex >= _addresses.length) {
+                                            _selectedAddressIndex = _addresses.length - 1;
+                                          }
+                                        } else if (_selectedAddressIndex > index) {
+                                          _selectedAddressIndex--;
+                                        }
+                                      });
+                                      setModalState(() {});
+                                    },
+                                    icon: const Icon(Icons.delete_outline_rounded,
+                                        color: Colors.redAccent, size: 20),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    splashRadius: 20,
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _showAddAddressDialog(context, onAdd: () {
+                          setModalState(() {});
+                        });
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accentColor,
+                        side: const BorderSide(color: AppColors.accentColor, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text(
+                        'TAMBAH ALAMAT BARU',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddAddressDialog(BuildContext context, {required VoidCallback onAdd}) {
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final addressController = TextEditingController();
+    final cityController = TextEditingController();
+    final postalCodeController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          title: const Text(
+            'Tambah Alamat Baru',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: _buildInputDecoration('Nama Lengkap / Label'),
+                    validator: (v) => v == null || v.isEmpty ? 'Nama tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneController,
+                    keyboardType: TextInputType.phone,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: _buildInputDecoration('Nomor Telepon'),
+                    validator: (v) => v == null || v.isEmpty ? 'Nomor telepon tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: addressController,
+                    maxLines: 3,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: _buildInputDecoration('Alamat Lengkap'),
+                    validator: (v) => v == null || v.isEmpty ? 'Alamat tidak boleh kosong' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: cityController,
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: _buildInputDecoration('Kota'),
+                          validator: (v) => v == null || v.isEmpty ? 'Kota wajib diisi' : null,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: TextFormField(
+                          controller: postalCodeController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: _buildInputDecoration('Kode Pos'),
+                          validator: (v) => v == null || v.isEmpty ? 'Kode pos wajib' : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actionsPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState!.validate()) {
+                  setState(() {
+                    _addresses.add({
+                      'name': nameController.text.trim(),
+                      'phone': phoneController.text.trim(),
+                      'address': addressController.text.trim(),
+                      'city': cityController.text.trim(),
+                      'postalCode': postalCodeController.text.trim(),
+                    });
+                    _selectedAddressIndex = _addresses.length - 1;
+                  });
+                  onAdd();
+                  Navigator.pop(ctx);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accentColor,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  InputDecoration _buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+      filled: true,
+      fillColor: AppColors.bgColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.accentColor, width: 1.5),
+      ),
+      errorStyle: const TextStyle(color: Colors.redAccent),
+    );
   }
 
   void _showOrderSuccessDialog() {
@@ -274,61 +623,78 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     // ── Delivery Address ─────────────────────────
                     _buildSectionLabel('DELIVERY ADDRESS'),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.accentColor.withValues(alpha: 0.3),
-                          width: 1,
+                    GestureDetector(
+                      onTap: () => _showAddressSelectionBottomSheet(context),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: AppColors.cardColor,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: AppColors.accentColor.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
                         ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.accentColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: AppColors.accentColor.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(Icons.location_on_rounded,
+                                  color: AppColors.accentColor, size: 22),
                             ),
-                            child: const Icon(Icons.location_on_rounded,
-                                color: AppColors.accentColor, size: 22),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _dummyAddress['name']!,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        _currentAddress['name']!,
+                                        style: const TextStyle(
+                                          color: AppColors.textPrimary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
+                                      const Text(
+                                        'Ubah',
+                                        style: TextStyle(
+                                          color: AppColors.accentColor,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _dummyAddress['phone']!,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _currentAddress['phone']!,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 13,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${_dummyAddress['address']!}\n${_dummyAddress['city']!}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
-                                    height: 1.5,
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${_currentAddress['address']!}\n${_currentAddress['city']!}, ${_currentAddress['postalCode']!}',
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 13,
+                                      height: 1.5,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
 
