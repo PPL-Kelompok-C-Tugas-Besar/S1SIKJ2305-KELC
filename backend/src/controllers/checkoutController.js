@@ -19,8 +19,8 @@ const getCheckoutSummary = async (req, res) => {
         p.price,
         p.image_url,
         p.stock
-      FROM defaultdb.carts c
-      JOIN defaultdb.products p ON c.product_id = p.id
+      FROM carts c
+      JOIN products p ON c.product_id = p.id
       WHERE c.user_id = ?
     `, [user_id]);
 
@@ -97,7 +97,7 @@ const placeOrder = async (req, res) => {
 
     // 1. Simpan ke tabel orders
     const [orderResult] = await connection.execute(
-      'INSERT INTO defaultdb.orders (user_id, payment_method, shipping_address, total_amount, status) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO orders (user_id, payment_method, shipping_address, total_amount, status) VALUES (?, ?, ?, ?, ?)',
       [user_id, payment_method, shipping_address, total, 'Pending']
     );
     const orderId = orderResult.insertId;
@@ -108,20 +108,20 @@ const placeOrder = async (req, res) => {
 
       // a. Simpan ke order_items
       await connection.execute(
-        'INSERT INTO defaultdb.order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
+        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
         [orderId, product_id, quantity, price]
       );
 
       // b. Update stok produk
       await connection.execute(
-        'UPDATE defaultdb.products SET stock = stock - ? WHERE id = ?',
+        'UPDATE products SET stock = stock - ? WHERE id = ?',
         [quantity, product_id]
       );
 
       // c. Hapus dari cart jika ada cart_id
       if (cart_id) {
         await connection.execute(
-          'DELETE FROM defaultdb.carts WHERE id = ? AND user_id = ?',
+          'DELETE FROM carts WHERE id = ? AND user_id = ?',
           [cart_id, user_id]
         );
       }
@@ -147,4 +147,92 @@ const placeOrder = async (req, res) => {
   }
 };
 
-module.exports = { getCheckoutSummary, placeOrder };
+/**
+ * GET /checkout/orders
+ * Ambil semua order milik user yang terotentikasi.
+ */
+const getUserOrders = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Ambil data orders join order_items & products
+    const [rows] = await pool.execute(`
+      SELECT
+        o.id AS order_id,
+        o.payment_method,
+        o.shipping_address,
+        o.total_amount,
+        o.status AS order_status,
+        o.created_at AS order_date,
+        oi.id AS item_id,
+        oi.product_id,
+        oi.quantity,
+        oi.price AS item_price,
+        p.name AS product_name,
+        p.image_url AS product_image
+      FROM orders o
+      LEFT JOIN order_items oi ON o.id = oi.order_id
+      LEFT JOIN products p ON oi.product_id = p.id
+      WHERE o.user_id = ?
+      ORDER BY o.created_at DESC, o.id DESC
+    `, [userId]);
+
+    const formatDateIndonesian = (dateObj) => {
+      if (!dateObj) return '';
+      const date = new Date(dateObj);
+      const months = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      const day = date.getDate();
+      const month = months[date.getMonth()];
+      const year = date.getFullYear();
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      return `${day} ${month} ${year}, ${hours}:${minutes}`;
+    };
+
+    const ordersMap = new Map();
+    for (const row of rows) {
+      if (!ordersMap.has(row.order_id)) {
+        ordersMap.set(row.order_id, {
+          id: `INV/${row.order_id.toString().padStart(8, '0')}`,
+          order_id_raw: row.order_id,
+          date: formatDateIndonesian(row.order_date),
+          status: row.order_status,
+          payment_method: row.payment_method,
+          shipping_address: row.shipping_address,
+          total_amount: parseFloat(row.total_amount),
+          shipping_cost: 50000,
+          items: []
+        });
+      }
+
+      if (row.item_id) {
+        ordersMap.get(row.order_id).items.push({
+          product_id: row.product_id,
+          name: row.product_name || 'Produk Tidak Dikenal',
+          image: row.product_image || 'assets/whey.png',
+          quantity: parseInt(row.quantity, 10),
+          price: parseFloat(row.item_price)
+        });
+      }
+    }
+
+    const ordersList = Array.from(ordersMap.values());
+
+    return res.status(200).json({
+      success: true,
+      data: ordersList
+    });
+  } catch (error) {
+    console.error('Error in getUserOrders:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Terjadi kesalahan server saat mengambil riwayat transaksi',
+      error: error.message
+    });
+  }
+};
+
+module.exports = { getCheckoutSummary, placeOrder, getUserOrders };

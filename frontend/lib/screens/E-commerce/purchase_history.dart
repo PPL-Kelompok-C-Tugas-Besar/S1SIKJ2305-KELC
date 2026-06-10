@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import '../../services/auth_service.dart';
 
 class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
@@ -20,90 +23,59 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
   String _selectedFilter = 'Semua';
   final List<String> _filters = ['Semua', 'Pending', 'Diproses', 'Selesai', 'Dibatalkan'];
 
-  // Mock data representing standard database orders & order_items structure
-  final List<Map<String, dynamic>> _mockOrders = [
-    {
-      'id': 'INV/20260610/0089',
-      'date': '10 Juni 2026, 20:45',
-      'status': 'Pending',
-      'payment_method': 'QRIS',
-      'shipping_address': 'Nadya, +62 123456789, Jl. Merdeka Belajar No. 99 Bandung, Jawa Barat, 40111',
-      'shipping_cost': 50000,
-      'items': [
-        {
-          'product_id': 1,
-          'name': 'Optimum Nutrition Whey Protein',
-          'image': 'assets/whey.png',
-          'quantity': 2,
-          'price': 450000,
+  List<Map<String, dynamic>> _orders = [];
+  bool _isLoading = true;
+  String _errorMessage = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchOrders();
+  }
+
+  Future<void> _fetchOrders() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = '';
+    });
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/checkout/orders'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
         },
-        {
-          'product_id': 2,
-          'name': 'Creatine Monohydrate',
-          'image': 'assets/creatine.png',
-          'quantity': 1,
-          'price': 350000,
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final List<dynamic> list = data['data'] ?? [];
+          setState(() {
+            _orders = list.map((item) => Map<String, dynamic>.from(item)).toList();
+            _isLoading = false;
+          });
+          return;
         }
-      ],
-    },
-    {
-      'id': 'INV/20260608/0042',
-      'date': '08 Juni 2026, 14:15',
-      'status': 'Diproses',
-      'payment_method': 'QRIS',
-      'shipping_address': 'Nadya, +62 123456789, Jl. Merdeka Belajar No. 99 Bandung, Jawa Barat, 40111',
-      'shipping_cost': 50000,
-      'items': [
-        {
-          'product_id': 3,
-          'name': 'Pre-Workout Cafein Maximum',
-          'image': 'assets/preworkout.png',
-          'quantity': 1,
-          'price': 280000,
-        }
-      ],
-    },
-    {
-      'id': 'INV/20260605/0017',
-      'date': '05 Juni 2026, 09:30',
-      'status': 'Selesai',
-      'payment_method': 'COD',
-      'shipping_address': 'Samuel Armando, +62 876543210, Kost Barokah No. 5, Coblong, Bandung, Jawa Barat, 40135',
-      'shipping_cost': 50000,
-      'items': [
-        {
-          'product_id': 2,
-          'name': 'Creatine Monohydrate',
-          'image': 'assets/creatine.png',
-          'quantity': 1,
-          'price': 350000,
-        }
-      ],
-    },
-    {
-      'id': 'INV/20260601/0005',
-      'date': '01 Juni 2026, 11:20',
-      'status': 'Dibatalkan',
-      'payment_method': 'QRIS',
-      'shipping_address': 'Nadya, +62 123456789, Jl. Merdeka Belajar No. 99 Bandung, Jawa Barat, 40111',
-      'shipping_cost': 50000,
-      'items': [
-        {
-          'product_id': 4,
-          'name': 'BCAA Powder Recovery',
-          'image': 'assets/bcaa.png',
-          'quantity': 3,
-          'price': 190000,
-        }
-      ],
-    },
-  ];
+      }
+      setState(() {
+        _errorMessage = 'Gagal mengambil data dari server';
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Terjadi kesalahan koneksi internet';
+        _isLoading = false;
+      });
+    }
+  }
 
   List<Map<String, dynamic>> get _filteredOrders {
     if (_selectedFilter == 'Semua') {
-      return _mockOrders;
+      return _orders;
     }
-    return _mockOrders.where((order) => order['status'] == _selectedFilter).toList();
+    return _orders.where((order) => order['status'] == _selectedFilter).toList();
   }
 
   String _formatRupiah(int price) {
@@ -117,18 +89,18 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
 
   int _calculateOrderTotal(Map<String, dynamic> order) {
     int subtotal = 0;
-    final List<dynamic> items = order['items'];
+    final List<dynamic> items = order['items'] ?? [];
     for (var item in items) {
-      subtotal += (item['price'] as int) * (item['quantity'] as int);
+      subtotal += (item['price'] as num).toInt() * (item['quantity'] as num).toInt();
     }
-    return subtotal + (order['shipping_cost'] as int);
+    return subtotal + (order['shipping_cost'] as num).toInt();
   }
 
   int _calculateOrderSubtotal(Map<String, dynamic> order) {
     int subtotal = 0;
-    final List<dynamic> items = order['items'];
+    final List<dynamic> items = order['items'] ?? [];
     for (var item in items) {
-      subtotal += (item['price'] as int) * (item['quantity'] as int);
+      subtotal += (item['price'] as num).toInt() * (item['quantity'] as num).toInt();
     }
     return subtotal;
   }
@@ -236,75 +208,112 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
 
             // Order lists
             Expanded(
-              child: orders.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(24),
-                            decoration: BoxDecoration(
-                              color: AppColors.cardColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white10),
-                            ),
-                            child: const Icon(
-                              Icons.receipt_long_outlined,
-                              color: AppColors.textSecondary,
-                              size: 56,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          const Text(
-                            'Belum Ada Riwayat Belanja',
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Status filter: $_selectedFilter.\nYuk, belanja suplemen kesehatan Anda sekarang!',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          ElevatedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.accentColor,
-                              foregroundColor: Colors.black,
-                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 4,
-                            ),
-                            child: const Text(
-                              'BELANJA SEKARANG',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 1.0,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(color: AppColors.accentColor),
                     )
+                  : _errorMessage.isNotEmpty && _orders.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: Colors.redAccent,
+                                size: 56,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                _errorMessage,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: _fetchOrders,
+                                icon: const Icon(Icons.refresh_rounded, color: Colors.black),
+                                label: const Text('COBA LAGI', style: TextStyle(fontWeight: FontWeight.bold)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.accentColor,
+                                  foregroundColor: Colors.black,
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      : orders.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(24),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.cardColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white10),
+                                    ),
+                                    child: const Icon(
+                                      Icons.receipt_long_outlined,
+                                      color: AppColors.textSecondary,
+                                      size: 56,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  const Text(
+                                    'Belum Ada Riwayat Belanja',
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Status filter: $_selectedFilter.\nYuk, belanja suplemen kesehatan Anda sekarang!',
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14,
+                                      height: 1.5,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 28),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.accentColor,
+                                      foregroundColor: Colors.black,
+                                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      elevation: 4,
+                                    ),
+                                    child: const Text(
+                                      'BELANJA SEKARANG',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 1.0,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            )
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
                       itemCount: orders.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 16),
                       itemBuilder: (context, index) {
                         final order = orders[index];
-                        final items = order['items'] as List<Map<String, dynamic>>;
+                        final items = List<Map<String, dynamic>>.from(order['items'] ?? []);
                         final firstItem = items.first;
-                        final totalItems = items.fold<int>(0, (sum, item) => sum + (item['quantity'] as int));
+                        final totalItems = items.fold<int>(0, (sum, item) => sum + (item['quantity'] as num).toInt());
                         final totalPayment = _calculateOrderTotal(order);
 
                         return Container(
@@ -434,7 +443,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              '${firstItem['quantity']} barang x ${_formatRupiah(firstItem['price'])}',
+                                              '${firstItem['quantity']} barang x ${_formatRupiah((firstItem['price'] as num).toInt())}',
                                               style: const TextStyle(
                                                 color: AppColors.textSecondary,
                                                 fontSize: 12,
@@ -500,7 +509,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
   }
 
   void _showOrderDetailBottomSheet(BuildContext context, Map<String, dynamic> order) {
-    final items = order['items'] as List<Map<String, dynamic>>;
+    final items = List<Map<String, dynamic>>.from(order['items'] ?? []);
     final subtotal = _calculateOrderSubtotal(order);
     final totalPayment = _calculateOrderTotal(order);
 
@@ -708,7 +717,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
                                         ),
                                       ),
                                       Text(
-                                        _formatRupiah(item['price'] * (item['quantity'] as int)),
+                                        _formatRupiah((item['price'] as num).toInt() * (item['quantity'] as num).toInt()),
                                         style: const TextStyle(
                                           color: AppColors.accentColor,
                                           fontWeight: FontWeight.bold,
@@ -782,7 +791,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
                               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                             ),
                             Text(
-                              _formatRupiah(order['shipping_cost']),
+                              _formatRupiah((order['shipping_cost'] as num).toInt()),
                               style: const TextStyle(color: AppColors.textPrimary, fontSize: 13),
                             ),
                           ],
