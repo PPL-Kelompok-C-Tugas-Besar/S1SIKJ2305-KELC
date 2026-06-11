@@ -77,3 +77,46 @@ module.exports = {
   calculateBMR,
   calculateTDEE
 };
+
+/**
+ * Menghitung ulang target kalori pengguna secara dinamis dan menyimpannya ke database.
+ * Fungsi ini dipanggil saat terjadi perubahan berat badan, pergantian goal, atau log latihan.
+ * @param {string|number} userId - ID Pengguna
+ * @param {object} pool - Koneksi Database MySQL
+ */
+const recalculateUserCalorieTarget = async (userId, pool) => {
+  try {
+    const [[user]] = await pool.execute(
+      'SELECT weight, height, age, gender, activity_level, diet_goal FROM users WHERE id = ?',
+      [userId]
+    );
+
+    if (!user || !user.weight || !user.height || !user.age || !user.gender || !user.activity_level) {
+      console.log(`[Calorie Service] Data fisik tidak lengkap untuk user ${userId}, skip kalkulasi.`);
+      return null;
+    }
+
+    const bmr = calculateBMR(user.weight, user.height, user.age, user.gender);
+    const tdee = calculateTDEE(bmr, user.activity_level);
+    
+    let newTarget = tdee;
+    if (user.diet_goal === 'cutting') {
+      newTarget -= 500;
+    } else if (user.diet_goal === 'bulking') {
+      newTarget += 500;
+    }
+
+    await pool.execute(
+      'UPDATE users SET daily_calorie_target = ? WHERE id = ?',
+      [newTarget, userId]
+    );
+    
+    console.log(`[Calorie Service] Target kalori diperbarui untuk user ${userId}: ${newTarget} kcal`);
+    return newTarget;
+  } catch (err) {
+    console.error(`[Calorie Service] Error saat recalculate: ${err.message}`);
+    return null;
+  }
+};
+
+module.exports.recalculateUserCalorieTarget = recalculateUserCalorieTarget;
