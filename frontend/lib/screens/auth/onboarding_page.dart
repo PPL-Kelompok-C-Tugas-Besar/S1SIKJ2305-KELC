@@ -101,7 +101,37 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final success = await authProvider.completeOnboarding(onboardingData);
     
     if (success && mounted) {
-      Navigator.pushReplacementNamed(context, '/home');
+      // Ambil nilai target kalori dari model user yang sudah diupdate
+      final calorieTarget = authProvider.user?.dailyCalorieTarget;
+      
+      if (calorieTarget != null) {
+        // Tampilkan dialog berisi notifikasi angka rekomendasi kalori harian
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: kCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Profil Tersimpan!', style: TextStyle(color: kTextPrimary)),
+            content: Text(
+              'Berdasarkan usia, berat, tinggi, aktivitas, dan tujuan diet Anda, sistem merekomendasikan target konsumsi harian sebesar:\n\n$calorieTarget kcal / hari.',
+              style: const TextStyle(color: kTextMuted, fontSize: 16),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Tutup dialog
+                  Navigator.pushReplacementNamed(context, '/home'); // Navigasi ke home
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: kAccent, foregroundColor: kBg),
+                child: const Text('Lanjut ke Beranda'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     }
   }
 
