@@ -6,6 +6,8 @@ import '../../services/history_service.dart';
 import '../../services/calorie_service.dart';
 import '../../utils/palette.dart';
 import 'workout_summary_screen.dart';
+import 'hiit_blast_session_page.dart';
+import 'powerlifting_basics_session_page.dart';
 
 class ExerciseSelectionPage extends StatefulWidget {
   const ExerciseSelectionPage({
@@ -92,13 +94,34 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
       );
       return;
     }
+
+    // 1. Navigasi ke halaman sesi latihan yang sesuai
+    //    Routing berdasarkan tipe workout yang dipilih
+    Widget sessionPage;
+    final workoutTitle = widget.workoutType.toLowerCase();
+
+    if (workoutTitle.contains('powerlifting')) {
+      sessionPage = const PowerliftingBasicsSessionPage();
+    } else {
+      sessionPage = const HiitBlastSessionPage();
+    }
+
+    final sessionCompleted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => sessionPage,
+      ),
+    );
+
+    // Jika user keluar tanpa menyelesaikan sesi, jangan lanjutkan
+    if (sessionCompleted != true || !mounted) return;
     
     setState(() {
       _isLoading = true;
     });
 
     try {
-      // 1. Hitung estimasi kalori aktual memanggil API Backend (PBI-1 Subtask 5)
+      // 2. Hitung estimasi kalori aktual memanggil API Backend (PBI-1 Subtask 5)
       final calculatedCalories = await _calorieService.calculateCalories(
         workoutId: widget.workoutId!,
         durationMinutes: duration,
@@ -108,7 +131,7 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
         throw Exception('Gagal menghitung kalori. Pastikan profil berat badan Anda sudah diisi.');
       }
 
-      // 2. Simpan ke history menggunakan kalori yang sudah dihitung (dibulatkan ke int untuk history)
+      // 3. Simpan ke history menggunakan kalori yang sudah dihitung
       final success = await _historyService.addHistory(
         workoutName: widget.workoutType,
         durationMinutes: duration,
@@ -117,7 +140,7 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
       
       if (success) {
         if (mounted) {
-          // Navigasi ke Halaman Ringkasan Latihan (PBI-1 Subtask 4)
+          // 4. Navigasi ke Halaman Ringkasan Latihan (PBI-1 Subtask 4)
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
