@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../models/weight_log_model.dart';
 import '../../services/weight_service.dart';
 import '../../utils/palette.dart';
+import '../../widgets/weight_dialog_helper.dart';
 
 class WeightTrackingPage extends StatefulWidget {
   const WeightTrackingPage({super.key});
@@ -87,6 +88,16 @@ class _WeightTrackingPageState extends State<WeightTrackingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          WeightDialogHelper.show(context, onSuccess: () {
+            _fetchLogs(reset: true);
+          });
+        },
+        backgroundColor: kAccent,
+        foregroundColor: kBg,
+        child: const Icon(Icons.add),
+      ),
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
