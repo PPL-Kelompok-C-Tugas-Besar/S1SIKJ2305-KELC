@@ -10,6 +10,7 @@ import '../../utils/palette.dart';
 import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
 import '../profile/profile_page.dart';
+import '../profile/weight_tracking_page.dart';
 import '../catalogue/exercise_selection_page.dart';
 import '../E-commerce/catalog_ecommerce.dart';
 
@@ -87,6 +88,7 @@ class _HomePageState extends State<_HomePage> {
   final HistoryService _historyService = HistoryService();
   TodayStats? _todayStats;
   bool _isLoading = true;
+  bool _showWeightReminder = true;
 
   @override
   void initState() {
@@ -140,6 +142,20 @@ class _HomePageState extends State<_HomePage> {
                 streak: _todayStats?.streak ?? 0,
                 isLit: _todayStats?.hasWorkedOutToday ?? false,
               ),
+              if (_showWeightReminder) ...[
+                const SizedBox(height: 20),
+                _WeightReminderCard(
+                  onDismiss: () {
+                    if (mounted) setState(() => _showWeightReminder = false);
+                  },
+                  onUpdate: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const WeightTrackingPage()),
+                    );
+                  },
+                ),
+              ],
               const SizedBox(height: 24),
               _DailyStatsRow(
                 calories: _todayStats?.todayCalories ?? 0,
@@ -243,6 +259,102 @@ class _StreakBadge extends StatelessWidget {
                   color: isLit ? kTextPrimary : kTextMuted,
                   fontWeight: FontWeight.bold,
                   fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Weight Reminder Card ─────────────────────────────────────────────────────
+class _WeightReminderCard extends StatelessWidget {
+  const _WeightReminderCard({
+    required this.onDismiss,
+    required this.onUpdate,
+  });
+
+  final VoidCallback onDismiss;
+  final VoidCallback onUpdate;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [kAccent.withAlpha(200), kAccent.withAlpha(100)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: kAccent.withAlpha(80)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: const BoxDecoration(
+              color: Colors.white24,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.monitor_weight_outlined, color: Colors.white, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Update Your Weight',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'Keep your calorie target accurate by logging your current weight.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: onUpdate,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: kAccent,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Update Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                    ),
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: onDismiss,
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.white70,
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: const Text('Later', style: TextStyle(fontSize: 12)),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: onDismiss,
+            child: const Icon(Icons.close, color: Colors.white54, size: 20),
+          ),
         ],
       ),
     );
