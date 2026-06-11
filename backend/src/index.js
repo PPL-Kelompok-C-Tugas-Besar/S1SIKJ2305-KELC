@@ -83,6 +83,10 @@ const start = async () => {
     const { runPhotoMigration } = require('./config/migrate_photo');
     await runPhotoMigration();
 
+    // Migrasi PBI Rekomendasi Target Kalori
+    const { runUsersCalorieMigration } = require('./config/migrate_users_calorie_target');
+    await runUsersCalorieMigration();
+
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);
     });
