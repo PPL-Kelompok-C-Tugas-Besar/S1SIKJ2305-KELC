@@ -380,6 +380,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                         Navigator.pop(context);
                                       },
                                 child: Container(
+                                  height: 130,
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
                                     color: AppColors.cardColor,
@@ -392,7 +393,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                     ),
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
                                     children: [
                                       if (!_isManagingAddresses) ...[
                                         Container(
@@ -426,6 +427,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
                                           children: [
                                             Row(
                                               children: [
@@ -478,6 +480,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                                 fontSize: 12,
                                                 height: 1.4,
                                               ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
                                             ),
                                           ],
                                         ),
@@ -761,7 +765,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void _showOrderSuccessDialog() {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -773,7 +777,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
               right: 8,
               top: 8,
               child: IconButton(
-                onPressed: () => Navigator.of(ctx).pop(),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                },
                 icon: const Icon(Icons.close, color: AppColors.textSecondary),
                 splashRadius: 20,
               ),
@@ -952,6 +959,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                         : GestureDetector(
                             onTap: () => _showAddressSelectionBottomSheet(context),
                             child: Container(
+                              height: 140,
                               padding: const EdgeInsets.all(20),
                               decoration: BoxDecoration(
                                 color: AppColors.cardColor,
@@ -962,7 +970,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                 ),
                               ),
                               child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                                crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(10),
@@ -978,6 +986,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       ? Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1014,6 +1023,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       : Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
                                               Row(
                                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1079,6 +1089,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                                   fontSize: 13,
                                                   height: 1.5,
                                                 ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ],
                                           ),
