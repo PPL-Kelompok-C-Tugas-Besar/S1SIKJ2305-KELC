@@ -55,10 +55,16 @@ router.put('/profile', verifyToken, async (req, res) => {
     const { gender, goals, currentWeight, targetWeight, height, age, activityLevel, dietGoal } = req.body;
     const userId = req.user.id;
 
-    // Convert goals array to enum value
+    // Map new diet goals to legacy fitness_goal enum to prevent MySQL error
     let fitnessGoalsValue = null;
-    if (goals && goals.length > 0) {
-      // Convert readable format back to enum
+    if (dietGoal) {
+      const goalMap = {
+        'cutting': 'weight_loss',
+        'maintenance': 'keep_fit',
+        'bulking': 'muscle_gain'
+      };
+      fitnessGoalsValue = goalMap[dietGoal] || 'keep_fit';
+    } else if (goals && goals.length > 0) {
       fitnessGoalsValue = goals[0].replace(' ', '_');
     }
 
