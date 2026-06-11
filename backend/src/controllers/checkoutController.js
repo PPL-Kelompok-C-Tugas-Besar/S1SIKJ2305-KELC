@@ -102,6 +102,12 @@ const placeOrder = async (req, res) => {
     );
     const orderId = orderResult.insertId;
 
+    // 1b. Simpan status awal ke order_tracking
+    await connection.execute(
+      'INSERT INTO order_tracking (order_id, status, description) VALUES (?, ?, ?)',
+      [orderId, 'Pending', 'Pesanan berhasil dibuat dan menunggu pembayaran.']
+    );
+
     // 2. Loop items untuk order_items, update stock, dan hapus dari cart
     for (const item of items) {
       const { product_id, quantity, price, cart_id } = item;
@@ -204,7 +210,8 @@ const getUserOrders = async (req, res) => {
           shipping_address: row.shipping_address,
           total_amount: parseFloat(row.total_amount),
           shipping_cost: 50000,
-          items: []
+          items: [],
+          tracking: []
         });
       }
 
@@ -216,6 +223,28 @@ const getUserOrders = async (req, res) => {
           quantity: parseInt(row.quantity, 10),
           price: parseFloat(row.item_price)
         });
+      }
+    }
+
+    const orderIds = Array.from(ordersMap.keys());
+    if (orderIds.length > 0) {
+      const placeholders = orderIds.map(() => '?').join(',');
+      const [trackingRows] = await pool.execute(`
+        SELECT id, order_id, status, description, created_at
+        FROM order_tracking
+        WHERE order_id IN (${placeholders})
+        ORDER BY created_at ASC, id ASC
+      `, orderIds);
+
+      for (const tRow of trackingRows) {
+        if (ordersMap.has(tRow.order_id)) {
+          ordersMap.get(tRow.order_id).tracking.push({
+            id: tRow.id,
+            status: tRow.status,
+            description: tRow.description,
+            created_at: formatDateIndonesian(tRow.created_at)
+          });
+        }
       }
     }
 

@@ -112,7 +112,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
       case 'Diproses':
         return Colors.blueAccent;
       case 'Dikirim':
-        return Colors.cyanAccent;
+        return AppColors.accentColor;
       case 'Selesai':
         return AppColors.accentColor;
       case 'Dibatalkan':
@@ -893,6 +893,7 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
         // Generate deterministic tracking number using numerical digits of order id
         final rawIdDigits = order['id']?.toString().replaceAll(RegExp(r'\D'), '') ?? '12345';
         final trackingNumber = 'GBR-$rawIdDigits-EXP';
+        final List<dynamic> trackingList = order['tracking'] ?? [];
 
         return Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
@@ -942,7 +943,28 @@ class _PurchaseHistoryPageState extends State<PurchaseHistoryPage> {
               ),
               const SizedBox(height: 24),
 
-              if (isDibatalkan) ...[
+              if (trackingList.isNotEmpty) ...[
+                ...List.generate(trackingList.length, (index) {
+                  final step = trackingList[index];
+                  final isLast = index == trackingList.length - 1;
+                  final stepStatus = step['status']?.toString() ?? 'Pending';
+                  
+                  Color activeColor = AppColors.accentColor;
+                  if (stepStatus == 'Dibatalkan') {
+                    activeColor = Colors.redAccent;
+                  }
+
+                  return _buildTimelineStep(
+                    title: stepStatus == 'Pending' ? 'Order Dibuat' : stepStatus,
+                    description: step['description']?.toString() ?? '',
+                    time: step['created_at']?.toString() ?? '',
+                    isActive: isLast,
+                    isCompleted: !isLast,
+                    isLast: isLast,
+                    activeColor: activeColor,
+                  );
+                }),
+              ] else if (isDibatalkan) ...[
                 _buildTimelineStep(
                   title: 'Order Dibuat',
                   description: 'Pesanan berhasil dibuat.',
