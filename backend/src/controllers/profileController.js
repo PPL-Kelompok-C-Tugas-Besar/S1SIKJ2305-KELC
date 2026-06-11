@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { recalculateUserCalorieTarget } = require('../utils/calorieCalculator');
 
 // POST /users/weight
 const updateWeight = async (req, res) => {
@@ -33,6 +34,9 @@ const updateWeight = async (req, res) => {
             'UPDATE users SET weight = ? WHERE id = ?',
             [weight, userId]
         );
+
+        // 3. Kalkulasi ulang target kalori secara otomatis
+        await recalculateUserCalorieTarget(userId, pool);
 
         return res.status(200).json({ 
             success: true, 
