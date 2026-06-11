@@ -123,6 +123,7 @@ class _HomePageState extends State<_HomePage> {
   Widget build(BuildContext context) {
     final user      = context.watch<AuthProvider>().user;
     final firstName = user?.fullName.split(' ').first ?? 'User';
+    final targetCalories = user?.dailyCalorieTarget ?? 0;
 
     return SafeArea(
       child: RefreshIndicator(
@@ -142,6 +143,7 @@ class _HomePageState extends State<_HomePage> {
               const SizedBox(height: 24),
               _DailyStatsRow(
                 calories: _todayStats?.todayCalories ?? 0,
+                targetCalories: targetCalories,
                 minutes: _todayStats?.todayMinutes ?? 0,
                 isLoading: _isLoading,
               ),
@@ -251,11 +253,13 @@ class _StreakBadge extends StatelessWidget {
 class _DailyStatsRow extends StatelessWidget {
   const _DailyStatsRow({
     required this.calories,
+    required this.targetCalories,
     required this.minutes,
     required this.isLoading,
   });
 
   final int calories;
+  final int targetCalories;
   final int minutes;
   final bool isLoading;
 
@@ -266,7 +270,7 @@ class _DailyStatsRow extends StatelessWidget {
         Expanded(
           child: _StatCard(
             label: 'Calories',
-            value: isLoading ? '...' : calories.toString(),
+            value: isLoading ? '...' : (targetCalories > 0 ? '$calories / $targetCalories' : calories.toString()),
             unit: 'kcal',
             icon: Icons.local_fire_department,
           ),
