@@ -124,7 +124,7 @@ const placeOrder = async (req, res) => {
         [quantity, product_id]
       );
 
-      // c. Hapus dari cart jika ada cart_id
+      // c. Hapus dari cart jika ada cart_id (bisa opsional, tapi sekarang kita hapus semua)
       if (cart_id) {
         await connection.execute(
           'DELETE FROM carts WHERE id = ? AND user_id = ?',
@@ -132,6 +132,12 @@ const placeOrder = async (req, res) => {
         );
       }
     }
+
+    // 3. Hapus semua item dari cart milik user ini agar keranjang kosong sepenuhnya
+    await connection.execute(
+      'DELETE FROM carts WHERE user_id = ?',
+      [user_id]
+    );
 
     await connection.commit();
     return res.status(201).json({
