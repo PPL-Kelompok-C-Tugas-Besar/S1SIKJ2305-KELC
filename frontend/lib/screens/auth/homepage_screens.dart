@@ -11,6 +11,7 @@ import '../catalogue/catalogue_page.dart';
 import '../history/history_page.dart';
 import '../profile/profile_page.dart';
 import '../profile/weight_tracking_page.dart';
+import '../../widgets/weight_dialog_helper.dart';
 import '../catalogue/exercise_selection_page.dart';
 import '../E-commerce/catalog_ecommerce.dart';
 
@@ -149,10 +150,9 @@ class _HomePageState extends State<_HomePage> {
                     if (mounted) setState(() => _showWeightReminder = false);
                   },
                   onUpdate: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const WeightTrackingPage()),
-                    );
+                    WeightDialogHelper.show(context, onSuccess: () {
+                      if (mounted) setState(() => _showWeightReminder = false);
+                    });
                   },
                 ),
               ],
