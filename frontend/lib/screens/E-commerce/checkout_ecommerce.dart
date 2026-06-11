@@ -255,7 +255,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
       if (response.statusCode == 201 && data['success'] == true) {
         setState(() => isOrdering = false);
-        _showOrderSuccessDialog();
+        
+        if (_selectedPayment == 'QRIS') {
+          _showQrisDialog();
+          await Future.delayed(const Duration(seconds: 5));
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+
+        if (mounted) {
+          _showOrderSuccessDialog();
+        }
       } else {
         _showErrorSnackbar(data['message'] ?? 'Pesanan gagal diproses');
       }
@@ -264,6 +275,78 @@ class _CheckoutPageState extends State<CheckoutPage> {
     } finally {
       if (mounted) setState(() => isOrdering = false);
     }
+  }
+
+  void _showQrisDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'PEMBAYARAN QRIS',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Silakan scan kode QR di bawah untuk membayar',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.qr_code_2_rounded,
+                  size: 200,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.accentColor,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Menunggu pembayaran...',
+                    style: TextStyle(
+                      color: AppColors.accentColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   void _showAddressSelectionBottomSheet(BuildContext context) {
