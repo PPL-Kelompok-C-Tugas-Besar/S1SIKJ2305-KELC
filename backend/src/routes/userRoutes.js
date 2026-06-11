@@ -5,6 +5,7 @@ const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
 const { getHistory, addHistory, getTodayStats } = require('../controllers/historyController');
 const { updateWeight, getWeightHistory, updateWeeklyGoal } = require('../controllers/profileController');
+const { calculateBMR, calculateTDEE } = require('../utils/calorieCalculator');
 
 // GET /users/stats/today
 router.get('/stats/today', verifyToken, getTodayStats);
@@ -18,7 +19,7 @@ router.get('/profile', verifyToken, async (req, res) => {
     console.log('Getting profile for user ID:', req.user.id);
     
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created, photo_url FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, height, age, activity_level, diet_goal, daily_calorie_target, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created, photo_url FROM users WHERE id = ?',
       [req.user.id]
     );
     
@@ -51,7 +52,7 @@ router.get('/profile', verifyToken, async (req, res) => {
 // PUT /users/profile
 router.put('/profile', verifyToken, async (req, res) => {
   try {
-    const { gender, goals, currentWeight, targetWeight } = req.body;
+    const { gender, goals, currentWeight, targetWeight, height, age, activityLevel, dietGoal } = req.body;
     const userId = req.user.id;
 
     // Convert goals array to enum value
@@ -61,15 +62,38 @@ router.put('/profile', verifyToken, async (req, res) => {
       fitnessGoalsValue = goals[0].replace(' ', '_');
     }
 
+    // Kalkulasi target kalori harian
+    let dailyCalorieTarget = null;
+    if (currentWeight && height && age && gender && activityLevel) {
+      try {
+        const bmr = calculateBMR(currentWeight, height, age, gender);
+        const tdee = calculateTDEE(bmr, activityLevel);
+        
+        dailyCalorieTarget = tdee;
+        if (dietGoal === 'cutting') {
+          dailyCalorieTarget -= 500;
+        } else if (dietGoal === 'bulking') {
+          dailyCalorieTarget += 500;
+        }
+      } catch (calcErr) {
+        console.error('Error calculating calorie target:', calcErr.message);
+      }
+    }
+
     const [result] = await pool.execute(
       `UPDATE users 
-       SET gender = ?, fitness_goal = ?, weight = ?, target_weight = ?, onboarding_completed = 1
+       SET gender = ?, fitness_goal = ?, weight = ?, target_weight = ?, height = ?, age = ?, activity_level = ?, diet_goal = ?, daily_calorie_target = ?, onboarding_completed = 1
        WHERE id = ?`,
       [
         gender || null,
         fitnessGoalsValue,
         currentWeight || null,
         targetWeight || null,
+        height || null,
+        age || null,
+        activityLevel || null,
+        dietGoal || null,
+        dailyCalorieTarget,
         userId
       ]
     );
@@ -80,7 +104,7 @@ router.put('/profile', verifyToken, async (req, res) => {
 
     // Get updated user data
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, date_created FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, height, age, activity_level, diet_goal, daily_calorie_target, role, gender, fitness_goal, target_weight, onboarding_completed, date_created FROM users WHERE id = ?',
       [userId]
     );
 

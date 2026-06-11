@@ -150,15 +150,24 @@ class AuthProvider extends ChangeNotifier {
     
     _setLoading(false);
     if (result['success'] == true) {
-      // Update user with new data
-      _user = _user?.copyWith(
-        gender: onboardingData['gender'],
-        goals: onboardingData['goals'],
-        weight: onboardingData['currentWeight'],
-        targetWeight: onboardingData['targetWeight'],
-        onboardingCompleted: true,
-      );
-      debugPrint('AuthProvider - User updated successfully');
+      // Jika backend mengirimkan user yang sudah diupdate (beserta target kalori), gunakan itu.
+      if (result['user'] != null) {
+        _user = result['user'];
+      } else {
+        // Fallback
+        _user = _user?.copyWith(
+          gender: onboardingData['gender'],
+          goals: onboardingData['goals'],
+          weight: onboardingData['currentWeight'],
+          targetWeight: onboardingData['targetWeight'],
+          height: onboardingData['height'],
+          age: onboardingData['age'],
+          activityLevel: onboardingData['activityLevel'],
+          dietGoal: onboardingData['dietGoal'],
+          onboardingCompleted: true,
+        );
+      }
+      debugPrint('AuthProvider - User updated successfully. Target Calorie: ${_user?.dailyCalorieTarget}');
       notifyListeners();
       return true;
     } else {
