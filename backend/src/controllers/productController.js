@@ -5,8 +5,16 @@ const productModel = require('../models/productModel');
  */
 const getProducts = async (req, res) => {
   try {
+    const { search, category, minPrice, maxPrice, sortBy } = req.query;
+    
     // Memanggil model untuk mendapatkan data (dummy atau DB)
-    const products = await productModel.getAllProducts();
+    const products = await productModel.getAllProducts({
+      search,
+      category,
+      minPrice,
+      maxPrice,
+      sortBy
+    });
     
     // Mengembalikan response sukses
     res.status(200).json({
