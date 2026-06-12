@@ -28,6 +28,12 @@ class _ShopPageState extends State<ShopPage> {
   String errorMessage = '';
   int cartItemCount = 0;
 
+  // New state variables for search and filters
+  String searchQuery = '';
+  String selectedCategory = '';
+  String sortBy = 'id_desc';
+  final TextEditingController searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -83,9 +89,19 @@ class _ShopPageState extends State<ShopPage> {
   }
 
   Future<void> fetchProducts() async {
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
     try {
-      // Narik data dari backend Node.js lu
-      final response = await http.get(Uri.parse('http://localhost:3000/products'));
+      final queryParams = <String, String>{};
+      if (searchQuery.isNotEmpty) queryParams['search'] = searchQuery;
+      if (selectedCategory.isNotEmpty) queryParams['category'] = selectedCategory;
+      if (sortBy.isNotEmpty) queryParams['sortBy'] = sortBy;
+
+      final uri = Uri.parse('http://localhost:3000/products').replace(queryParameters: queryParams);
+      final response = await http.get(uri);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -158,6 +174,91 @@ class _ShopPageState extends State<ShopPage> {
     }
   }
 
+  Widget _buildCategoryChip(String label, String categoryValue) {
+    bool isSelected = selectedCategory == categoryValue;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8.0),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (bool selected) {
+          setState(() {
+            selectedCategory = selected ? categoryValue : '';
+          });
+          fetchProducts();
+        },
+        backgroundColor: AppColors.cardColor,
+        selectedColor: AppColors.accentColor,
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.black : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+        checkmarkColor: Colors.black,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? AppColors.accentColor : Colors.transparent,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showSortBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Sort By',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            _buildSortOption('Latest', 'created_at_desc'),
+            _buildSortOption('Price: Low to High', 'price_asc'),
+            _buildSortOption('Price: High to Low', 'price_desc'),
+            _buildSortOption('Name: A to Z', 'name_asc'),
+            _buildSortOption('Name: Z to A', 'name_desc'),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(String label, String value) {
+    bool isSelected = sortBy == value;
+    return ListTile(
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? AppColors.accentColor : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected ? const Icon(Icons.check, color: AppColors.accentColor) : null,
+      onTap: () {
+        setState(() {
+          sortBy = value;
+        });
+        Navigator.pop(context);
+        fetchProducts();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -215,11 +316,32 @@ class _ShopPageState extends State<ShopPage> {
                     child: SizedBox(
                       height: 44,
                       child: TextField(
+                        controller: searchController,
                         style: const TextStyle(color: AppColors.textPrimary),
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value;
+                          });
+                        },
+                        onSubmitted: (value) {
+                          fetchProducts();
+                        },
                         decoration: InputDecoration(
                           hintText: 'Search supplements...',
                           hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                           prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.accentColor),
+                          suffixIcon: searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 20, color: AppColors.textSecondary),
+                                  onPressed: () {
+                                    setState(() {
+                                      searchController.clear();
+                                      searchQuery = '';
+                                    });
+                                    fetchProducts();
+                                  },
+                                )
+                              : null,
                           filled: true,
                           fillColor: AppColors.cardColor,
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
@@ -261,10 +383,28 @@ class _ShopPageState extends State<ShopPage> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.sort, color: AppColors.textPrimary),
-                      onPressed: () {},
+                      onPressed: () {
+                        _showSortBottomSheet();
+                      },
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 16),
+              
+              // Category Filter
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildCategoryChip('All', ''),
+                    _buildCategoryChip('Protein', 'Protein'),
+                    _buildCategoryChip('Pre-Workout', 'Pre-Workout'),
+                    _buildCategoryChip('Vitamins', 'Vitamins'),
+                    _buildCategoryChip('Creatine', 'Creatine'),
+                    _buildCategoryChip('Amino Acids', 'Amino Acids'),
+                  ],
+                ),
               ),
               const SizedBox(height: 24),
               
@@ -289,7 +429,39 @@ class _ShopPageState extends State<ShopPage> {
                               ],
                             ),
                           )
-                        : GridView.builder(
+                        : products.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.search_off_rounded,
+                                      size: 80,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'There is no product for this',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Try adjusting your search or filters',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 14,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : GridView.builder(
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               crossAxisSpacing: 16.0,
