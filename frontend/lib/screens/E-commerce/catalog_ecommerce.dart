@@ -30,8 +30,9 @@ class _ShopPageState extends State<ShopPage> {
 
   // New state variables for search and filters
   String searchQuery = '';
-  String selectedCategory = '';
   String sortBy = 'id_desc';
+  double? minPrice;
+  double? maxPrice;
   final TextEditingController searchController = TextEditingController();
 
   @override
@@ -97,7 +98,8 @@ class _ShopPageState extends State<ShopPage> {
     try {
       final queryParams = <String, String>{};
       if (searchQuery.isNotEmpty) queryParams['search'] = searchQuery;
-      if (selectedCategory.isNotEmpty) queryParams['category'] = selectedCategory;
+      if (minPrice != null) queryParams['minPrice'] = minPrice!.toInt().toString();
+      if (maxPrice != null) queryParams['maxPrice'] = maxPrice!.toInt().toString();
       if (sortBy.isNotEmpty) queryParams['sortBy'] = sortBy;
 
       final uri = Uri.parse('http://localhost:3000/products').replace(queryParameters: queryParams);
@@ -174,33 +176,131 @@ class _ShopPageState extends State<ShopPage> {
     }
   }
 
-  Widget _buildCategoryChip(String label, String categoryValue) {
-    bool isSelected = selectedCategory == categoryValue;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (bool selected) {
-          setState(() {
-            selectedCategory = selected ? categoryValue : '';
-          });
-          fetchProducts();
-        },
-        backgroundColor: AppColors.cardColor,
-        selectedColor: AppColors.accentColor,
-        labelStyle: TextStyle(
-          color: isSelected ? Colors.black : AppColors.textPrimary,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-        checkmarkColor: Colors.black,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(
-            color: isSelected ? AppColors.accentColor : Colors.transparent,
-          ),
-        ),
+  void _showFilterBottomSheet() {
+    double tempMin = minPrice ?? 0;
+    double tempMax = maxPrice ?? 10000000;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20, 
+                right: 20, 
+                top: 20, 
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Price Range',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Min Price',
+                            labelStyle: const TextStyle(color: AppColors.textSecondary),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.textSecondary),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.accentColor),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            tempMin = double.tryParse(value) ?? 0;
+                          },
+                          controller: TextEditingController(text: tempMin > 0 ? tempMin.toInt().toString() : ''),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Max Price',
+                            labelStyle: const TextStyle(color: AppColors.textSecondary),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.textSecondary),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.accentColor),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            tempMax = double.tryParse(value) ?? 10000000;
+                          },
+                          controller: TextEditingController(text: tempMax < 10000000 ? tempMax.toInt().toString() : ''),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              minPrice = null;
+                              maxPrice = null;
+                            });
+                            Navigator.pop(context);
+                            fetchProducts();
+                          },
+                          child: const Text('Reset', style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentColor,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              minPrice = tempMin;
+                              maxPrice = tempMax;
+                            });
+                            Navigator.pop(context);
+                            fetchProducts();
+                          },
+                          child: const Text('Apply'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+        );
+      },
     );
   }
 
@@ -382,6 +482,19 @@ class _ShopPageState extends State<ShopPage> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: IconButton(
+                      icon: const Icon(Icons.filter_list, color: AppColors.textPrimary),
+                      onPressed: () {
+                        _showFilterBottomSheet();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
                       icon: const Icon(Icons.sort, color: AppColors.textPrimary),
                       onPressed: () {
                         _showSortBottomSheet();
@@ -389,22 +502,6 @@ class _ShopPageState extends State<ShopPage> {
                     ),
                   ),
                 ],
-              ),
-              const SizedBox(height: 16),
-              
-              // Category Filter
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    _buildCategoryChip('All', ''),
-                    _buildCategoryChip('Protein', 'Protein'),
-                    _buildCategoryChip('Pre-Workout', 'Pre-Workout'),
-                    _buildCategoryChip('Vitamins', 'Vitamins'),
-                    _buildCategoryChip('Creatine', 'Creatine'),
-                    _buildCategoryChip('Amino Acids', 'Amino Acids'),
-                  ],
-                ),
               ),
               const SizedBox(height: 24),
               
