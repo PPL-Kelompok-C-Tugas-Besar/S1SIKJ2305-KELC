@@ -11,6 +11,8 @@ class Workout {
   final String? fitnessGoal;
   final bool isSaved;
   final double? caloriesBurned;
+  final String recommendationReason;
+  final int recommendationScore;
 
   const Workout({
     required this.id,
@@ -25,6 +27,8 @@ class Workout {
     this.isSaved = false,
     this.fitnessGoal,
     this.caloriesBurned,
+    this.recommendationReason = '',
+    this.recommendationScore = 0,
   });
 
   Workout copyWith({
@@ -40,6 +44,8 @@ class Workout {
     String? fitnessGoal,
     bool? isSaved,
     double? caloriesBurned,
+    String? recommendationReason,
+    int? recommendationScore,
   }) {
     return Workout(
       id: id ?? this.id,
@@ -54,11 +60,12 @@ class Workout {
       fitnessGoal: fitnessGoal ?? this.fitnessGoal,
       isSaved: isSaved ?? this.isSaved,
       caloriesBurned: caloriesBurned ?? this.caloriesBurned,
+      recommendationReason: recommendationReason ?? this.recommendationReason,
+      recommendationScore: recommendationScore ?? this.recommendationScore,
     );
   }
 
   factory Workout.fromJson(Map<String, dynamic> json) {
-    
     return Workout(
       id: _readString(json, 'id'),
       title: _readString(json, 'title'),
@@ -71,6 +78,8 @@ class Workout {
       equipmentSummary: _readString(json, 'equipment_summary'),
       fitnessGoal: _readString(json, 'fitness_goal'),
       caloriesBurned: _readDouble(json, 'calories_burned'),
+      recommendationReason: _readString(json, 'recommendation_reason'),
+      recommendationScore: _readInt(json, 'recommendation_score') ?? 0,
     );
   }
 

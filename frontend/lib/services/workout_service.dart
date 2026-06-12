@@ -11,23 +11,45 @@ class WorkoutService {
   Future<String?> _getToken() async => await _storage.read(key: _tokenKey);
 
   Map<String, String> _authHeaders(String token) => {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      };
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $token',
+  };
 
   Future<List<Workout>> getWorkouts({
     String location = 'all',
     String category = 'all',
   }) async {
     try {
-      final uri = Uri.parse(ApiConstants.workouts).replace(
-        queryParameters: {
-          'location': location,
-          'category': category,
-        },
-      );
+      final uri = Uri.parse(
+        ApiConstants.workouts,
+      ).replace(queryParameters: {'location': location, 'category': category});
 
       final response = await http.get(uri);
+      if (response.statusCode != 200) return [];
+
+      final body = jsonDecode(response.body);
+      final raw = body is List ? body : body['data'];
+      if (raw is! List) return [];
+
+      return raw
+          .whereType<Map<String, dynamic>>()
+          .map(Workout.fromJson)
+          .toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Workout>> getRecommendedWorkouts({int limit = 10}) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    try {
+      final uri = Uri.parse(
+        '${ApiConstants.workouts}/recommended',
+      ).replace(queryParameters: {'limit': limit.toString()});
+
+      final response = await http.get(uri, headers: _authHeaders(token));
       if (response.statusCode != 200) return [];
 
       final body = jsonDecode(response.body);

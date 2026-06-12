@@ -22,6 +22,7 @@ class _CataloguePageState extends State<CataloguePage> {
   String _selectedCategory = 'all';
   String _selectedDifficulty = 'all';
   String _selectedSaved = 'all';
+  String _selectedRecommendation = 'all';
 
   static const _locations = [
     _FilterOption(label: 'All', value: 'all'),
@@ -48,6 +49,11 @@ class _CataloguePageState extends State<CataloguePage> {
     _FilterOption(label: 'Saved', value: 'saved'),
   ];
 
+  static const _recommendationOptions = [
+    _FilterOption(label: 'All', value: 'all'),
+    _FilterOption(label: 'Recommended', value: 'recommended'),
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -61,33 +67,46 @@ class _CataloguePageState extends State<CataloguePage> {
     });
 
     try {
-      final workouts = await _workoutService.getWorkouts(
-        location: _selectedLocation,
-        category: _selectedCategory,
-      );
+      final workouts = _selectedRecommendation == 'recommended'
+          ? await _workoutService.getRecommendedWorkouts(limit: 20)
+          : await _workoutService.getWorkouts(
+              location: _selectedLocation,
+              category: _selectedCategory,
+            );
       final savedWorkoutIds = await _workoutService.getSavedWorkoutIds();
       final workoutsWithSavedState = workouts
           .map(
-            (workout) => workout.copyWith(
-              isSaved: savedWorkoutIds.contains(workout.id),
-            ),
+            (workout) =>
+                workout.copyWith(isSaved: savedWorkoutIds.contains(workout.id)),
           )
           .toList();
 
+      final optionFilteredWorkouts = workoutsWithSavedState.where((workout) {
+        final locationMatches =
+            _selectedLocation == 'all' ||
+            workout.locationType.toLowerCase() == _selectedLocation ||
+            workout.locationType.toLowerCase() == 'anywhere';
+        final categoryMatches =
+            _selectedCategory == 'all' ||
+            workout.category.toLowerCase() == _selectedCategory;
+
+        return locationMatches && categoryMatches;
+      }).toList();
+
       // Filter by difficulty if not 'all'
       final difficultyFilteredWorkouts = _selectedDifficulty == 'all'
-          ? workoutsWithSavedState
-          : workoutsWithSavedState
-              .where(
-                (workout) =>
-                    workout.difficulty.toLowerCase() == _selectedDifficulty,
-              )
-              .toList();
+          ? optionFilteredWorkouts
+          : optionFilteredWorkouts
+                .where(
+                  (workout) =>
+                      workout.difficulty.toLowerCase() == _selectedDifficulty,
+                )
+                .toList();
 
       final filteredWorkouts = _selectedSaved == 'saved'
           ? difficultyFilteredWorkouts
-              .where((workout) => workout.isSaved)
-              .toList()
+                .where((workout) => workout.isSaved)
+                .toList()
           : difficultyFilteredWorkouts;
 
       if (!mounted) return;
@@ -126,6 +145,12 @@ class _CataloguePageState extends State<CataloguePage> {
   void _setSaved(String value) {
     if (_selectedSaved == value) return;
     setState(() => _selectedSaved = value);
+    _loadWorkouts();
+  }
+
+  void _setRecommendation(String value) {
+    if (_selectedRecommendation == value) return;
+    setState(() => _selectedRecommendation = value);
     _loadWorkouts();
   }
 
@@ -168,7 +193,7 @@ class _CataloguePageState extends State<CataloguePage> {
           workoutId: workout.id,
           location: workout.locationType,
           workoutType: workout.title,
-          workout: workout, 
+          workout: workout,
         ),
       ),
     );
@@ -235,6 +260,14 @@ class _CataloguePageState extends State<CataloguePage> {
                       selected: _selectedSaved,
                       onSelect: _setSaved,
                     ),
+                    const SizedBox(height: 18),
+                    _FilterSection(
+                      label: 'Personalized',
+                      icon: Icons.auto_awesome_outlined,
+                      options: _recommendationOptions,
+                      selected: _selectedRecommendation,
+                      onSelect: _setRecommendation,
+                    ),
                     const SizedBox(height: 24),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -264,9 +297,7 @@ class _CataloguePageState extends State<CataloguePage> {
             ),
             if (_isLoading)
               const SliverFillRemaining(
-                child: Center(
-                  child: CircularProgressIndicator(color: kAccent),
-                ),
+                child: Center(child: CircularProgressIndicator(color: kAccent)),
               )
             else if (_hasError)
               SliverFillRemaining(
@@ -290,18 +321,15 @@ class _CataloguePageState extends State<CataloguePage> {
               SliverPadding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 28),
                 sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final workout = _workouts[index];
-                      return _WorkoutCard(
-                        workout: workout,
-                        imageUrl: _imageForWorkout(workout),
-                        onTap: () => _openWorkout(workout),
-                        onToggleSaved: () => _toggleSaved(workout),
-                      );
-                    },
-                    childCount: _workouts.length,
-                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final workout = _workouts[index];
+                    return _WorkoutCard(
+                      workout: workout,
+                      imageUrl: _imageForWorkout(workout),
+                      onTap: () => _openWorkout(workout),
+                      onToggleSaved: () => _toggleSaved(workout),
+                    );
+                  }, childCount: _workouts.length),
                 ),
               ),
           ],
@@ -326,10 +354,7 @@ class _CataloguePageState extends State<CataloguePage> {
 }
 
 class _FilterOption {
-  const _FilterOption({
-    required this.label,
-    required this.value,
-  });
+  const _FilterOption({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -412,9 +437,7 @@ class _OptionChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? kAccent : kCard,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? kAccent : Colors.white12,
-          ),
+          border: Border.all(color: isSelected ? kAccent : Colors.white12),
         ),
         child: Text(
           label,
@@ -514,7 +537,7 @@ class _WorkoutCard extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 workout.description,
-                maxLines: 2,
+                maxLines: workout.recommendationReason.isNotEmpty ? 1 : 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: Colors.white70,
@@ -522,6 +545,27 @@ class _WorkoutCard extends StatelessWidget {
                   height: 1.35,
                 ),
               ),
+              if (workout.recommendationReason.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.auto_awesome, color: kAccent, size: 14),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        workout.recommendationReason,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: 14),
               Row(
                 children: [
