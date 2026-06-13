@@ -51,6 +51,237 @@ class WorkoutPackage {
     required this.restDuration,
     required this.exercises,
   });
+
+  static WorkoutPackage getHomeHiitBlastPackage() {
+    return const WorkoutPackage(
+      title: 'Home HIIT Blast',
+      restDuration: 15,
+      exercises: [
+        ExerciseModel(
+          name: 'Jumping Jacks',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/jumping_jack.gif',
+          icon: Icons.directions_run_rounded,
+        ),
+        ExerciseModel(
+          name: 'Mountain Climbers',
+          durationOrReps: '00:30',
+          value: 30,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/mountain_climb.gif',
+          icon: Icons.landscape_rounded,
+        ),
+        ExerciseModel(
+          name: 'Burpees',
+          durationOrReps: 'x10',
+          value: 10,
+          isTimer: false,
+          imagePath: 'lib/assets/gifs/burpees.gif',
+          icon: Icons.fitness_center_rounded,
+        ),
+        ExerciseModel(
+          name: 'Lunges',
+          durationOrReps: 'x12',
+          value: 12,
+          isTimer: false,
+          imagePath: 'lib/assets/gifs/Lunges.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+      ],
+    );
+  }
+
+  static WorkoutPackage getAbsBeginnerPackage() {
+    return const WorkoutPackage(
+      title: 'Abs Beginner',
+      restDuration: 15,
+      exercises: [
+        ExerciseModel(
+          name: 'Jumping Jacks',
+          durationOrReps: '00:20',
+          value: 20,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/jumping_jack.gif',
+          icon: Icons.directions_run_rounded,
+        ),
+        ExerciseModel(
+          name: 'Abdominal Crunches',
+          durationOrReps: 'x16',
+          value: 16,
+          isTimer: false,
+          imagePath: 'lib/assets/gifs/Abdominal-Crunces.gif',
+          icon: Icons.fitness_center_rounded,
+        ),
+        ExerciseModel(
+          name: 'Russian Twist',
+          durationOrReps: 'x20',
+          value: 20,
+          isTimer: false,
+          imagePath: 'lib/assets/gifs/Russian-Twist.gif',
+          icon: Icons.self_improvement_rounded,
+        ),
+      ],
+    );
+  }
+
+  static WorkoutPackage getFullBodyStrengthPackage() {
+    return const WorkoutPackage(
+      title: 'Full Body Strength',
+      restDuration: 60,
+      exercises: [
+        ExerciseModel(
+          name: 'Barbell Squat',
+          durationOrReps: 'x12',
+          value: 12,
+          isTimer: false,
+          imagePath: 'lib/assets/gifs/Barbel_Squat.gif',
+          icon: Icons.fitness_center_rounded,
+        ),
+        ExerciseModel(
+          name: 'Dumbbell Bench Press',
+          durationOrReps: 'x10',
+          value: 10,
+          isTimer: false,
+          imagePath: 'lib/assets/gifs/chest_fly_dumbells.gif',
+          icon: Icons.fitness_center_rounded,
+        ),
+      ],
+    );
+  }
+
+  static WorkoutPackage getLegDayPrimerPackage() {
+    return const WorkoutPackage(
+      title: 'Leg Day Primer',
+      restDuration: 15,
+      exercises: [
+        ExerciseModel(
+          name: 'Arm Circles',
+          durationOrReps: '01:00',
+          value: 60,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/arm-circles.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+        ExerciseModel(
+          name: 'Torso Twists',
+          durationOrReps: '00:30',
+          value: 30,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/Torso-Twist.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+        ExerciseModel(
+          name: 'High Knees',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/high-knees.gif',
+          icon: Icons.directions_run_rounded,
+        ),
+      ],
+    );
+  }
+
+  static WorkoutPackage getOfficeDeskStretchPackage() {
+    return const WorkoutPackage(
+      title: 'Office Desk Stretch',
+      restDuration: 15,
+      exercises: [
+        ExerciseModel(
+          name: 'Neck Rolls',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/neck-rolls.gif',
+          icon: Icons.self_improvement_rounded,
+        ),
+        ExerciseModel(
+          name: 'Arm Circles',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/arm-circles.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+        ExerciseModel(
+          name: 'Torso Twists',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/Torso-Twist.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+        ExerciseModel(
+          name: 'Plank',
+          durationOrReps: '00:30',
+          value: 30,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/plank.gif',
+          icon: Icons.fitness_center_rounded,
+        ),
+      ],
+    );
+  }
+
+  static WorkoutPackage getMorningMobilityPackage() {
+    return const WorkoutPackage(
+      title: 'Morning Mobility',
+      restDuration: 15,
+      exercises: [
+        ExerciseModel(
+          name: 'Neck Rolls',
+          durationOrReps: '00:30',
+          value: 30,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/neck-rolls.gif',
+          icon: Icons.self_improvement_rounded,
+        ),
+        ExerciseModel(
+          name: 'Arm Circles',
+          durationOrReps: '00:30',
+          value: 30,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/arm-circles.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+        ExerciseModel(
+          name: 'Torso Twists',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/Torso-Twist.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+      ],
+    );
+  }
+
+  static WorkoutPackage getPreWorkoutStretchPackage() {
+    return const WorkoutPackage(
+      title: 'Pre-Workout Stretch',
+      restDuration: 15,
+      exercises: [
+        ExerciseModel(
+          name: 'Arm Circles',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/arm-circles.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+        ExerciseModel(
+          name: 'Torso Twists',
+          durationOrReps: '00:45',
+          value: 45,
+          isTimer: true,
+          imagePath: 'lib/assets/gifs/Torso-Twist.gif',
+          icon: Icons.accessibility_new_rounded,
+        ),
+      ],
+    );
+  }
 }
 
 // ══════════════════════════════════════════════
