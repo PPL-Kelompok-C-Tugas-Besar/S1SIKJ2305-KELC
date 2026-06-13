@@ -103,8 +103,20 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
       sessionPackage = powerliftingBasicsPackage;
     } else if (workoutTitle.contains('yoga')) {
       sessionPackage = yogaFlowPackage;
+    } else if (workoutTitle.contains('abs')) {
+      sessionPackage = WorkoutPackage.getAbsBeginnerPackage();
+    } else if (workoutTitle.contains('full body strength') || workoutTitle.contains('full')) {
+      sessionPackage = WorkoutPackage.getFullBodyStrengthPackage();
+    } else if (workoutTitle.contains('leg day primer') || workoutTitle.contains('leg')) {
+      sessionPackage = WorkoutPackage.getLegDayPrimerPackage();
+    } else if (workoutTitle.contains('office desk stretch') || workoutTitle.contains('office')) {
+      sessionPackage = WorkoutPackage.getOfficeDeskStretchPackage();
+    } else if (workoutTitle.contains('morning mobility') || workoutTitle.contains('morning')) {
+      sessionPackage = WorkoutPackage.getMorningMobilityPackage();
+    } else if (workoutTitle.contains('pre-workout stretch') || workoutTitle.contains('pre-workout')) {
+      sessionPackage = WorkoutPackage.getPreWorkoutStretchPackage();
     } else {
-      sessionPackage = hiitBlastPackage;
+      sessionPackage = WorkoutPackage.getHomeHiitBlastPackage();
     }
 
     final sessionCompleted = await Navigator.push<bool>(
