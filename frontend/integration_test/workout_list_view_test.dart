@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gymbro/screens/catalogue/catalogue_page.dart';
 import 'package:gymbro/utils/palette.dart';

@@ -24,6 +24,7 @@ void main() {
   Widget buildPage({required int stock}) {
     return MaterialApp(
       home: ProductDetailPage(
+        productId: 1,
         productName: 'Test Whey Protein',
         imagePath: 'assets/whey.png',
         price: 'Rp 850.000',
