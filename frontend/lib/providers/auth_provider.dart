@@ -35,6 +35,16 @@ class AuthProvider extends ChangeNotifier {
     _setLoading(false);
   }
 
+  /// Mengambil data profil terbaru dari server tanpa mengubah status autentikasi.
+  /// Digunakan untuk sinkronisasi data seperti target kalori atau berat badan.
+  Future<void> fetchProfile() async {
+    final result = await _authService.getProfile();
+    if (result['success'] == true) {
+      _user = result['user'];
+      notifyListeners();
+    }
+  }
+
   Future<bool> register({
     required String fullName,
     required String email,
