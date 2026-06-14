@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:gymbro/screens/E-commerce/catalog_ecommerce.dart';
 import 'package:gymbro/screens/E-commerce/detailcatalog_ecommerce.dart';
-import 'package:gymbro/screens/E-commerce/checkout_ecommerce.dart';
 import 'package:provider/provider.dart';
 import 'package:gymbro/providers/auth_provider.dart';
 import 'package:gymbro/services/auth_service.dart';
