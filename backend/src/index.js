@@ -9,8 +9,12 @@ const { pool: db, testConnection } = require('./config/db');
 // Routes
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const productRoutes = require('./routes/productRoutes');
+const checkoutRoutes = require('./routes/checkoutRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
+const calorieRoutes = require('./routes/calorieRoutes'); // PBI-1 [Subtask 2]
 
 // 2. Media Tools
 const cloudinary = require('cloudinary').v2;
@@ -19,7 +23,7 @@ const multer = require('multer');
 // Pastikan folder 'uploads' ada
 const uploadDir = './uploads';
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir);
+  fs.mkdirSync(uploadDir);
 }
 
 // Config Cloudinary
@@ -30,8 +34,11 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
+app.use('/products', productRoutes);
+app.use('/checkout', checkoutRoutes);
+app.use('/cart', cartRoutes);
 const adminRoutes = require('./routes/adminRoutes');
 
 app.use('/api/auth', authRoutes);
@@ -39,6 +46,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api/workouts', require('./routes/workoutRoutes'));
 app.use('/api/admin', adminRoutes);
+app.use('/api/calories', calorieRoutes); // PBI-1 [Subtask 2] – Estimasi Kalori Terbakar
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Gymbro API is running 🚀' });
@@ -54,11 +62,11 @@ app.use((req, res) => {
 const start = async () => {
   try {
     await testConnection();
-    
+
     // Jalankan migrasi tabel
     const { runMigration } = require('./config/migrate_history');
     await runMigration();
-    
+
     const { runWeightMigration } = require('./config/migrate_weight');
     await runWeightMigration();
 
@@ -67,6 +75,19 @@ const start = async () => {
 
     const { runExercisesMigration } = require('./config/migrate_exercises');
     await runExercisesMigration();
+
+    // PBI-1 [Subtask 1] – Tambahkan kolom met_value ke tabel exercises
+    const { runMetMigration } = require('./config/migrate_met');
+    await runMetMigration();
+
+    const { runPhotoMigration } = require('./config/migrate_photo');
+    await runPhotoMigration();
+
+    const { runAddressesMigration } = require('./config/migrate_addresses');
+    await runAddressesMigration();
+    // Migrasi PBI Rekomendasi Target Kalori
+    const { runUsersCalorieMigration } = require('./config/migrate_users_calorie_target');
+    await runUsersCalorieMigration();
 
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);

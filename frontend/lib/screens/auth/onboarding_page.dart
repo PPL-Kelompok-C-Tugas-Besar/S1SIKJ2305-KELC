@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import '../../utils/palette.dart';
 import '../../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -17,40 +16,56 @@ class _OnboardingPageState extends State<OnboardingPage> {
   
   // Form data
   String _selectedGender = '';
-  final List<String> _selectedGoals = [];
+  int _age = 25;
+  double _height = 170.0;
   double _currentWeight = 70.0;
+  String _activityLevel = '';
+  String _dietGoal = '';
   final double _targetWeight = 65.0;
+  
   final TextEditingController _weightController = TextEditingController();
+  final TextEditingController _heightController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
 
   final List<String> _genders = ['male', 'female'];
-  final List<String> _goals = [
-    'Weight Loss',
-    'Muscle Gain', 
-    'Maintenance',
+  final List<String> _dietGoals = ['cutting', 'maintenance', 'bulking'];
+  final List<Map<String, String>> _activities = [
+    {'value': 'sedentary', 'label': 'Sangat Ringan (Jarang olahraga)'},
+    {'value': 'light', 'label': 'Ringan (1-3 hari/minggu)'},
+    {'value': 'moderate', 'label': 'Sedang (3-5 hari/minggu)'},
+    {'value': 'active', 'label': 'Berat (6-7 hari/minggu)'},
+    {'value': 'very_active', 'label': 'Sangat Berat (Pekerjaan fisik)'},
   ];
 
   @override
   void initState() {
     super.initState();
     _weightController.text = _currentWeight.toStringAsFixed(1);
+    _heightController.text = _height.toStringAsFixed(1);
+    _ageController.text = _age.toString();
   }
 
   @override
   void dispose() {
     _pageController.dispose();
     _weightController.dispose();
+    _heightController.dispose();
+    _ageController.dispose();
     super.dispose();
   }
 
   bool _canProceed() {
     if (_currentPage == 0) return _selectedGender.isNotEmpty;
-    if (_currentPage == 1) return _selectedGoals.isNotEmpty;
-    if (_currentPage == 2) return _currentWeight > 0;
+    if (_currentPage == 1) return _age > 0;
+    if (_currentPage == 2) return _height > 0;
+    if (_currentPage == 3) return _currentWeight > 0;
+    if (_currentPage == 4) return _activityLevel.isNotEmpty;
+    if (_currentPage == 5) return _dietGoal.isNotEmpty;
     return true;
   }
 
   void _nextPage() {
-    if (_canProceed() && _currentPage < 3) {
+    if (_canProceed() && _currentPage < 6) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -68,29 +83,55 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   Future<void> _completeOnboarding() async {
-    debugPrint('OnboardingPage - Starting completion...');
-    
     final authProvider = context.read<AuthProvider>();
     
     final onboardingData = {
       'gender': _selectedGender,
-      'goals': _selectedGoals,
+      'age': _age,
+      'height': _height,
       'currentWeight': _currentWeight,
       'targetWeight': _targetWeight,
+      'activityLevel': _activityLevel,
+      'dietGoal': _dietGoal,
+      // For backward compatibility with the API if needed
+      'goals': [_dietGoal], 
       'onboardingCompleted': true,
     };
-
-    debugPrint('OnboardingPage - Data: $onboardingData');
     
     final success = await authProvider.completeOnboarding(onboardingData);
     
-    debugPrint('OnboardingPage - Success: $success');
-    
     if (success && mounted) {
-      debugPrint('OnboardingPage - Navigating to home...');
-      Navigator.pushReplacementNamed(context, '/home');
-    } else {
-      debugPrint('OnboardingPage - Failed to complete onboarding');
+      // Ambil nilai target kalori dari model user yang sudah diupdate
+      final calorieTarget = authProvider.user?.dailyCalorieTarget;
+      
+      if (calorieTarget != null) {
+        // Tampilkan dialog berisi notifikasi angka rekomendasi kalori harian
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            backgroundColor: kCard,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Text('Profil Tersimpan!', style: TextStyle(color: kTextPrimary)),
+            content: Text(
+              'Berdasarkan usia, berat, tinggi, aktivitas, dan tujuan diet Anda, sistem merekomendasikan target konsumsi harian sebesar:\n\n$calorieTarget kcal / hari.',
+              style: const TextStyle(color: kTextMuted, fontSize: 16),
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Tutup dialog
+                  Navigator.pushReplacementNamed(context, '/home'); // Navigasi ke home
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: kAccent, foregroundColor: kBg),
+                child: const Text('Lanjut ke Beranda'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        Navigator.pushReplacementNamed(context, '/home');
+      }
     }
   }
 
@@ -112,7 +153,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   ),
                   Expanded(
                     child: LinearProgressIndicator(
-                      value: (_currentPage + 1) / 4,
+                      value: (_currentPage + 1) / 7,
                       backgroundColor: kCard,
                       valueColor: const AlwaysStoppedAnimation<Color>(kAccent),
                     ),
@@ -132,8 +173,11 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
                   _buildGenderPage(),
-                  _buildGoalsPage(),
+                  _buildAgePage(),
+                  _buildHeightPage(),
                   _buildWeightPage(),
+                  _buildActivityLevelPage(),
+                  _buildDietGoalPage(),
                   _buildSummaryPage(),
                 ],
               ),
@@ -161,7 +205,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   if (_currentPage > 0) const SizedBox(width: 16),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: _currentPage == 3 ? _completeOnboarding : _nextPage,
+                      onPressed: _currentPage == 6 ? _completeOnboarding : _nextPage,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: kAccent,
                         foregroundColor: kBg,
@@ -169,7 +213,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         disabledBackgroundColor: kCard,
                         disabledForegroundColor: kTextMuted,
                       ),
-                      child: Text(_currentPage == 3 ? 'Complete Setup' : 'Next'),
+                      child: Text(_currentPage == 6 ? 'Complete Setup' : 'Next'),
                     ),
                   ),
                 ],
@@ -189,22 +233,19 @@ class _OnboardingPageState extends State<OnboardingPage> {
         children: [
           const Text(
             'What\'s your gender?',
-            style: TextStyle(
-              color: kTextPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: kTextPrimary, fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           const Text(
-            'This helps us personalize your workout recommendations.',
+            'This helps us calculate your daily calorie target.',
             style: TextStyle(color: kTextMuted, fontSize: 16),
           ),
           const SizedBox(height: 32),
           ..._genders.map((gender) => Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: _GenderOption(
-              gender: gender,
+            child: _SelectionOption(
+              label: gender[0].toUpperCase() + gender.substring(1),
+              icon: Icons.person,
               isSelected: _selectedGender == gender,
               onTap: () => setState(() => _selectedGender = gender),
             ),
@@ -214,42 +255,76 @@ class _OnboardingPageState extends State<OnboardingPage> {
     );
   }
 
-  Widget _buildGoalsPage() {
+  Widget _buildAgePage() {
     return Padding(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'What are your fitness goals?',
-            style: TextStyle(
-              color: kTextPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            'How old are you?',
+            style: TextStyle(color: kTextPrimary, fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Select all that apply to you.',
-            style: TextStyle(color: kTextMuted, fontSize: 16),
-          ),
+          const Text('Age is used to calculate your BMR accurately.', style: TextStyle(color: kTextMuted, fontSize: 16)),
           const SizedBox(height: 32),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: _goals.map((goal) => _GoalOption(
-              goal: goal,
-              isSelected: _selectedGoals.contains(goal),
-              onTap: () {
-                setState(() {
-                  if (_selectedGoals.contains(goal)) {
-                    _selectedGoals.remove(goal);
-                  } else {
-                    _selectedGoals.add(goal);
-                  }
-                });
-              },
-            )).toList(),
+          _buildNumberInputContainer(
+            controller: _ageController,
+            unit: 'years',
+            min: 10,
+            max: 100,
+            currentValue: _age.toDouble(),
+            divisions: 90,
+            onSliderChanged: (val) {
+              setState(() {
+                _age = val.toInt();
+                _ageController.text = _age.toString();
+              });
+            },
+            onTextChanged: (val) {
+              final valInt = int.tryParse(val);
+              if (valInt != null && valInt >= 10 && valInt <= 100) {
+                setState(() => _age = valInt);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeightPage() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'What\'s your height?',
+            style: TextStyle(color: kTextPrimary, fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text('Required for estimating your metabolism.', style: TextStyle(color: kTextMuted, fontSize: 16)),
+          const SizedBox(height: 32),
+          _buildNumberInputContainer(
+            controller: _heightController,
+            unit: 'cm',
+            min: 100,
+            max: 250,
+            currentValue: _height,
+            divisions: 150,
+            onSliderChanged: (val) {
+              setState(() {
+                _height = val;
+                _heightController.text = _height.toStringAsFixed(1);
+              });
+            },
+            onTextChanged: (val) {
+              final valDouble = double.tryParse(val);
+              if (valDouble != null && valDouble >= 100 && valDouble <= 250) {
+                setState(() => _height = valDouble);
+              }
+            },
           ),
         ],
       ),
@@ -264,111 +339,164 @@ class _OnboardingPageState extends State<OnboardingPage> {
         children: [
           const Text(
             'What\'s your current weight?',
-            style: TextStyle(
-              color: kTextPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: kTextPrimary, fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'This helps us track your progress and calculate calories.',
-            style: TextStyle(color: kTextMuted, fontSize: 16),
-          ),
+          const Text('This helps us track your progress.', style: TextStyle(color: kTextMuted, fontSize: 16)),
           const SizedBox(height: 32),
+          _buildNumberInputContainer(
+            controller: _weightController,
+            unit: 'kg',
+            min: 30,
+            max: 200,
+            currentValue: _currentWeight,
+            divisions: 170,
+            onSliderChanged: (val) {
+              setState(() {
+                _currentWeight = val;
+                _weightController.text = _currentWeight.toStringAsFixed(1);
+              });
+            },
+            onTextChanged: (val) {
+              final weight = double.tryParse(val);
+              if (weight != null && weight >= 30 && weight <= 200) {
+                setState(() => _currentWeight = weight);
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberInputContainer({
+    required TextEditingController controller,
+    required String unit,
+    required double min,
+    required double max,
+    required double currentValue,
+    required int divisions,
+    required Function(double) onSliderChanged,
+    required Function(String) onTextChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: kCard,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
-              color: kCard,
-              borderRadius: BorderRadius.circular(16),
+              color: kBg,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.white10),
             ),
-            child: Column(
+            child: Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: kBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white10),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _weightController,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(color: kTextPrimary, fontSize: 24),
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            hintText: 'Enter weight',
-                            hintStyle: TextStyle(color: kTextMuted),
-                          ),
-                          onChanged: (value) {
-                            final weight = double.tryParse(value);
-                            if (weight != null && weight >= 30 && weight <= 200) {
-                              setState(() => _currentWeight = weight);
-                            }
-                          },
-                          onEditingComplete: () {
-                            final weight = double.tryParse(_weightController.text);
-                            if (weight == null || weight < 30) {
-                              setState(() {
-                                _currentWeight = 30.0;
-                                _weightController.text = '30.0';
-                              });
-                            } else if (weight > 200) {
-                              setState(() {
-                                _currentWeight = 200.0;
-                                _weightController.text = '200.0';
-                              });
-                            }
-                          },
-                        ),
-                      ),
-                      const Text(
-                        'kg',
-                        style: TextStyle(
-                          color: kTextPrimary,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    keyboardType: TextInputType.number,
+                    style: const TextStyle(color: kTextPrimary, fontSize: 24),
+                    decoration: const InputDecoration(
+                      border: InputBorder.none,
+                      hintText: 'Enter value',
+                      hintStyle: TextStyle(color: kTextMuted),
+                    ),
+                    onChanged: onTextChanged,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Slider(
-                  value: _currentWeight,
-                  min: 30,
-                  max: 200,
-                  divisions: 170,
-                  activeColor: kAccent,
-                  inactiveColor: kCard,
-                  onChanged: (value) {
-                    setState(() {
-                      _currentWeight = value;
-                      _weightController.text = value.toStringAsFixed(1);
-                    });
-                  },
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '30 kg',
-                      style: TextStyle(color: kTextMuted, fontSize: 12),
-                    ),
-                    Text(
-                      '200 kg',
-                      style: TextStyle(color: kTextMuted, fontSize: 12),
-                    ),
-                  ],
+                Text(
+                  unit,
+                  style: const TextStyle(color: kTextPrimary, fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 20),
+          Slider(
+            value: currentValue,
+            min: min,
+            max: max,
+            divisions: divisions,
+            activeColor: kAccent,
+            inactiveColor: kCard,
+            onChanged: onSliderChanged,
+          ),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('${min.toInt()} $unit', style: const TextStyle(color: kTextMuted, fontSize: 12)),
+              Text('${max.toInt()} $unit', style: const TextStyle(color: kTextMuted, fontSize: 12)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityLevelPage() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'What\'s your activity level?',
+            style: TextStyle(color: kTextPrimary, fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text('This helps determine your Total Daily Energy Expenditure (TDEE).', style: TextStyle(color: kTextMuted, fontSize: 16)),
+          const SizedBox(height: 32),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _activities.length,
+              itemBuilder: (context, index) {
+                final activity = _activities[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _SelectionOption(
+                    label: activity['label']!,
+                    icon: Icons.directions_run,
+                    isSelected: _activityLevel == activity['value'],
+                    onTap: () => setState(() => _activityLevel = activity['value']!),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDietGoalPage() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'What is your diet goal?',
+            style: TextStyle(color: kTextPrimary, fontSize: 28, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          const Text('Select whether you want to lose, maintain, or gain weight.', style: TextStyle(color: kTextMuted, fontSize: 16)),
+          const SizedBox(height: 32),
+          ..._dietGoals.map((goal) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _SelectionOption(
+              label: goal.toUpperCase(),
+              icon: Icons.flag,
+              isSelected: _dietGoal == goal,
+              onTap: () => setState(() => _dietGoal = goal),
+            ),
+          )),
         ],
       ),
     );
@@ -382,17 +510,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
         children: [
           const Text(
             'You\'re all set!',
-            style: TextStyle(
-              color: kTextPrimary,
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: kTextPrimary, fontSize: 28, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'Here\'s your profile summary:',
-            style: TextStyle(color: kTextMuted, fontSize: 16),
-          ),
+          const Text('Here\'s your profile summary:', style: TextStyle(color: kTextMuted, fontSize: 16)),
           const SizedBox(height: 32),
           Container(
             padding: const EdgeInsets.all(20),
@@ -405,15 +526,21 @@ class _OnboardingPageState extends State<OnboardingPage> {
               children: [
                 _SummaryItem(label: 'Gender', value: _selectedGender),
                 const Divider(color: Colors.white10),
-                _SummaryItem(label: 'Goals', value: _selectedGoals.join(', ')),
+                _SummaryItem(label: 'Age', value: '$_age years'),
                 const Divider(color: Colors.white10),
-                _SummaryItem(label: 'Current Weight', value: '${_currentWeight.toStringAsFixed(1)} kg'),
+                _SummaryItem(label: 'Height', value: '$_height cm'),
+                const Divider(color: Colors.white10),
+                _SummaryItem(label: 'Weight', value: '${_currentWeight.toStringAsFixed(1)} kg'),
+                const Divider(color: Colors.white10),
+                _SummaryItem(label: 'Activity', value: _activityLevel),
+                const Divider(color: Colors.white10),
+                _SummaryItem(label: 'Goal', value: _dietGoal),
               ],
             ),
           ),
           const SizedBox(height: 32),
           const Text(
-            'We\'ll use this information to personalize your workout recommendations and track your progress.',
+            'We will calculate your daily calorie target automatically based on these physical details.',
             style: TextStyle(color: kTextMuted, fontSize: 14),
           ),
         ],
@@ -422,14 +549,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 }
 
-class _GenderOption extends StatelessWidget {
-  const _GenderOption({
-    required this.gender,
+class _SelectionOption extends StatelessWidget {
+  const _SelectionOption({
+    required this.label,
+    required this.icon,
     required this.isSelected,
     required this.onTap,
   });
 
-  final String gender;
+  final String label;
+  final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
 
@@ -449,69 +578,25 @@ class _GenderOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              Icons.person,
-              color: isSelected ? kAccent : kTextMuted,
-              size: 24,
-            ),
+            Icon(icon, color: isSelected ? kAccent : kTextMuted, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
-                gender[0].toUpperCase() + gender.substring(1),
+                label,
                 style: TextStyle(
                   color: isSelected ? kAccent : kTextPrimary,
-                  fontSize: 18,
+                  fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            if (isSelected)
-              const Icon(Icons.check_circle, color: kAccent),
+            if (isSelected) const Icon(Icons.check_circle, color: kAccent),
           ],
         ),
       ),
     );
   }
 }
-
-class _GoalOption extends StatelessWidget {
-  const _GoalOption({
-    required this.goal,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  final String goal;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? kAccent.withAlpha(31) : kCard,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? kAccent : Colors.white10,
-            width: isSelected ? 2 : 1,
-          ),
-        ),
-        child: Text(
-          goal,
-          style: TextStyle(
-            color: isSelected ? kAccent : kTextPrimary,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 
 class _SummaryItem extends StatelessWidget {
   const _SummaryItem({
@@ -530,24 +615,16 @@ class _SummaryItem extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 100,
             child: Text(
               label,
-              style: const TextStyle(
-                color: kTextMuted,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(color: kTextMuted, fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
           Expanded(
             child: Text(
-              value,
-              style: const TextStyle(
-                color: kTextPrimary,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              ),
+              value.toUpperCase(),
+              style: const TextStyle(color: kTextPrimary, fontSize: 14, fontWeight: FontWeight.w600),
             ),
           ),
         ],

@@ -117,6 +117,27 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<Map<String, dynamic>> uploadPhoto(String base64Photo) async {
+    final result = await _authService.uploadPhoto(base64Photo);
+    if (result['success'] == true) {
+      _user = _user?.copyWith(photoUrl: base64Photo);
+      notifyListeners();
+    }
+    return result;
+  }
+
+  Future<Map<String, dynamic>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    return await _authService.changePassword(
+      oldPassword: oldPassword,
+      newPassword: newPassword,
+      confirmPassword: confirmPassword,
+    );
+  }
+
   Future<bool> completeOnboarding(Map<String, dynamic> onboardingData) async {
     _setLoading(true);
     _clearError();
@@ -129,15 +150,24 @@ class AuthProvider extends ChangeNotifier {
     
     _setLoading(false);
     if (result['success'] == true) {
-      // Update user with new data
-      _user = _user?.copyWith(
-        gender: onboardingData['gender'],
-        goals: onboardingData['goals'],
-        weight: onboardingData['currentWeight'],
-        targetWeight: onboardingData['targetWeight'],
-        onboardingCompleted: true,
-      );
-      debugPrint('AuthProvider - User updated successfully');
+      // Jika backend mengirimkan user yang sudah diupdate (beserta target kalori), gunakan itu.
+      if (result['user'] != null) {
+        _user = result['user'];
+      } else {
+        // Fallback
+        _user = _user?.copyWith(
+          gender: onboardingData['gender'],
+          goals: onboardingData['goals'],
+          weight: onboardingData['currentWeight'],
+          targetWeight: onboardingData['targetWeight'],
+          height: onboardingData['height'],
+          age: onboardingData['age'],
+          activityLevel: onboardingData['activityLevel'],
+          dietGoal: onboardingData['dietGoal'],
+          onboardingCompleted: true,
+        );
+      }
+      debugPrint('AuthProvider - User updated successfully. Target Calorie: ${_user?.dailyCalorieTarget}');
       notifyListeners();
       return true;
     } else {

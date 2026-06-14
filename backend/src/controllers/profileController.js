@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { recalculateUserCalorieTarget } = require('../utils/calorieCalculator');
 
 // POST /users/weight
 const updateWeight = async (req, res) => {
@@ -33,6 +34,9 @@ const updateWeight = async (req, res) => {
             'UPDATE users SET weight = ? WHERE id = ?',
             [weight, userId]
         );
+
+        // 3. Kalkulasi ulang target kalori secara otomatis
+        await recalculateUserCalorieTarget(userId, pool);
 
         return res.status(200).json({ 
             success: true, 
@@ -89,4 +93,38 @@ const getWeightHistory = async (req, res) => {
     }
 };
 
-module.exports = { updateWeight, getWeightHistory };
+// POST /users/weekly-goal
+const updateWeeklyGoal = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { goal } = req.body;
+
+        if (goal === undefined || goal === null) {
+            return res.status(400).json({ success: false, message: 'Goal wajib diisi' });
+        }
+
+        const parsedGoal = parseInt(goal);
+        if (isNaN(parsedGoal) || parsedGoal < 1 || parsedGoal > 7) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Goal tidak valid. Harus antara 1 - 7 hari' 
+            });
+        }
+
+        await pool.execute(
+            'UPDATE users SET weekly_workout_goal = ? WHERE id = ?',
+            [parsedGoal, userId]
+        );
+
+        return res.status(200).json({ 
+            success: true, 
+            message: 'Goal mingguan berhasil diperbarui',
+            data: { weeklyGoal: parsedGoal }
+        });
+    } catch (err) {
+        console.error('Update weekly goal error:', err);
+        return res.status(500).json({ success: false, message: 'Terjadi kesalahan saat memperbarui goal mingguan' });
+    }
+};
+
+module.exports = { updateWeight, getWeightHistory, updateWeeklyGoal };

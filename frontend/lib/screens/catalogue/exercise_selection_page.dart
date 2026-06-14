@@ -3,7 +3,10 @@ import '../../models/exercise_model.dart';
 import '../../models/workout_model.dart';
 import '../../services/exercise_service.dart';
 import '../../services/history_service.dart';
+import '../../services/calorie_service.dart';
 import '../../utils/palette.dart';
+import 'workout_summary_screen.dart';
+import 'dynamic_session_page.dart';
 
 class ExerciseSelectionPage extends StatefulWidget {
   const ExerciseSelectionPage({
@@ -25,16 +28,28 @@ class ExerciseSelectionPage extends StatefulWidget {
 
 class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
   final ExerciseService _exerciseService = ExerciseService();
+  final TextEditingController _searchController = TextEditingController();
   final HistoryService _historyService = HistoryService();
+  final CalorieService _calorieService = CalorieService();
 
   List<Exercise> _exercises = [];
   bool _isLoading = true;
   bool _hasError = false;
+  String _searchQuery = '';
 
   @override
   void initState() {
     super.initState();
     _loadExercises();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadExercises() async {
@@ -66,40 +81,89 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
 
   
   void _startSession() async {
-    // Use workout data if available, otherwise use defaults
-    final calories = widget.workout?.caloriesBurned?.round() ?? 0;
+    // Gunakan data workout (durasi) yang ada
     final duration = widget.workout?.durationMinutes ?? 0;
     
-    if (calories == 0 || duration == 0) {
+    if (duration == 0 || widget.workoutId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Workout data incomplete. Cannot save completion.'),
+          content: Text('Data workout tidak lengkap (durasi atau ID tidak ada).'),
           backgroundColor: Colors.orange,
         ),
       );
       return;
     }
+
+    // 1. Navigasi ke halaman sesi latihan yang sesuai
+    //    Routing berdasarkan tipe workout yang dipilih
+    WorkoutPackage sessionPackage;
+    final workoutTitle = widget.workoutType.toLowerCase();
+
+    if (workoutTitle.contains('powerlifting')) {
+      sessionPackage = powerliftingBasicsPackage;
+    } else if (workoutTitle.contains('yoga')) {
+      sessionPackage = yogaFlowPackage;
+    } else if (workoutTitle.contains('abs')) {
+      sessionPackage = WorkoutPackage.getAbsBeginnerPackage();
+    } else if (workoutTitle.contains('full body strength') || workoutTitle.contains('full')) {
+      sessionPackage = WorkoutPackage.getFullBodyStrengthPackage();
+    } else if (workoutTitle.contains('leg day primer') || workoutTitle.contains('leg')) {
+      sessionPackage = WorkoutPackage.getLegDayPrimerPackage();
+    } else if (workoutTitle.contains('office desk stretch') || workoutTitle.contains('office')) {
+      sessionPackage = WorkoutPackage.getOfficeDeskStretchPackage();
+    } else if (workoutTitle.contains('morning mobility') || workoutTitle.contains('morning')) {
+      sessionPackage = WorkoutPackage.getMorningMobilityPackage();
+    } else if (workoutTitle.contains('pre-workout stretch') || workoutTitle.contains('pre-workout')) {
+      sessionPackage = WorkoutPackage.getPreWorkoutStretchPackage();
+    } else {
+      sessionPackage = WorkoutPackage.getHomeHiitBlastPackage();
+    }
+
+    final sessionCompleted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DynamicSessionPage(package: sessionPackage),
+      ),
+    );
+
+    // Jika user keluar tanpa menyelesaikan sesi, jangan lanjutkan
+    if (sessionCompleted != true || !mounted) return;
     
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      // Save workout completion to history
+      // 2. Hitung estimasi kalori aktual memanggil API Backend (PBI-1 Subtask 5)
+      final calculatedCalories = await _calorieService.calculateCalories(
+        workoutId: widget.workoutId!,
+        durationMinutes: duration,
+      );
+
+      if (calculatedCalories == null) {
+        throw Exception('Gagal menghitung kalori. Pastikan profil berat badan Anda sudah diisi.');
+      }
+
+      // 3. Simpan ke history menggunakan kalori yang sudah dihitung
       final success = await _historyService.addHistory(
         workoutName: widget.workoutType,
         durationMinutes: duration,
-        caloriesBurned: calories,
+        caloriesBurned: calculatedCalories.round(),
       );
       
       if (success) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Workout completed! $calories kcal burned in $duration minutes',
+          // 4. Navigasi ke Halaman Ringkasan Latihan (PBI-1 Subtask 4)
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => WorkoutSummaryScreen(
+                workoutName: widget.workoutType,
+                durationMinutes: duration,
+                caloriesBurned: calculatedCalories,
               ),
-              backgroundColor: Colors.green,
             ),
           );
-          // Navigate back to homepage using named route
-          Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
         }
       } else {
         if (mounted) {
@@ -120,11 +184,31 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
+  }
+
+  List<Exercise> get _filteredExercises {
+    final query = _searchQuery.toLowerCase();
+    if (query.isEmpty) return _exercises;
+
+    return _exercises.where((exercise) {
+      return exercise.name.toLowerCase().contains(query) ||
+          exercise.workoutTitle.toLowerCase().contains(query) ||
+          exercise.repsOrDuration.toLowerCase().contains(query) ||
+          exercise.instructions.toLowerCase().contains(query);
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final filteredExercises = _filteredExercises;
+
     return Scaffold(
       backgroundColor: kBg,
       bottomNavigationBar: _isLoading || _hasError || _exercises.isEmpty
@@ -203,6 +287,8 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 24),
+                      _SearchField(controller: _searchController),
                     ],
                   ),
                 ),
@@ -231,6 +317,14 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                     message: 'No database exercises match this workout option.',
                   ),
                 )
+              else if (filteredExercises.isEmpty)
+                const SliverFillRemaining(
+                  child: _MessageState(
+                    icon: Icons.search_off_rounded,
+                    title: 'No matches',
+                    message: 'Try another exercise keyword.',
+                  ),
+                )
               else
                 SliverPadding(
                   padding: EdgeInsets.fromLTRB(
@@ -242,17 +336,54 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
                   sliver: SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (context, index) {
-                        final exercise = _exercises[index];
+                        final exercise = filteredExercises[index];
                         return _ExerciseCard(
                           exercise: exercise,
                         );
                       },
-                      childCount: _exercises.length,
+                      childCount: filteredExercises.length,
                     ),
                   ),
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchField extends StatelessWidget {
+  const _SearchField({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      style: const TextStyle(color: kTextPrimary),
+      decoration: InputDecoration(
+        hintText: 'Search exercises',
+        hintStyle: const TextStyle(color: kTextMuted),
+        prefixIcon: const Icon(Icons.search_rounded, color: kTextMuted),
+        filled: true,
+        fillColor: kCard,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white10),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: Colors.white10),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: const BorderSide(color: kAccent),
         ),
       ),
     );

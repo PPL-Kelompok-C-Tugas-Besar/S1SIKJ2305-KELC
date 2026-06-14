@@ -98,7 +98,7 @@ class _ManageSupplementsScreenState extends State<ManageSupplementsScreen> {
             leading: ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: product.imageUrl != null && product.imageUrl!.isNotEmpty
-                  ? Image.network(product.imageUrl!, width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, __, ___) => _buildPlaceholder())
+                  ? Image.network(product.imageUrl!, width: 60, height: 60, fit: BoxFit.cover, errorBuilder: (_, _, _) => _buildPlaceholder())
                   : _buildPlaceholder(),
             ),
             title: Text(product.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),

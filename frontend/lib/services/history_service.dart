@@ -8,13 +8,48 @@ import 'api_constants.dart';
 class HistoryResult {
   final List<WorkoutHistory> data;
   final int total;
+  final int totalCalories;
+  final int totalMinutes;
   final bool hasMore;
 
   const HistoryResult({
     required this.data,
     required this.total,
+    this.totalCalories = 0,
+    this.totalMinutes = 0,
     required this.hasMore,
   });
+}
+
+class TodayStats {
+  final int todayCalories;
+  final int todayMinutes;
+  final int streak;
+  final bool hasWorkedOutToday;
+  final int weeklyGoal;
+  final List<int> completedDays;
+
+  const TodayStats({
+    required this.todayCalories,
+    required this.todayMinutes,
+    required this.streak,
+    required this.hasWorkedOutToday,
+    required this.weeklyGoal,
+    required this.completedDays,
+  });
+
+  factory TodayStats.fromJson(Map<String, dynamic> json) {
+    return TodayStats(
+      todayCalories: json['todayCalories'] ?? 0,
+      todayMinutes: json['todayMinutes'] ?? 0,
+      streak: json['streak'] ?? 0,
+      hasWorkedOutToday: json['hasWorkedOutToday'] ?? false,
+      weeklyGoal: json['weeklyGoal'] ?? 3,
+      completedDays: json['completedDays'] != null
+          ? List<int>.from(json['completedDays'])
+          : [],
+    );
+  }
 }
 
 class HistoryService {
@@ -60,6 +95,8 @@ class HistoryService {
           return HistoryResult(
             data: raw.map((j) => WorkoutHistory.fromJson(j)).toList(),
             total: pagination['totalData'] ?? 0,
+            totalCalories: pagination['totalCalories'] ?? 0,
+            totalMinutes: pagination['totalMinutes'] ?? 0,
             hasMore: pagination['hasMore'] ?? false,
           );
         }
@@ -67,6 +104,44 @@ class HistoryService {
       return const HistoryResult(data: [], total: 0, hasMore: false);
     } catch (e) {
       return const HistoryResult(data: [], total: 0, hasMore: false);
+    }
+  }
+
+  Future<TodayStats?> getTodayStats() async {
+    final token = await _getToken();
+    if (token == null) return null;
+
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConstants.todayStats),
+        headers: _headers(token),
+      );
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          return TodayStats.fromJson(body['data']);
+        }
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> updateWeeklyGoal(int goal) async {
+    final token = await _getToken();
+    if (token == null) return false;
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/users/weekly-goal'),
+        headers: _headers(token),
+        body: jsonEncode({'goal': goal}),
+      );
+      return response.statusCode == 200;
+    } catch (e) {
+      return false;
     }
   }
 

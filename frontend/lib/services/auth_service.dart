@@ -172,6 +172,74 @@ class AuthService {
     }
   }
 
+  Future<Map<String, dynamic>> uploadPhoto(String base64Photo) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'code': 'TOKEN_EXPIRED'};
+      final response = await http.put(
+        Uri.parse(ApiConstants.uploadPhoto),
+        headers: _headers(token: token),
+        body: jsonEncode({'photo_base64': base64Photo}),
+      );
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': body['message']};
+      }
+      return {'success': false, 'message': body['message'] ?? 'Gagal upload foto'};
+    } catch (e) {
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateHeight(double height) async {
+    try {
+      final token = await getToken();
+      if (token == null) {
+        return {'success': false, 'message': 'Sesi telah habis. Silakan login kembali.'};
+      }
+      final response = await http.put(
+        Uri.parse(ApiConstants.height),
+        headers: _headers(token: token),
+        body: jsonEncode({'height': height}),
+      );
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': body['message']};
+      } else {
+        return {'success': false, 'message': body['message'] ?? 'Gagal memperbarui tinggi badan'};
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
+    }
+  }
+
+  Future<Map<String, dynamic>> changePassword({
+    required String oldPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final token = await getToken();
+      if (token == null) return {'success': false, 'code': 'TOKEN_EXPIRED'};
+      final response = await http.put(
+        Uri.parse(ApiConstants.changePassword),
+        headers: _headers(token: token),
+        body: jsonEncode({
+          'old_password': oldPassword,
+          'new_password': newPassword,
+          'confirm_password': confirmPassword,
+        }),
+      );
+      final body = jsonDecode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': body['message']};
+      }
+      return {'success': false, 'message': body['message'] ?? 'Gagal mengubah password'};
+    } catch (e) {
+      return {'success': false, 'message': 'Tidak dapat terhubung ke server'};
+    }
+  }
+
   Future<void> logout() async {
     await deleteToken();
   }

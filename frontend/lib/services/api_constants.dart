@@ -8,9 +8,16 @@ class ApiConstants {
 
   // User
   static const String profile = '$baseUrl/users/profile';
+  static const String changePassword = '$baseUrl/users/password';
+  static const String uploadPhoto = '$baseUrl/users/photo';
   static const String history = '$baseUrl/users/history';
+  static const String todayStats = '$baseUrl/users/stats/today';
   static const String weight = '$baseUrl/users/weight';
   static const String weightHistory = '$baseUrl/users/weight/history';
+  static const String height = '$baseUrl/users/height';
+
+  // Calories
+  static const String calculateCalories = '$baseUrl/calories/calculate';
 
   // Public workouts & exercises
   static const String workouts = '$baseUrl/workouts';
