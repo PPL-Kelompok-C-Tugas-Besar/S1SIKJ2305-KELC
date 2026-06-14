@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
-import 'workout_summary_screen.dart';
 
 // ══════════════════════════════════════════════
 //  MODEL DATA
@@ -418,7 +417,6 @@ class _DynamicSessionPageState extends State<DynamicSessionPage> {
   int _secondsRemaining = 0;
   bool _isResting = false;
   bool _isFinished = false;
-  bool _timerRunning = false;
   bool _isPaused = false;
   Timer? _timer;
 
@@ -448,14 +446,12 @@ class _DynamicSessionPageState extends State<DynamicSessionPage> {
     if (exercise.isTimer) {
       setState(() {
         _secondsRemaining = exercise.value;
-        _timerRunning = true;
         _isPaused = false;
       });
       _runTimer(onDone: _onExerciseDone);
     } else {
       // Reps manual — tampilkan target, tunggu tombol
       setState(() {
-        _timerRunning = false;
         _isPaused = false;
       });
     }
@@ -501,7 +497,6 @@ class _DynamicSessionPageState extends State<DynamicSessionPage> {
     setState(() {
       _isResting = true;
       _secondsRemaining = widget.package.restDuration;
-      _timerRunning = true;
       _isPaused = false;
     });
     _runTimer(onDone: _goToNextExercise);

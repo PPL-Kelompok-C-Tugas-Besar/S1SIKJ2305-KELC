@@ -87,7 +87,7 @@ const placeOrder = async (req, res) => {
   const connection = await pool.getConnection();
   try {
     const user_id = req.user.id;
-    const { items, payment_method, shipping_address, total } = req.body;
+    const { items, payment_method, shipping_address, subtotal, discount, voucher_code, total } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ success: false, message: 'Item pesanan tidak boleh kosong' });
@@ -95,10 +95,20 @@ const placeOrder = async (req, res) => {
 
     await connection.beginTransaction();
 
+    // Generate unique order number
+    const todayStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const randomPart = Math.floor(1000 + Math.random() * 9000);
+    const orderNumber = `GB-${todayStr}-${randomPart}`;
+
+    const finalSubtotal = subtotal || items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const finalDiscount = discount || 0;
+    const finalTotal = total || (finalSubtotal + 50000 - finalDiscount);
+
     // 1. Simpan ke tabel orders
     const [orderResult] = await connection.execute(
-      'INSERT INTO orders (user_id, payment_method, shipping_address, total_amount, status) VALUES (?, ?, ?, ?, ?)',
-      [user_id, payment_method, shipping_address, total, 'Pending']
+      `INSERT INTO orders (order_number, user_id, subtotal, discount, voucher_code, total, status, payment_method, shipping_address)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [orderNumber, user_id, finalSubtotal, finalDiscount, voucher_code || null, finalTotal, 'Pending', payment_method, shipping_address]
     );
     const orderId = orderResult.insertId;
 
@@ -112,10 +122,16 @@ const placeOrder = async (req, res) => {
     for (const item of items) {
       const { product_id, quantity, price, cart_id } = item;
 
+      // Fetch product name and current stock
+      const [[product]] = await connection.execute('SELECT name, stock FROM products WHERE id = ?', [product_id]);
+      if (!product) {
+        throw new Error(`Product with ID ${product_id} not found`);
+      }
+
       // a. Simpan ke order_items
       await connection.execute(
-        'INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)',
-        [orderId, product_id, quantity, price]
+        'INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES (?, ?, ?, ?, ?)',
+        [orderId, product_id, product.name, quantity, price]
       );
 
       // b. Update stok produk
@@ -124,7 +140,7 @@ const placeOrder = async (req, res) => {
         [quantity, product_id]
       );
 
-      // c. Hapus dari cart jika ada cart_id (bisa opsional, tapi sekarang kita hapus semua)
+      // c. Hapus dari cart jika ada cart_id
       if (cart_id) {
         await connection.execute(
           'DELETE FROM carts WHERE id = ? AND user_id = ?',
@@ -171,22 +187,26 @@ const getUserOrders = async (req, res) => {
     const [rows] = await pool.execute(`
       SELECT
         o.id AS order_id,
+        o.order_number,
         o.payment_method,
         o.shipping_address,
-        o.total_amount,
+        o.subtotal,
+        o.discount,
+        o.voucher_code,
+        o.total AS total_amount,
         o.status AS order_status,
-        o.created_at AS order_date,
+        o.date AS order_date,
         oi.id AS item_id,
         oi.product_id,
         oi.quantity,
         oi.price AS item_price,
-        p.name AS product_name,
+        oi.product_name,
         p.image_url AS product_image
       FROM orders o
       LEFT JOIN order_items oi ON o.id = oi.order_id
       LEFT JOIN products p ON oi.product_id = p.id
       WHERE o.user_id = ?
-      ORDER BY o.created_at DESC, o.id DESC
+      ORDER BY o.date DESC, o.id DESC
     `, [userId]);
 
     const formatDateIndonesian = (dateObj) => {
@@ -208,12 +228,15 @@ const getUserOrders = async (req, res) => {
     for (const row of rows) {
       if (!ordersMap.has(row.order_id)) {
         ordersMap.set(row.order_id, {
-          id: `INV/${row.order_id.toString().padStart(8, '0')}`,
+          id: row.order_number || `INV/${row.order_id.toString().padStart(8, '0')}`,
           order_id_raw: row.order_id,
           date: formatDateIndonesian(row.order_date),
           status: row.order_status,
           payment_method: row.payment_method,
           shipping_address: row.shipping_address,
+          subtotal: parseFloat(row.subtotal || 0),
+          discount: parseFloat(row.discount || 0),
+          voucher_code: row.voucher_code,
           total_amount: parseFloat(row.total_amount),
           shipping_cost: 50000,
           items: [],

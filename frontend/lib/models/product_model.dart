@@ -7,6 +7,8 @@ class Product {
   final String? category;
   final String? imageUrl;
   final int? weightGrams;
+  final double averageRating;
+  final int totalReviews;
 
   Product({
     required this.id,
@@ -17,6 +19,8 @@ class Product {
     this.category,
     this.imageUrl,
     this.weightGrams,
+    this.averageRating = 0.0,
+    this.totalReviews = 0,
   });
 
   factory Product.fromJson(Map<String, dynamic> json) {
@@ -29,6 +33,8 @@ class Product {
       category: json['category'],
       imageUrl: json['image_url'],
       weightGrams: json['weight_grams'] != null ? (json['weight_grams'] is int ? json['weight_grams'] : int.parse(json['weight_grams'].toString())) : null,
+      averageRating: json['average_rating'] != null ? double.parse(json['average_rating'].toString()) : 0.0,
+      totalReviews: json['total_reviews'] != null ? int.parse(json['total_reviews'].toString()) : 0,
     );
   }
 
@@ -42,6 +48,8 @@ class Product {
       'category': category,
       'image_url': imageUrl,
       'weight_grams': weightGrams,
+      'average_rating': averageRating,
+      'total_reviews': totalReviews,
     };
   }
 }
