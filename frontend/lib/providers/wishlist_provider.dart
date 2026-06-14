@@ -1,66 +1,84 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/product_model.dart';
+import '../services/supplement_service.dart';
 
 class WishlistProvider with ChangeNotifier {
-  static const _storage = FlutterSecureStorage();
-  static const _wishlistKey = 'gymbro_wishlist';
-
+  final _supplementService = SupplementService();
   Map<int, Product> _items = {};
+  bool _isLoading = false;
 
   WishlistProvider() {
-    _loadWishlist();
+    loadWishlist();
   }
 
   List<Product> get wishlistItems => _items.values.toList();
+  bool get isLoading => _isLoading;
 
   bool isWishlisted(int productId) {
     return _items.containsKey(productId);
   }
 
-  Future<void> _loadWishlist() async {
+  Future<void> loadWishlist() async {
+    _isLoading = true;
+    notifyListeners();
     try {
-      final wishlistStr = await _storage.read(key: _wishlistKey);
-      if (wishlistStr != null) {
-        final List<dynamic> decoded = json.decode(wishlistStr);
-        _items = {
-          for (var item in decoded)
-            (item['id'] is int 
-                ? item['id'] as int 
-                : int.parse(item['id'].toString())): Product.fromJson(item)
-        };
-        notifyListeners();
+      final result = await _supplementService.getWishlist();
+      if (result['success'] == true) {
+        final List<Product> products = result['data'];
+        _items = {for (var p in products) p.id: p};
       }
     } catch (e) {
       debugPrint('Error loading wishlist: $e');
-    }
-  }
-
-  Future<void> _saveWishlist() async {
-    try {
-      final list = _items.values.map((item) => item.toJson()).toList();
-      await _storage.write(key: _wishlistKey, value: json.encode(list));
-    } catch (e) {
-      debugPrint('Error saving wishlist: $e');
+    } finally {
+      _isLoading = false;
+      notifyListeners();
     }
   }
 
   Future<void> toggleWishlist(Product product) async {
-    if (_items.containsKey(product.id)) {
-      _items.remove(product.id);
+    final int productId = product.id;
+    if (_items.containsKey(productId)) {
+      // Optimistic UI update
+      _items.remove(productId);
+      notifyListeners();
+      try {
+        await _supplementService.removeFromWishlist(productId);
+      } catch (e) {
+        debugPrint('Error removing from wishlist: $e');
+        // Rollback
+        _items[productId] = product;
+        notifyListeners();
+      }
     } else {
-      _items[product.id] = product;
+      // Optimistic UI update
+      _items[productId] = product;
+      notifyListeners();
+      try {
+        await _supplementService.addToWishlist(productId);
+      } catch (e) {
+        debugPrint('Error adding to wishlist: $e');
+        // Rollback
+        _items.remove(productId);
+        notifyListeners();
+      }
     }
-    notifyListeners();
-    await _saveWishlist();
   }
 
   Future<void> removeFromWishlist(int productId) async {
     if (_items.containsKey(productId)) {
+      final product = _items[productId];
       _items.remove(productId);
       notifyListeners();
-      await _saveWishlist();
+      try {
+        await _supplementService.removeFromWishlist(productId);
+      } catch (e) {
+        debugPrint('Error removing from wishlist: $e');
+        // Rollback
+        if (product != null) {
+          _items[productId] = product;
+          notifyListeners();
+        }
+      }
     }
   }
 }

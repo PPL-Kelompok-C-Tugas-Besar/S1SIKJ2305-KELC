@@ -17,16 +17,38 @@ class WishlistPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: kBg,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: kTextPrimary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: kTextPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Wishlist Saya',
-          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'STORE',
+              style: TextStyle(
+                color: kTextMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            Text(
+              'WISHLIST',
+              style: TextStyle(
+                color: kTextPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                fontSize: 24,
+              ),
+            ),
+          ],
         ),
+        centerTitle: false,
+        titleSpacing: 0,
       ),
       body: wishlistItems.isEmpty
           ? _buildEmptyState(context)
@@ -52,8 +74,11 @@ class WishlistPage extends StatelessWidget {
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: kCard,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: Colors.white10),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.05),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -63,14 +88,14 @@ class WishlistPage extends StatelessWidget {
                           child: Container(
                             width: 75,
                             height: 75,
-                            color: Colors.white10,
+                            color: kBg,
                             child: product.imageUrl != null && product.imageUrl!.isNotEmpty
                                 ? Image.network(
                                     product.imageUrl!,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => const Icon(Icons.image, color: kTextMuted),
+                                    errorBuilder: (_, __, ___) => const Icon(Icons.fitness_center, color: kTextMuted),
                                   )
-                                : const Icon(Icons.image, color: kTextMuted),
+                                : const Icon(Icons.fitness_center, color: kTextMuted),
                           ),
                         ),
                         const SizedBox(width: 14),
@@ -87,7 +112,7 @@ class WishlistPage extends StatelessWidget {
                                 style: const TextStyle(
                                   color: kTextPrimary,
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontSize: 16,
                                 ),
                               ),
                               const SizedBox(height: 4),
@@ -95,8 +120,8 @@ class WishlistPage extends StatelessWidget {
                                 'Rp ${product.price.toStringAsFixed(0)}',
                                 style: const TextStyle(
                                   color: kAccent,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 15,
                                 ),
                               ),
                               const SizedBox(height: 6),
@@ -114,7 +139,7 @@ class WishlistPage extends StatelessWidget {
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
-                                    '(${product.totalReviews} Ulasan)',
+                                    '(${product.totalReviews} ulasan)',
                                     style: const TextStyle(
                                       color: kTextMuted,
                                       fontSize: 11,
@@ -155,16 +180,16 @@ class WishlistPage extends StatelessWidget {
                                   : null,
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: kAccent,
-                                foregroundColor: kBg,
-                                minimumSize: const Size(60, 28),
-                                padding: const EdgeInsets.symmetric(horizontal: 10),
+                                foregroundColor: Colors.black,
+                                minimumSize: const Size(80, 32),
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(10),
                                 ),
                                 elevation: 0,
                               ),
                               child: Text(
-                                product.stock > 0 ? '+ Keranjang' : 'Habis',
+                                product.stock > 0 ? 'BELI' : 'HABIS',
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
                               ),
                             ),
@@ -215,7 +240,7 @@ class WishlistPage extends StatelessWidget {
               onPressed: () => Navigator.pop(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: kAccent,
-                foregroundColor: kBg,
+                foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

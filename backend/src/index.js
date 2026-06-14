@@ -47,6 +47,7 @@ app.use('/api/exercises', exerciseRoutes);
 app.use('/api/workouts', require('./routes/workoutRoutes'));
 app.use('/api/admin', adminRoutes);
 app.use('/api/calories', calorieRoutes); // PBI-1 [Subtask 2] – Estimasi Kalori Terbakar
+app.use('/api/marketplace', require('./routes/marketplaceRoutes'));
 
 app.get('/', (req, res) => {
   res.json({ success: true, message: 'Gymbro API is running 🚀' });
@@ -88,6 +89,13 @@ const start = async () => {
     // Migrasi PBI Rekomendasi Target Kalori
     const { runUsersCalorieMigration } = require('./config/migrate_users_calorie_target');
     await runUsersCalorieMigration();
+
+    // Migrasi PBI Marketplace & Reviews & Wishlist
+    const { runMarketplaceFeaturesMigration } = require('./config/migrate_marketplace_features');
+    await runMarketplaceFeaturesMigration();
+
+    const { runReviewsMigration } = require('./config/migrate_reviews');
+    await runReviewsMigration();
 
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);

@@ -13,12 +13,12 @@ class AdminVoucherProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
 
-  Future<void> fetchVouchers({String? search}) async {
+  Future<void> fetchVouchers({String? search, String? isActive}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
 
-    final result = await _adminService.getAdminVouchers(search: search);
+    final result = await _adminService.getAdminVouchers(search: search, isActive: isActive);
 
     if (result['success']) {
       _vouchers = result['data'] as List<Voucher>;

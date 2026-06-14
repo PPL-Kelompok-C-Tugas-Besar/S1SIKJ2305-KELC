@@ -266,6 +266,141 @@ const updateExerciseMedia = async (req, res) => {
   }
 };
 
+// ─── Vouchers ─────────────────────────────────────────────────────────────────
+
+// GET /api/admin/vouchers
+const getAllVouchers = async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { search, is_active } = req.query;
+    let query = 'SELECT * FROM vouchers';
+    const params = [];
+    const conditions = [];
+
+    if (search) {
+      conditions.push('(code LIKE ? OR name LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (is_active !== undefined && is_active !== '') {
+      conditions.push('is_active = ?');
+      params.push(is_active === '1' || is_active === 'true' ? 1 : 0);
+    }
+
+    if (conditions.length > 0) {
+      query += ` WHERE ${conditions.join(' AND ')}`;
+    }
+
+    query += ' ORDER BY id DESC';
+
+    const [rows] = await pool.query(query, params);
+    return res.status(200).json({ success: true, data: rows });
+  } catch (err) {
+    console.error('Get all vouchers error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+};
+
+// POST /api/admin/vouchers
+const createVoucher = async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const {
+      code, name, description, discount_type, discount_value,
+      minimum_purchase, max_discount, start_date, end_date, is_active
+    } = req.body;
+
+    if (!code || !name || !discount_type || discount_value === undefined) {
+      return res.status(400).json({ success: false, message: 'code, name, discount_type, dan discount_value wajib diisi' });
+    }
+
+    const [existing] = await pool.execute('SELECT id FROM vouchers WHERE code = ?', [code]);
+    if (existing.length > 0) {
+      return res.status(409).json({ success: false, message: 'Kode voucher sudah terdaftar' });
+    }
+
+    const [result] = await pool.execute(
+      `INSERT INTO vouchers (code, name, description, discount_type, discount_value, minimum_purchase, max_discount, start_date, end_date, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        code, name, description || null, discount_type, discount_value,
+        minimum_purchase || 0.00, max_discount || 0.00,
+        start_date || null, end_date || null,
+        is_active !== undefined ? (is_active ? 1 : 0) : 1
+      ]
+    );
+
+    const [[voucher]] = await pool.execute('SELECT * FROM vouchers WHERE id = ?', [result.insertId]);
+    return res.status(201).json({ success: true, message: 'Voucher berhasil dibuat', data: voucher });
+  } catch (err) {
+    console.error('Create voucher error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+};
+
+// PUT /api/admin/vouchers/:id
+const updateVoucher = async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const {
+      code, name, description, discount_type, discount_value,
+      minimum_purchase, max_discount, start_date, end_date, is_active
+    } = req.body;
+
+    if (!code || !name || !discount_type || discount_value === undefined) {
+      return res.status(400).json({ success: false, message: 'code, name, discount_type, dan discount_value wajib diisi' });
+    }
+
+    const [existing] = await pool.execute('SELECT id FROM vouchers WHERE code = ? AND id != ?', [code, id]);
+    if (existing.length > 0) {
+      return res.status(409).json({ success: false, message: 'Kode voucher sudah digunakan oleh voucher lain' });
+    }
+
+    const [result] = await pool.execute(
+      `UPDATE vouchers 
+       SET code = ?, name = ?, description = ?, discount_type = ?, discount_value = ?, 
+           minimum_purchase = ?, max_discount = ?, start_date = ?, end_date = ?, is_active = ?
+       WHERE id = ?`,
+      [
+        code, name, description || null, discount_type, discount_value,
+        minimum_purchase || 0.00, max_discount || 0.00,
+        start_date || null, end_date || null,
+        is_active !== undefined ? (is_active ? 1 : 0) : 1,
+        id
+      ]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Voucher tidak ditemukan' });
+    }
+
+    const [[voucher]] = await pool.execute('SELECT * FROM vouchers WHERE id = ?', [id]);
+    return res.status(200).json({ success: true, message: 'Voucher berhasil diperbarui', data: voucher });
+  } catch (err) {
+    console.error('Update voucher error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+};
+
+// DELETE /api/admin/vouchers/:id
+const deleteVoucher = async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  try {
+    const { id } = req.params;
+    const [result] = await pool.execute('DELETE FROM vouchers WHERE id = ?', [id]);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, message: 'Voucher tidak ditemukan' });
+    }
+
+    return res.status(200).json({ success: true, message: 'Voucher berhasil dihapus' });
+  } catch (err) {
+    console.error('Delete voucher error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+};
+
 module.exports = {
   getAllUsers,
   getAllWorkouts,
@@ -279,5 +414,9 @@ module.exports = {
   getAllExercises,
   createExercise,
   updateExerciseMedia,
+  getAllVouchers,
+  createVoucher,
+  updateVoucher,
+  deleteVoucher,
 };
 

@@ -16,12 +16,13 @@ class ManageVouchersScreen extends StatefulWidget {
 class _ManageVouchersScreenState extends State<ManageVouchersScreen> {
   final TextEditingController _searchCtrl = TextEditingController();
   String _searchQuery = '';
+  String _statusFilter = 'all'; // 'all', 'active', 'inactive'
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<AdminVoucherProvider>(context, listen: false).fetchVouchers();
+      _fetchVouchers();
     });
   }
 
@@ -31,11 +32,52 @@ class _ManageVouchersScreenState extends State<ManageVouchersScreen> {
     super.dispose();
   }
 
+  void _fetchVouchers() {
+    String? isActiveParam;
+    if (_statusFilter == 'active') isActiveParam = '1';
+    if (_statusFilter == 'inactive') isActiveParam = '0';
+    Provider.of<AdminVoucherProvider>(context, listen: false).fetchVouchers(
+      search: _searchQuery,
+      isActive: isActiveParam,
+    );
+  }
+
   void _onSearchChanged(String query) {
     setState(() {
       _searchQuery = query;
     });
-    Provider.of<AdminVoucherProvider>(context, listen: false).fetchVouchers(search: query);
+    _fetchVouchers();
+  }
+
+  Widget _buildFilterChip(String label, String value) {
+    final isSelected = _statusFilter == value;
+    return ChoiceChip(
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Colors.black : AdminColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontSize: 13,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: AdminColors.accentColor,
+      backgroundColor: AdminColors.cardColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10),
+        side: BorderSide(
+          color: isSelected ? AdminColors.accentColor : Colors.white10,
+        ),
+      ),
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _statusFilter = value;
+          });
+          _fetchVouchers();
+        }
+      },
+    );
   }
 
   @override
@@ -45,10 +87,34 @@ class _ManageVouchersScreenState extends State<ManageVouchersScreen> {
     return Scaffold(
       backgroundColor: AdminColors.bgColor,
       appBar: AppBar(
-        title: const Text('Kelola Voucher', style: TextStyle(color: AdminColors.textPrimary, fontWeight: FontWeight.bold)),
-        backgroundColor: AdminColors.cardColor,
-        iconTheme: const IconThemeData(color: AdminColors.textPrimary),
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: AdminColors.textPrimary),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'ADMIN',
+              style: TextStyle(
+                color: AdminColors.textSecondary,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            Text(
+              'KELOLA VOUCHER',
+              style: TextStyle(
+                color: AdminColors.textPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                fontSize: 22,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
+        titleSpacing: 0,
       ),
       body: Column(
         children: [
@@ -74,10 +140,25 @@ class _ManageVouchersScreenState extends State<ManageVouchersScreen> {
             ),
           ),
 
+          // Filter Chips
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(
+              children: [
+                _buildFilterChip('Semua', 'all'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Aktif', 'active'),
+                const SizedBox(width: 8),
+                _buildFilterChip('Nonaktif', 'inactive'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+
           // Vouchers List
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => provider.fetchVouchers(search: _searchQuery),
+              onRefresh: () async => _fetchVouchers(),
               color: AdminColors.accentColor,
               backgroundColor: AdminColors.cardColor,
               child: provider.isLoading && provider.vouchers.isEmpty

@@ -65,13 +65,38 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: kBg,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: kTextPrimary),
         leading: IconButton(
           icon: const Icon(Icons.close, color: kTextPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('Tulis Ulasan', style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold)),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'STORE',
+              style: TextStyle(
+                color: kTextMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            Text(
+              'TULIS ULASAN',
+              style: TextStyle(
+                color: kTextPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                fontSize: 22,
+              ),
+            ),
+          ],
+        ),
+        centerTitle: false,
+        titleSpacing: 0,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -176,27 +201,32 @@ class _WriteReviewPageState extends State<WriteReviewPage> {
             // Submit Button
             SizedBox(
               width: double.infinity,
-              height: 48,
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitReview,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kAccent,
-                  foregroundColor: kBg,
-                  disabledBackgroundColor: kAccent.withOpacity(0.5),
+                  foregroundColor: Colors.black,
+                  disabledBackgroundColor: kAccent.withValues(alpha: 0.5),
+                  padding: const EdgeInsets.symmetric(vertical: 18.0),
+                  elevation: 8,
+                  shadowColor: kAccent.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(16.0),
                   ),
-                  elevation: 0,
                 ),
                 child: _isSubmitting
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(color: kBg, strokeWidth: 2),
+                        child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2),
                       )
                     : const Text(
                         'Kirim Ulasan',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.5,
+                          fontSize: 16,
+                        ),
                       ),
               ),
             ),

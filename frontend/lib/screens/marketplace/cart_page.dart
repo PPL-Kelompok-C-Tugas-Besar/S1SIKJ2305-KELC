@@ -18,23 +18,45 @@ class CartPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: kBg,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: kTextPrimary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: kTextPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Keranjang Belanja',
-          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'STORE',
+              style: TextStyle(
+                color: kTextMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            Text(
+              'CART',
+              style: TextStyle(
+                color: kTextPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                fontSize: 24,
+              ),
+            ),
+          ],
         ),
+        centerTitle: false,
+        titleSpacing: 0,
         actions: [
           if (cartItems.isNotEmpty)
             TextButton(
               onPressed: () {
                 _confirmClearCart(context, cartProvider);
               },
-              child: const Text('Bersihkan', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
+              child: const Text('Clear', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
             ),
         ],
       ),
@@ -56,8 +78,11 @@ class CartPage extends StatelessWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: kCard,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.white10),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.05),
+                            width: 1,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -67,14 +92,14 @@ class CartPage extends StatelessWidget {
                               child: Container(
                                 width: 70,
                                 height: 70,
-                                color: Colors.white10,
+                                color: kBg,
                                 child: product.imageUrl != null && product.imageUrl!.isNotEmpty
                                     ? Image.network(
                                         product.imageUrl!,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => const Icon(Icons.image, color: kTextMuted),
+                                        errorBuilder: (_, __, ___) => const Icon(Icons.fitness_center, color: kTextMuted),
                                       )
-                                    : const Icon(Icons.image, color: kTextMuted),
+                                    : const Icon(Icons.fitness_center, color: kTextMuted),
                               ),
                             ),
                             const SizedBox(width: 14),
@@ -91,7 +116,7 @@ class CartPage extends StatelessWidget {
                                     style: const TextStyle(
                                       color: kTextPrimary,
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 14,
+                                      fontSize: 16,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -121,22 +146,22 @@ class CartPage extends StatelessWidget {
                                     cartProvider.removeFromCart(product.id);
                                   },
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 12),
                                 Container(
                                   decoration: BoxDecoration(
                                     color: kBg,
-                                    borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white10),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
                                     children: [
-                                      GestureDetector(
+                                      InkWell(
                                         onTap: () {
                                           cartProvider.decrementQuantity(product.id);
                                         },
+                                        borderRadius: BorderRadius.circular(8),
                                         child: const Padding(
                                           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          child: Icon(Icons.remove, color: kTextPrimary, size: 14),
+                                          child: Icon(Icons.remove, color: kTextPrimary, size: 16),
                                         ),
                                       ),
                                       Text(
@@ -147,13 +172,14 @@ class CartPage extends StatelessWidget {
                                           fontSize: 13,
                                         ),
                                       ),
-                                      GestureDetector(
+                                      InkWell(
                                         onTap: () {
                                           cartProvider.incrementQuantity(product.id);
                                         },
+                                        borderRadius: BorderRadius.circular(8),
                                         child: const Padding(
                                           padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          child: Icon(Icons.add, color: kTextPrimary, size: 14),
+                                          child: Icon(Icons.add, color: kTextPrimary, size: 16),
                                         ),
                                       ),
                                     ],
@@ -170,11 +196,17 @@ class CartPage extends StatelessWidget {
 
                 // Order Summary Panel
                 Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
                     color: kCard,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                    border: Border(top: BorderSide(color: Colors.white10)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(30.0)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
                   ),
                   child: SafeArea(
                     child: Column(
@@ -229,24 +261,19 @@ class CartPage extends StatelessWidget {
                           ),
                         ),
                         
-                        const Text(
-                          'Ringkasan Pesanan',
-                          style: TextStyle(color: kTextPrimary, fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 14),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Total Item', style: TextStyle(color: kTextMuted, fontSize: 14)),
-                            Text('${cartProvider.totalItems} item', style: const TextStyle(color: kTextPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+                            const Text('Total Item', style: TextStyle(color: kTextMuted, fontSize: 15)),
+                            Text('${cartProvider.totalItems} item', style: const TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Subtotal', style: TextStyle(color: kTextMuted, fontSize: 14)),
-                            Text('Rp ${cartProvider.totalPrice.toStringAsFixed(0)}', style: const TextStyle(color: kTextPrimary, fontSize: 14, fontWeight: FontWeight.bold)),
+                            const Text('Subtotal', style: TextStyle(color: kTextMuted, fontSize: 15)),
+                            Text('Rp ${cartProvider.totalPrice.toStringAsFixed(0)}', style: const TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         if (cartProvider.discountAmount > 0) ...[
@@ -254,19 +281,22 @@ class CartPage extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text('Diskon Voucher', style: TextStyle(color: kTextMuted, fontSize: 14)),
-                              Text('-Rp ${cartProvider.discountAmount.toStringAsFixed(0)}', style: const TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.bold)),
+                              const Text('Diskon Voucher', style: TextStyle(color: kTextMuted, fontSize: 15)),
+                              Text('-Rp ${cartProvider.discountAmount.toStringAsFixed(0)}', style: const TextStyle(color: Colors.redAccent, fontSize: 15, fontWeight: FontWeight.bold)),
                             ],
                           ),
                         ],
-                        const SizedBox(height: 8),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12.0),
+                          child: Divider(color: kTextMuted, height: 1),
+                        ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Total Pembayaran', style: TextStyle(color: kTextMuted, fontSize: 14)),
+                            const Text('Total Pembayaran', style: TextStyle(color: kTextPrimary, fontSize: 18, fontWeight: FontWeight.w900)),
                             Text(
                               'Rp ${cartProvider.finalPrice.toStringAsFixed(0)}',
-                              style: const TextStyle(color: kAccent, fontSize: 18, fontWeight: FontWeight.bold),
+                              style: const TextStyle(color: kAccent, fontSize: 22, fontWeight: FontWeight.w900),
                             ),
                           ],
                         ),
@@ -275,22 +305,27 @@ class CartPage extends StatelessWidget {
                         // Checkout Button
                         SizedBox(
                           width: double.infinity,
-                          height: 48,
                           child: ElevatedButton(
                             onPressed: () {
                               _handleCheckout(context, cartProvider);
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kAccent,
-                              foregroundColor: kBg,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 18.0),
+                              elevation: 8,
+                              shadowColor: kAccent.withValues(alpha: 0.3),
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(16.0),
                               ),
-                              elevation: 0,
                             ),
                             child: const Text(
-                              'Checkout',
-                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              'CHECKOUT',
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
                         ),

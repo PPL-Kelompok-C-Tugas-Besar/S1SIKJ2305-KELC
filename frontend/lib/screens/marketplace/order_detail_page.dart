@@ -47,20 +47,43 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        backgroundColor: kBg,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: const IconThemeData(color: kTextPrimary),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: kTextPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Detail Transaksi',
-          style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'STORE',
+              style: TextStyle(
+                color: kTextMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.0,
+              ),
+            ),
+            Text(
+              'DETAIL TRANSAKSI',
+              style: TextStyle(
+                color: kTextPrimary,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 1.5,
+                fontSize: 22,
+              ),
+            ),
+          ],
         ),
+        centerTitle: false,
+        titleSpacing: 0,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator(color: kAccent))
@@ -68,6 +91,25 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
               ? _buildErrorState()
               : _buildOrderDetails(),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return Colors.orangeAccent;
+      case 'paid':
+        return Colors.green;
+      case 'processing':
+        return Colors.blueAccent;
+      case 'shipped':
+        return kAccent;
+      case 'completed':
+        return kAccent;
+      case 'cancelled':
+        return Colors.redAccent;
+      default:
+        return kTextMuted;
+    }
   }
 
   Widget _buildOrderDetails() {
@@ -84,8 +126,18 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: kCard,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.05),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,9 +179,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           const SizedBox(height: 20),
 
           // Shipping Address Card
-          const Text(
-            'Informasi Pengiriman',
-            style: TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+          const Padding(
+            padding: EdgeInsets.only(left: 4.0),
+            child: Text(
+              'Informasi Pengiriman',
+              style: TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 10),
           Container(
@@ -137,8 +192,18 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: kCard,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.05),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -164,9 +229,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           const SizedBox(height: 20),
 
           // Product list details
-          const Text(
-            'Daftar Produk',
-            style: TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+          const Padding(
+            padding: EdgeInsets.only(left: 4.0),
+            child: Text(
+              'Daftar Produk',
+              style: TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 10),
           ListView.separated(
@@ -183,7 +251,17 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                 decoration: BoxDecoration(
                   color: kCard,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.white10),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.05),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.15),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
@@ -235,17 +313,30 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
           const SizedBox(height: 20),
 
           // Pricing Summary Card
-          const Text(
-            'Rincian Pembayaran',
-            style: TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+          const Padding(
+            padding: EdgeInsets.only(left: 4.0),
+            child: Text(
+              'Rincian Pembayaran',
+              style: TextStyle(color: kTextPrimary, fontSize: 15, fontWeight: FontWeight.bold),
+            ),
           ),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: kCard,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.white10),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.05),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.15),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Column(
               children: [
@@ -276,7 +367,7 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
                     const Text('Total Pembayaran', style: TextStyle(color: kTextPrimary, fontWeight: FontWeight.bold, fontSize: 14)),
                     Text(
                       'Rp ${order.total.toStringAsFixed(0)}',
-                      style: const TextStyle(color: kAccent, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: const TextStyle(color: kAccent, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
@@ -290,48 +381,25 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
   }
 
   Widget _buildStatusBadge(String status) {
-    Color bg;
-    Color text;
-
-    switch (status.toLowerCase()) {
-      case 'pending':
-        bg = Colors.amber.withValues(alpha: 0.15);
-        text = Colors.amber;
-        break;
-      case 'paid':
-        bg = Colors.green.withValues(alpha: 0.15);
-        text = Colors.green;
-        break;
-      case 'processing':
-        bg = Colors.orange.withValues(alpha: 0.15);
-        text = Colors.orange;
-        break;
-      case 'shipped':
-        bg = Colors.blue.withValues(alpha: 0.15);
-        text = Colors.blue;
-        break;
-      case 'completed':
-        bg = Colors.grey.withValues(alpha: 0.15);
-        text = Colors.grey;
-        break;
-      case 'cancelled':
-        bg = Colors.red.withValues(alpha: 0.15);
-        text = Colors.red;
-        break;
-      default:
-        bg = Colors.white10;
-        text = kTextPrimary;
-    }
-
+    final statusColor = _getStatusColor(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: bg,
+        color: statusColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: statusColor,
+          width: 1,
+        ),
       ),
       child: Text(
         status.toUpperCase(),
-        style: TextStyle(color: text, fontSize: 10, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: statusColor,
+          fontSize: 10,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 0.8,
+        ),
       ),
     );
   }
@@ -353,8 +421,12 @@ class _OrderDetailPageState extends State<OrderDetailPage> {
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _loadOrderDetails,
-              style: ElevatedButton.styleFrom(backgroundColor: kAccent, foregroundColor: kBg),
-              child: const Text('Coba Lagi'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: kAccent,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('COBA LAGI', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
           ],
         ),

@@ -24,7 +24,8 @@ async function runUsersCalorieMigration() {
       { name: 'age', def: 'INT DEFAULT NULL' },
       { name: 'activity_level', def: 'VARCHAR(50) DEFAULT NULL' },
       { name: 'diet_goal', def: 'VARCHAR(50) DEFAULT NULL' },
-      { name: 'daily_calorie_target', def: 'INT DEFAULT NULL' }
+      { name: 'daily_calorie_target', def: 'INT DEFAULT NULL' },
+      { name: 'weekly_workout_goal', def: 'INT DEFAULT 3' }
     ];
 
     let altered = false;

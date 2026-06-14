@@ -118,11 +118,11 @@ class CartProvider with ChangeNotifier {
     }
   }
 
-  Future<void> addToCart(Product product) async {
+  Future<void> addToCart(Product product, {int quantity = 1}) async {
     if (_items.containsKey(product.id)) {
-      _items[product.id]!.quantity += 1;
+      _items[product.id]!.quantity += quantity;
     } else {
-      _items[product.id] = CartItem(product: product, quantity: 1);
+      _items[product.id] = CartItem(product: product, quantity: quantity);
     }
     _validateVoucher();
     notifyListeners();

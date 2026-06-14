@@ -259,14 +259,21 @@ class AdminService {
 
   // ─── Vouchers ──────────────────────────────────────────────────────────────
 
-  Future<Map<String, dynamic>> getAdminVouchers({String? search}) async {
+  Future<Map<String, dynamic>> getAdminVouchers({String? search, String? isActive}) async {
     try {
       final token = await _getToken();
       if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
 
       String url = ApiConstants.adminVouchers;
+      final params = <String>[];
       if (search != null && search.isNotEmpty) {
-        url += '?search=${Uri.encodeComponent(search)}';
+        params.add('search=${Uri.encodeComponent(search)}');
+      }
+      if (isActive != null && isActive.isNotEmpty) {
+        params.add('is_active=$isActive');
+      }
+      if (params.isNotEmpty) {
+        url += '?${params.join('&')}';
       }
 
       final response = await http.get(Uri.parse(url), headers: _authHeaders(token));

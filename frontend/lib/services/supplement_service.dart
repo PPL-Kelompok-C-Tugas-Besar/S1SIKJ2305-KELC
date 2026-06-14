@@ -202,4 +202,162 @@ class SupplementService {
       return {'success': false, 'message': 'Kesalahan jaringan: $e'};
     }
   }
+
+  // ─── Wishlist API Call methods ──────────────────────────────────────────────
+  // GET /api/marketplace/wishlist
+  Future<Map<String, dynamic>> getWishlist() async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/marketplace/wishlist'),
+        headers: _authHeaders(token),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> raw = data['data'] ?? [];
+        final products = raw.map((e) => Product.fromJson(e)).toList();
+        return {'success': true, 'data': products};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal mengambil wishlist'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  // POST /api/marketplace/wishlist
+  Future<Map<String, dynamic>> addToWishlist(int productId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/marketplace/wishlist'),
+        headers: _authHeaders(token),
+        body: json.encode({'product_id': productId}),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Produk berhasil ditambahkan ke wishlist'};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal menambahkan ke wishlist'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  // DELETE /api/marketplace/wishlist/:productId
+  Future<Map<String, dynamic>> removeFromWishlist(int productId) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/marketplace/wishlist/$productId'),
+        headers: _authHeaders(token),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Produk berhasil dihapus dari wishlist'};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal menghapus dari wishlist'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  // ─── Admin Vouchers API Call methods ─────────────────────────────────────────
+  // GET /api/admin/vouchers
+  Future<Map<String, dynamic>> adminGetVouchers({String? search, String? isActive}) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final queryParams = <String, String>{};
+      if (search != null && search.isNotEmpty) queryParams['search'] = search;
+      if (isActive != null && isActive.isNotEmpty) queryParams['is_active'] = isActive;
+
+      final uri = Uri.parse('${ApiConstants.baseUrl}/admin/vouchers').replace(queryParameters: queryParams);
+      final response = await http.get(uri, headers: _authHeaders(token));
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> raw = data['data'] ?? [];
+        final vouchers = raw.map((e) => Voucher.fromJson(e)).toList();
+        return {'success': true, 'data': vouchers};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal mengambil data voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  // POST /api/admin/vouchers
+  Future<Map<String, dynamic>> adminCreateVoucher(Map<String, dynamic> body) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/admin/vouchers'),
+        headers: _authHeaders(token),
+        body: json.encode(body),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        return {'success': true, 'data': Voucher.fromJson(data['data']), 'message': data['message']};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal membuat voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  // PUT /api/admin/vouchers/:id
+  Future<Map<String, dynamic>> adminUpdateVoucher(int id, Map<String, dynamic> body) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/admin/vouchers/$id'),
+        headers: _authHeaders(token),
+        body: json.encode(body),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': Voucher.fromJson(data['data']), 'message': data['message']};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal memperbarui voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  // DELETE /api/admin/vouchers/:id
+  Future<Map<String, dynamic>> adminDeleteVoucher(int id) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/admin/vouchers/$id'),
+        headers: _authHeaders(token),
+      );
+
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'message': data['message'] ?? 'Voucher berhasil dihapus'};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal menghapus voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
 }

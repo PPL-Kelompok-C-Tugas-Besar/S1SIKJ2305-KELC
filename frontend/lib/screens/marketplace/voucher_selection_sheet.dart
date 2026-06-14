@@ -56,8 +56,8 @@ class _VoucherSelectionSheetState extends State<VoucherSelectionSheet> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       decoration: const BoxDecoration(
-        color: kBg,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        color: kCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -69,7 +69,7 @@ class _VoucherSelectionSheetState extends State<VoucherSelectionSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.white24,
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
             ),
@@ -80,7 +80,12 @@ class _VoucherSelectionSheetState extends State<VoucherSelectionSheet> {
             children: [
               const Text(
                 'Pilih Voucher Diskon',
-                style: TextStyle(color: kTextPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  color: kTextPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
               ),
               if (widget.selectedVoucher != null)
                 TextButton(
@@ -139,13 +144,20 @@ class _VoucherSelectionSheetState extends State<VoucherSelectionSheet> {
                                   child: Container(
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: kCard,
+                                      color: kBg,
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
                                         color: isCurrentlySelected
                                             ? kAccent
-                                            : Colors.white10,
+                                            : Colors.white.withValues(alpha: 0.05),
                                       ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withValues(alpha: 0.1),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
                                     ),
                                     child: Row(
                                       children: [
@@ -191,12 +203,16 @@ class _VoucherSelectionSheetState extends State<VoucherSelectionSheet> {
                                                     ),
                                                   ),
                                                   const SizedBox(width: 8),
-                                                  Text(
-                                                    voucher.name,
-                                                    style: const TextStyle(
-                                                      color: kTextPrimary,
-                                                      fontWeight: FontWeight.bold,
-                                                      fontSize: 14,
+                                                  Expanded(
+                                                    child: Text(
+                                                      voucher.name,
+                                                      style: const TextStyle(
+                                                        color: kTextPrimary,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                 ],
