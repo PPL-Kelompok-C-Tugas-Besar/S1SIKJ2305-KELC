@@ -36,6 +36,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final bytes = await picked.readAsBytes();
     final base64Photo = base64Encode(bytes);
 
+    if (!mounted) return;
     final result = await context.read<AuthProvider>().uploadPhoto(base64Photo);
 
     setState(() => _isUploadingPhoto = false);
