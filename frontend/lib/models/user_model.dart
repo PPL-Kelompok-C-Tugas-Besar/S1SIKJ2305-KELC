@@ -3,6 +3,7 @@ class UserModel {
   final String fullName;
   final String email;
   final double? weight;
+  final double? height;
   final String role;
   final String? gender;
   final List<String>? goals;
@@ -21,6 +22,7 @@ class UserModel {
     required this.fullName,
     required this.email,
     this.weight,
+    this.height,
     required this.role,
     this.gender,
     this.goals,
@@ -35,12 +37,28 @@ class UserModel {
     this.dailyCalorieTarget,
   });
 
+  double? get bmi {
+    if (weight == null || height == null || height! <= 0) return null;
+    final heightInMeters = height! / 100;
+    return weight! / (heightInMeters * heightInMeters);
+  }
+
+  String get bmiCategory {
+    final b = bmi;
+    if (b == null) return '--';
+    if (b < 18.5) return 'Kekurangan Berat Badan';
+    if (b < 25.0) return 'Normal';
+    if (b < 30.0) return 'Kelebihan Berat Badan';
+    return 'Obesitas';
+  }
+
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'],
       fullName: json['full_name'],
       email: json['email'],
       weight: _parseDouble(json['weight']),
+      height: _parseDouble(json['height']),
       role: json['role'],
       gender: json['gender'],
       goals: json['goals'] != null ? List<String>.from(json['goals']) : null,
@@ -61,6 +79,7 @@ class UserModel {
     String? fullName,
     String? email,
     double? weight,
+    double? height,
     String? role,
     String? gender,
     List<String>? goals,
@@ -79,6 +98,7 @@ class UserModel {
       fullName: fullName ?? this.fullName,
       email: email ?? this.email,
       weight: weight ?? this.weight,
+      height: height ?? this.height,
       role: role ?? this.role,
       gender: gender ?? this.gender,
       goals: goals ?? this.goals,
