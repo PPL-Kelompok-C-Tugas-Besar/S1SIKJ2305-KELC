@@ -9,5 +9,6 @@ CREATE TABLE IF NOT EXISTS users (
   fitness_goal         VARCHAR(100) DEFAULT NULL,
   target_weight        FLOAT DEFAULT NULL,
   onboarding_completed BOOLEAN DEFAULT FALSE,
+  height               FLOAT DEFAULT NULL,
   date_created         TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

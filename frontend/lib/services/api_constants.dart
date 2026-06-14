@@ -14,6 +14,7 @@ class ApiConstants {
   static const String todayStats = '$baseUrl/users/stats/today';
   static const String weight = '$baseUrl/users/weight';
   static const String weightHistory = '$baseUrl/users/weight/history';
+  static const String height = '$baseUrl/users/height';
 
   // Calories
   static const String calculateCalories = '$baseUrl/calories/calculate';
