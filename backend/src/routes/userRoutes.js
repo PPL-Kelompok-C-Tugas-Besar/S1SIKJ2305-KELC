@@ -5,6 +5,8 @@ const { verifyToken } = require('../middleware/authMiddleware');
 const { pool } = require('../config/db');
 const { getHistory, addHistory, getTodayStats } = require('../controllers/historyController');
 const { updateWeight, getWeightHistory, updateWeeklyGoal } = require('../controllers/profileController');
+const { calculateBMR, calculateTDEE } = require('../utils/calorieCalculator');
+const { getAddresses, addAddress, updateAddress, deleteAddress } = require('../controllers/addressController');
 
 // GET /users/stats/today
 router.get('/stats/today', verifyToken, getTodayStats);
@@ -16,19 +18,19 @@ router.post('/weekly-goal', verifyToken, updateWeeklyGoal);
 router.get('/profile', verifyToken, async (req, res) => {
   try {
     console.log('Getting profile for user ID:', req.user.id);
-    
+
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, height, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created, photo_url FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, height, age, activity_level, diet_goal, daily_calorie_target, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created, photo_url FROM users WHERE id = ?',
       [req.user.id]
     );
-    
+
     console.log('Raw user data from DB:', rows[0]);
-    
+
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
     }
     const user = rows[0];
-    
+
     // Convert fitness_goal enum to array
     if (user.fitness_goal) {
       // Convert enum value to readable format
@@ -36,11 +38,11 @@ router.get('/profile', verifyToken, async (req, res) => {
     } else {
       user.goals = [];
     }
-    
+
     console.log('Processed user data:', user);
     console.log('onboarding_completed value:', user.onboarding_completed);
     console.log('onboarding_completed type:', typeof user.onboarding_completed);
-    
+
     return res.status(200).json({ success: true, data: user });
   } catch (err) {
     console.error('Get profile error:', err);
@@ -51,25 +53,54 @@ router.get('/profile', verifyToken, async (req, res) => {
 // PUT /users/profile
 router.put('/profile', verifyToken, async (req, res) => {
   try {
-    const { gender, goals, currentWeight, targetWeight } = req.body;
+    const { gender, goals, currentWeight, targetWeight, height, age, activityLevel, dietGoal } = req.body;
     const userId = req.user.id;
 
-    // Convert goals array to enum value
+    // Map new diet goals to legacy fitness_goal enum to prevent MySQL error
     let fitnessGoalsValue = null;
-    if (goals && goals.length > 0) {
-      // Convert readable format back to enum
+    if (dietGoal) {
+      const goalMap = {
+        'cutting': 'weight_loss',
+        'maintenance': 'keep_fit',
+        'bulking': 'muscle_gain'
+      };
+      fitnessGoalsValue = goalMap[dietGoal] || 'keep_fit';
+    } else if (goals && goals.length > 0) {
       fitnessGoalsValue = goals[0].replace(' ', '_');
+    }
+
+    // Kalkulasi target kalori harian
+    let dailyCalorieTarget = null;
+    if (currentWeight && height && age && gender && activityLevel) {
+      try {
+        const bmr = calculateBMR(currentWeight, height, age, gender);
+        const tdee = calculateTDEE(bmr, activityLevel);
+
+        dailyCalorieTarget = tdee;
+        if (dietGoal === 'cutting') {
+          dailyCalorieTarget -= 500;
+        } else if (dietGoal === 'bulking') {
+          dailyCalorieTarget += 500;
+        }
+      } catch (calcErr) {
+        console.error('Error calculating calorie target:', calcErr.message);
+      }
     }
 
     const [result] = await pool.execute(
       `UPDATE users
-       SET gender = ?, fitness_goal = ?, weight = ?, target_weight = ?, onboarding_completed = 1
+       SET gender = ?, fitness_goal = ?, weight = ?, target_weight = ?, height = ?, age = ?, activity_level = ?, diet_goal = ?, daily_calorie_target = ?, onboarding_completed = 1
        WHERE id = ?`,
       [
         gender || null,
         fitnessGoalsValue,
         currentWeight || null,
         targetWeight || null,
+        height || null,
+        age || null,
+        activityLevel || null,
+        dietGoal || null,
+        dailyCalorieTarget,
         userId
       ]
     );
@@ -80,7 +111,7 @@ router.put('/profile', verifyToken, async (req, res) => {
 
     // Get updated user data
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, height, role, gender, fitness_goal, target_weight, onboarding_completed, date_created FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, height, age, activity_level, diet_goal, daily_calorie_target, role, gender, fitness_goal, target_weight, onboarding_completed, date_created FROM users WHERE id = ?',
       [userId]
     );
 
@@ -147,6 +178,18 @@ router.get('/history', verifyToken, getHistory);
 
 // POST /users/history
 router.post('/history', verifyToken, addHistory);
+
+// GET /users/addresses
+router.get('/addresses', verifyToken, getAddresses);
+
+// POST /users/addresses
+router.post('/addresses', verifyToken, addAddress);
+
+// PUT /users/addresses/:id
+router.put('/addresses/:id', verifyToken, updateAddress);
+
+// DELETE /users/addresses/:id
+router.delete('/addresses/:id', verifyToken, deleteAddress);
 
 // PUT /users/photo
 router.put('/photo', verifyToken, async (req, res) => {

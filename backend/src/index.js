@@ -62,11 +62,11 @@ app.use((req, res) => {
 const start = async () => {
   try {
     await testConnection();
-    
+
     // Jalankan migrasi tabel
     const { runMigration } = require('./config/migrate_history');
     await runMigration();
-    
+
     const { runWeightMigration } = require('./config/migrate_weight');
     await runWeightMigration();
 
@@ -82,6 +82,12 @@ const start = async () => {
 
     const { runPhotoMigration } = require('./config/migrate_photo');
     await runPhotoMigration();
+
+    const { runAddressesMigration } = require('./config/migrate_addresses');
+    await runAddressesMigration();
+    // Migrasi PBI Rekomendasi Target Kalori
+    const { runUsersCalorieMigration } = require('./config/migrate_users_calorie_target');
+    await runUsersCalorieMigration();
 
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);

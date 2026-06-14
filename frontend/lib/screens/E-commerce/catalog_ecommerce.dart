@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'detailcatalog_ecommerce.dart';
 import 'cart_ecommerce.dart';
+import 'purchase_history.dart';
 import '../../services/auth_service.dart';
 
 class AppColors {
@@ -26,6 +27,13 @@ class _ShopPageState extends State<ShopPage> {
   bool isLoading = true;
   String errorMessage = '';
   int cartItemCount = 0;
+
+  // New state variables for search and filters
+  String searchQuery = '';
+  String sortBy = 'id_desc';
+  double? minPrice;
+  double? maxPrice;
+  final TextEditingController searchController = TextEditingController();
 
   @override
   void initState() {
@@ -82,9 +90,20 @@ class _ShopPageState extends State<ShopPage> {
   }
 
   Future<void> fetchProducts() async {
+    if (!mounted) return;
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
     try {
-      // Narik data dari backend Node.js lu
-      final response = await http.get(Uri.parse('http://localhost:3000/products'));
+      final queryParams = <String, String>{};
+      if (searchQuery.isNotEmpty) queryParams['search'] = searchQuery;
+      if (minPrice != null) queryParams['minPrice'] = minPrice!.toInt().toString();
+      if (maxPrice != null) queryParams['maxPrice'] = maxPrice!.toInt().toString();
+      if (sortBy.isNotEmpty) queryParams['sortBy'] = sortBy;
+
+      final uri = Uri.parse('http://localhost:3000/products').replace(queryParameters: queryParams);
+      final response = await http.get(uri);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -157,6 +176,189 @@ class _ShopPageState extends State<ShopPage> {
     }
   }
 
+  void _showFilterBottomSheet() {
+    double tempMin = minPrice ?? 0;
+    double tempMax = maxPrice ?? 10000000;
+    
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardColor,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20, 
+                right: 20, 
+                top: 20, 
+                bottom: MediaQuery.of(context).viewInsets.bottom + 20
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Price Range',
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Min Price',
+                            labelStyle: const TextStyle(color: AppColors.textSecondary),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.textSecondary),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.accentColor),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            tempMin = double.tryParse(value) ?? 0;
+                          },
+                          controller: TextEditingController(text: tempMin > 0 ? tempMin.toInt().toString() : ''),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: TextField(
+                          style: const TextStyle(color: AppColors.textPrimary),
+                          decoration: InputDecoration(
+                            labelText: 'Max Price',
+                            labelStyle: const TextStyle(color: AppColors.textSecondary),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.textSecondary),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: AppColors.accentColor),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) {
+                            tempMax = double.tryParse(value) ?? 10000000;
+                          },
+                          controller: TextEditingController(text: tempMax < 10000000 ? tempMax.toInt().toString() : ''),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 30),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              minPrice = null;
+                              maxPrice = null;
+                            });
+                            Navigator.pop(context);
+                            fetchProducts();
+                          },
+                          child: const Text('Reset', style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentColor,
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              minPrice = tempMin;
+                              maxPrice = tempMax;
+                            });
+                            Navigator.pop(context);
+                            fetchProducts();
+                          },
+                          child: const Text('Apply'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
+
+  void _showSortBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Text(
+                'Sort By',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            _buildSortOption('Latest', 'created_at_desc'),
+            _buildSortOption('Price: Low to High', 'price_asc'),
+            _buildSortOption('Price: High to Low', 'price_desc'),
+            _buildSortOption('Name: A to Z', 'name_asc'),
+            _buildSortOption('Name: Z to A', 'name_desc'),
+            const SizedBox(height: 16),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSortOption(String label, String value) {
+    bool isSelected = sortBy == value;
+    return ListTile(
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? AppColors.accentColor : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      trailing: isSelected ? const Icon(Icons.check, color: AppColors.accentColor) : null,
+      onTap: () {
+        setState(() {
+          sortBy = value;
+        });
+        Navigator.pop(context);
+        fetchProducts();
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -214,11 +416,32 @@ class _ShopPageState extends State<ShopPage> {
                     child: SizedBox(
                       height: 44,
                       child: TextField(
+                        controller: searchController,
                         style: const TextStyle(color: AppColors.textPrimary),
+                        onChanged: (value) {
+                          setState(() {
+                            searchQuery = value;
+                          });
+                        },
+                        onSubmitted: (value) {
+                          fetchProducts();
+                        },
                         decoration: InputDecoration(
                           hintText: 'Search supplements...',
                           hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
                           prefixIcon: const Icon(Icons.search, size: 20, color: AppColors.accentColor),
+                          suffixIcon: searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 20, color: AppColors.textSecondary),
+                                  onPressed: () {
+                                    setState(() {
+                                      searchController.clear();
+                                      searchQuery = '';
+                                    });
+                                    fetchProducts();
+                                  },
+                                )
+                              : null,
                           filled: true,
                           fillColor: AppColors.cardColor,
                           contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
@@ -242,7 +465,27 @@ class _ShopPageState extends State<ShopPage> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.receipt_long_outlined, color: AppColors.textPrimary),
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PurchaseHistoryPage(),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.cardColor,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.filter_list, color: AppColors.textPrimary),
+                      onPressed: () {
+                        _showFilterBottomSheet();
+                      },
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -253,7 +496,9 @@ class _ShopPageState extends State<ShopPage> {
                     ),
                     child: IconButton(
                       icon: const Icon(Icons.sort, color: AppColors.textPrimary),
-                      onPressed: () {},
+                      onPressed: () {
+                        _showSortBottomSheet();
+                      },
                     ),
                   ),
                 ],
@@ -281,7 +526,39 @@ class _ShopPageState extends State<ShopPage> {
                               ],
                             ),
                           )
-                        : GridView.builder(
+                        : products.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.search_off_rounded,
+                                      size: 80,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'There is no product for this',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Try adjusting your search or filters',
+                                      style: TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 14,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : GridView.builder(
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
                               crossAxisSpacing: 16.0,

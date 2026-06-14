@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { recalculateUserCalorieTarget } = require('../utils/calorieCalculator');
 
 const PAGE_LIMIT = 10; // jumlah item per halaman
 
@@ -153,6 +154,9 @@ const addHistory = async (req, res) => {
             'INSERT INTO workout_history (user_id, workout_name, duration_minutes, calories_burned) VALUES (?, ?, ?, ?)',
             [userId, workout_name, duration_minutes, calories_burned]
         );
+
+        // Kalkulasi ulang target kalori (contoh: jika adapter ini menyesuaikan target kalori harian saat latihan selesai)
+        await recalculateUserCalorieTarget(userId, pool);
 
         return res.status(201).json({ 
             success: true, 

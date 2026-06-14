@@ -15,7 +15,7 @@ const addToCart = async (req, res) => {
 
     // 1. Ambil stok produk saat ini dari gudang (database)
     const [products] = await pool.execute(
-      'SELECT stock FROM defaultdb.products WHERE id = ?',
+      'SELECT stock FROM products WHERE id = ?',
       [product_id]
     );
 
@@ -27,7 +27,7 @@ const addToCart = async (req, res) => {
 
     // 2. Cek apakah produk sudah ada di cart untuk user ini
     const [existing] = await pool.execute(
-      'SELECT id, quantity FROM defaultdb.carts WHERE user_id = ? AND product_id = ?',
+      'SELECT id, quantity FROM carts WHERE user_id = ? AND product_id = ?',
       [user_id, product_id]
     );
 
@@ -50,13 +50,13 @@ const addToCart = async (req, res) => {
     if (existing.length > 0) {
       // Update quantity
       await pool.execute(
-        'UPDATE defaultdb.carts SET quantity = ? WHERE id = ?',
+        'UPDATE carts SET quantity = ? WHERE id = ?',
         [totalQuantity, existing[0].id]
       );
     } else {
       // Insert baru
       await pool.execute(
-        'INSERT INTO defaultdb.carts (user_id, product_id, quantity) VALUES (?, ?, ?)',
+        'INSERT INTO carts (user_id, product_id, quantity) VALUES (?, ?, ?)',
         [user_id, product_id, quantity]
       );
     }
@@ -80,8 +80,8 @@ const getCart = async (req, res) => {
     const user_id = req.user.id;
     const [rows] = await pool.execute(`
       SELECT c.id as cart_id, c.quantity, p.id as product_id, p.name, p.price, p.image_url, p.stock
-      FROM defaultdb.carts c
-      JOIN defaultdb.products p ON c.product_id = p.id
+      FROM carts c
+      JOIN products p ON c.product_id = p.id
       WHERE c.user_id = ?
     `, [user_id]);
 
@@ -111,13 +111,13 @@ const updateCartItem = async (req, res) => {
     const user_id = req.user.id;
 
     // Check ownership
-    const [existing] = await pool.execute('SELECT * FROM defaultdb.carts WHERE id = ? AND user_id = ?', [id, user_id]);
+    const [existing] = await pool.execute('SELECT * FROM carts WHERE id = ? AND user_id = ?', [id, user_id]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, message: 'Item tidak ditemukan' });
     }
 
     // Check stock
-    const [product] = await pool.execute('SELECT stock FROM defaultdb.products WHERE id = ?', [existing[0].product_id]);
+    const [product] = await pool.execute('SELECT stock FROM products WHERE id = ?', [existing[0].product_id]);
     const availableStock = product.length > 0 ? parseInt(product[0].stock, 10) : 0;
     if (quantity > availableStock) {
       return res.status(400).json({ success: false, message: `Stok hanya sisa ${availableStock}` });
@@ -134,7 +134,7 @@ const removeCartItem = async (req, res) => {
   try {
     const { id } = req.params;
     const user_id = req.user.id;
-    await pool.execute('DELETE FROM defaultdb.carts WHERE id = ? AND user_id = ?', [id, user_id]);
+    await pool.execute('DELETE FROM carts WHERE id = ? AND user_id = ?', [id, user_id]);
     return res.status(200).json({ success: true, message: 'Item dihapus' });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
@@ -144,7 +144,7 @@ const removeCartItem = async (req, res) => {
 const clearCart = async (req, res) => {
   try {
     const user_id = req.user.id;
-    await pool.execute('DELETE FROM defaultdb.carts WHERE user_id = ?', [user_id]);
+    await pool.execute('DELETE FROM carts WHERE user_id = ?', [user_id]);
     return res.status(200).json({ success: true, message: 'Cart dikosongkan' });
   } catch (error) {
     return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });

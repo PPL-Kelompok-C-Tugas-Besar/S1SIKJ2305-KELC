@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -31,13 +32,179 @@ class _CheckoutPageState extends State<CheckoutPage> {
   bool isOrdering = false;
   String _selectedPayment = 'QRIS';
 
-  // Dummy address — address management is a future sprint
-  final Map<String, String> _dummyAddress = {
-    'name': 'John Doe',
-    'phone': '+62 812-3456-7890',
-    'address': 'Jl. Agartha No. 9, Kel. Sehat, Kec. Fit',
-    'city': 'Jakarta Selatan, 12345',
-  };
+  int _selectedAddressIndex = 0;
+  bool _isLoadingAddresses = true;
+  bool _isManagingAddresses = false;
+
+  final List<Map<String, String>> _addresses = [];
+
+  Map<String, String>? get _currentAddress {
+    if (_addresses.isEmpty ||
+        _selectedAddressIndex < 0 ||
+        _selectedAddressIndex >= _addresses.length) {
+      return null;
+    }
+    return _addresses[_selectedAddressIndex];
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAddresses();
+  }
+
+  Future<void> _fetchAddresses() async {
+    setState(() => _isLoadingAddresses = true);
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.get(
+        Uri.parse('http://localhost:3000/api/users/addresses'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final List<dynamic> list = data['data'] ?? [];
+          setState(() {
+            _addresses.clear();
+            for (var item in list) {
+              _addresses.add({
+                'id': item['id'].toString(),
+                'name': item['name'].toString(),
+                'phone': item['phone'].toString(),
+                'address': item['address'].toString(),
+                'city': item['city'].toString(),
+                'postalCode': item['postalCode'].toString(),
+                'isDefault': item['isDefault'].toString(),
+              });
+            }
+            if (_selectedAddressIndex >= _addresses.length) {
+              _selectedAddressIndex = 0;
+            }
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching addresses: $e');
+    } finally {
+      setState(() => _isLoadingAddresses = false);
+    }
+  }
+
+  Future<bool> _addAddressToApi({
+    required String name,
+    required String phone,
+    required String address,
+    required String city,
+    required String postalCode,
+    required bool isDefault,
+  }) async {
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.post(
+        Uri.parse('http://localhost:3000/api/users/addresses'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'name': name,
+          'phone': phone,
+          'address': address,
+          'city': city,
+          'postalCode': postalCode,
+          'isDefault': isDefault,
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          await _fetchAddresses();
+          setState(() {
+            _selectedAddressIndex = 0;
+          });
+          return true;
+        }
+      }
+      _showErrorSnackbar('Gagal menyimpan alamat baru');
+      return false;
+    } catch (e) {
+      _showErrorSnackbar('Terjadi kesalahan koneksi saat menambah alamat');
+      return false;
+    }
+  }
+
+  Future<bool> _updateAddressInApi({
+    required String addressId,
+    required String name,
+    required String phone,
+    required String address,
+    required String city,
+    required String postalCode,
+    required bool isDefault,
+  }) async {
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.put(
+        Uri.parse('http://localhost:3000/api/users/addresses/$addressId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'name': name,
+          'phone': phone,
+          'address': address,
+          'city': city,
+          'postalCode': postalCode,
+          'isDefault': isDefault,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          await _fetchAddresses();
+          return true;
+        }
+      }
+      _showErrorSnackbar('Gagal memperbarui alamat');
+      return false;
+    } catch (e) {
+      _showErrorSnackbar('Terjadi kesalahan koneksi saat memperbarui alamat');
+      return false;
+    }
+  }
+
+  Future<bool> _deleteAddressFromApi(String addressId) async {
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.delete(
+        Uri.parse('http://localhost:3000/api/users/addresses/$addressId'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          return true;
+        }
+      }
+      _showErrorSnackbar('Gagal menghapus alamat');
+      return false;
+    } catch (e) {
+      _showErrorSnackbar('Terjadi kesalahan koneksi saat menghapus alamat');
+      return false;
+    }
+  }
 
   int get totalCost => widget.subtotal + widget.shippingCost;
 
@@ -54,6 +221,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   Future<void> _placeOrder() async {
+    if (_currentAddress == null) {
+      _showErrorSnackbar('Silakan tambahkan alamat pengiriman terlebih dahulu');
+      return;
+    }
+
     setState(() => isOrdering = true);
 
     try {
@@ -72,7 +244,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
             'cart_id': item['id'], // item['id'] is cart_id in cart_ecommerce
           }).toList(),
           'payment_method': _selectedPayment,
-          'shipping_address': _dummyAddress['address'],
+          'shipping_address': '${_currentAddress!['address']!}, ${_currentAddress!['city']!}, ${_currentAddress!['postalCode']!}',
           'total': totalCost,
         }),
       );
@@ -83,7 +255,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
       if (response.statusCode == 201 && data['success'] == true) {
         setState(() => isOrdering = false);
-        _showOrderSuccessDialog();
+        
+        if (_selectedPayment == 'QRIS') {
+          _showQrisDialog();
+          await Future.delayed(const Duration(seconds: 5));
+          if (mounted) {
+            Navigator.of(context).pop();
+          }
+        }
+
+        if (mounted) {
+          _showOrderSuccessDialog();
+        }
       } else {
         _showErrorSnackbar(data['message'] ?? 'Pesanan gagal diproses');
       }
@@ -94,10 +277,578 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
+  void _showQrisDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: AppColors.cardColor,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'PEMBAYARAN QRIS',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Silakan scan kode QR di bawah untuk membayar',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(
+                  Icons.qr_code_2_rounded,
+                  size: 200,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.accentColor,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Menunggu pembayaran...',
+                    style: TextStyle(
+                      color: AppColors.accentColor,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showAddressSelectionBottomSheet(BuildContext context) {
+    _isManagingAddresses = false; // Reset to select mode when opening
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.bgColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[700],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'PILIH ALAMAT',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          setModalState(() {
+                            _isManagingAddresses = !_isManagingAddresses;
+                          });
+                        },
+                        child: Text(
+                          _isManagingAddresses ? 'Selesai' : 'Kelola',
+                          style: const TextStyle(
+                            color: AppColors.accentColor,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.4,
+                    ),
+                    child: _addresses.isEmpty
+                        ? Container(
+                            alignment: Alignment.center,
+                            padding: const EdgeInsets.symmetric(vertical: 40),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.location_off_rounded,
+                                    color: AppColors.textSecondary, size: 48),
+                                SizedBox(height: 12),
+                                Text(
+                                  'Belum ada alamat pengiriman',
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Silakan tambahkan alamat baru di bawah.',
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            shrinkWrap: true,
+                            itemCount: _addresses.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final address = _addresses[index];
+                              final isSelected = _selectedAddressIndex == index;
+                              final isDefault = address['isDefault'] == 'true';
+                              return GestureDetector(
+                                onTap: _isManagingAddresses
+                                    ? null
+                                    : () {
+                                        setState(() {
+                                          _selectedAddressIndex = index;
+                                        });
+                                        setModalState(() {});
+                                        Navigator.pop(context);
+                                      },
+                                child: Container(
+                                  height: 130,
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.cardColor,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: !_isManagingAddresses && isSelected
+                                          ? AppColors.accentColor
+                                          : Colors.transparent,
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      if (!_isManagingAddresses) ...[
+                                        Container(
+                                          margin: const EdgeInsets.only(top: 2),
+                                          width: 20,
+                                          height: 20,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? AppColors.accentColor
+                                                  : AppColors.textSecondary,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: isSelected
+                                              ? Center(
+                                                  child: Container(
+                                                    width: 10,
+                                                    height: 10,
+                                                    decoration: const BoxDecoration(
+                                                      color: AppColors.accentColor,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 16),
+                                      ],
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  address['name']!,
+                                                  style: const TextStyle(
+                                                    color: AppColors.textPrimary,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                                if (isDefault) ...[
+                                                  const SizedBox(width: 8),
+                                                  Container(
+                                                    padding: const EdgeInsets.symmetric(
+                                                        horizontal: 6, vertical: 2),
+                                                    decoration: BoxDecoration(
+                                                      color: AppColors.accentColor
+                                                          .withValues(alpha: 0.15),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      border: Border.all(
+                                                          color: AppColors.accentColor,
+                                                          width: 1),
+                                                    ),
+                                                    child: const Text(
+                                                      'Utama',
+                                                      style: TextStyle(
+                                                        color: AppColors.accentColor,
+                                                        fontSize: 10,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              address['phone']!,
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 12,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 6),
+                                            Text(
+                                              '${address['address']!}\n${address['city']!}, ${address['postalCode']!}',
+                                              style: const TextStyle(
+                                                color: AppColors.textSecondary,
+                                                fontSize: 12,
+                                                height: 1.4,
+                                              ),
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      if (_isManagingAddresses) ...[
+                                        IconButton(
+                                          onPressed: () {
+                                            _showAddAddressDialog(context,
+                                                existingAddress: address, onAdd: () {
+                                              setModalState(() {});
+                                            });
+                                          },
+                                          icon: const Icon(Icons.edit_outlined,
+                                              color: AppColors.accentColor, size: 20),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          splashRadius: 20,
+                                        ),
+                                        const SizedBox(width: 12),
+                                        IconButton(
+                                          onPressed: () async {
+                                            final addressId = address['id'];
+                                            if (addressId != null) {
+                                              final success =
+                                                  await _deleteAddressFromApi(addressId);
+                                              if (success) {
+                                                setState(() {
+                                                  _addresses.removeAt(index);
+                                                  if (_selectedAddressIndex == index) {
+                                                    if (_selectedAddressIndex >=
+                                                        _addresses.length) {
+                                                      _selectedAddressIndex =
+                                                          _addresses.length - 1;
+                                                    }
+                                                  } else if (_selectedAddressIndex > index) {
+                                                    _selectedAddressIndex--;
+                                                  }
+                                                  if (_selectedAddressIndex < 0) {
+                                                    _selectedAddressIndex = 0;
+                                                  }
+                                                });
+                                                setModalState(() {});
+                                              }
+                                            }
+                                          },
+                                          icon: const Icon(Icons.delete_outline_rounded,
+                                              color: Colors.redAccent, size: 20),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          splashRadius: 20,
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        _showAddAddressDialog(context, onAdd: () {
+                          setModalState(() {});
+                        });
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.accentColor,
+                        side: const BorderSide(color: AppColors.accentColor, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text(
+                        'TAMBAH ALAMAT BARU',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddAddressDialog(BuildContext context,
+      {Map<String, String>? existingAddress, required VoidCallback onAdd}) {
+    final isEditing = existingAddress != null;
+    final formKey = GlobalKey<FormState>();
+
+    final nameController = TextEditingController(text: isEditing ? existingAddress['name'] : '');
+    final phoneController = TextEditingController(text: isEditing ? existingAddress['phone'] : '');
+    final addressController =
+        TextEditingController(text: isEditing ? existingAddress['address'] : '');
+    final cityController = TextEditingController(text: isEditing ? existingAddress['city'] : '');
+    final postalCodeController =
+        TextEditingController(text: isEditing ? existingAddress['postalCode'] : '');
+
+    bool makeDefault = isEditing ? (existingAddress['isDefault'] == 'true') : false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              backgroundColor: AppColors.cardColor,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              title: Text(
+                isEditing ? 'Edit Alamat' : 'Tambah Alamat Baru',
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: _buildInputDecoration('Nama Penerima'),
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Nama penerima wajib diisi' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: phoneController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: _buildInputDecoration('Nomor Telepon'),
+                        validator: (v) =>
+                            v == null || v.isEmpty ? 'Nomor telepon wajib diisi' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: addressController,
+                        maxLines: 3,
+                        style: const TextStyle(color: AppColors.textPrimary),
+                        decoration: _buildInputDecoration('Alamat Lengkap'),
+                        validator: (v) => v == null || v.isEmpty ? 'Alamat wajib diisi' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: cityController,
+                              style: const TextStyle(color: AppColors.textPrimary),
+                              decoration: _buildInputDecoration('Kota'),
+                              validator: (v) => v == null || v.isEmpty ? 'Kota wajib diisi' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: postalCodeController,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                              style: const TextStyle(color: AppColors.textPrimary),
+                              decoration: _buildInputDecoration('Kode Pos'),
+                              validator: (v) => v == null || v.isEmpty ? 'Kode pos wajib' : null,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      GestureDetector(
+                        onTap: () {
+                          setDialogState(() {
+                            makeDefault = !makeDefault;
+                          });
+                        },
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: makeDefault,
+                              activeColor: AppColors.accentColor,
+                              checkColor: Colors.black,
+                              onChanged: (v) {
+                                setDialogState(() {
+                                  makeDefault = v ?? false;
+                                });
+                              },
+                            ),
+                            const Text(
+                              'Jadikan Alamat Utama',
+                              style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actionsPadding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (formKey.currentState!.validate()) {
+                      bool success = false;
+                      if (isEditing) {
+                        success = await _updateAddressInApi(
+                          addressId: existingAddress['id']!,
+                          name: nameController.text.trim(),
+                          phone: phoneController.text.trim(),
+                          address: addressController.text.trim(),
+                          city: cityController.text.trim(),
+                          postalCode: postalCodeController.text.trim(),
+                          isDefault: makeDefault,
+                        );
+                      } else {
+                        success = await _addAddressToApi(
+                          name: nameController.text.trim(),
+                          phone: phoneController.text.trim(),
+                          address: addressController.text.trim(),
+                          city: cityController.text.trim(),
+                          postalCode: postalCodeController.text.trim(),
+                          isDefault: makeDefault,
+                        );
+                      }
+                      if (success && ctx.mounted) {
+                        onAdd();
+                        Navigator.pop(ctx);
+                      }
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.accentColor,
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  InputDecoration _buildInputDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      labelStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+      filled: true,
+      fillColor: AppColors.bgColor,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.accentColor, width: 1.5),
+      ),
+      errorStyle: const TextStyle(color: Colors.redAccent),
+    );
+  }
+
   void _showOrderSuccessDialog() {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.cardColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
@@ -109,7 +860,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
               right: 8,
               top: 8,
               child: IconButton(
-                onPressed: () => Navigator.of(ctx).pop(),
+                onPressed: () {
+                  Navigator.of(ctx).pop();
+                  Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+                },
                 icon: const Icon(Icons.close, color: AppColors.textSecondary),
                 splashRadius: 20,
               ),
@@ -274,63 +1028,160 @@ class _CheckoutPageState extends State<CheckoutPage> {
                     // ── Delivery Address ─────────────────────────
                     _buildSectionLabel('DELIVERY ADDRESS'),
                     const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: AppColors.cardColor,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.accentColor.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
+                    _isLoadingAddresses
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(vertical: 30),
                             decoration: BoxDecoration(
-                              color: AppColors.accentColor.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(12),
+                              color: AppColors.cardColor,
+                              borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Icon(Icons.location_on_rounded,
-                                color: AppColors.accentColor, size: 22),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _dummyAddress['name']!,
-                                  style: const TextStyle(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 15,
-                                  ),
+                            child: const Center(
+                              child: CircularProgressIndicator(color: AppColors.accentColor),
+                            ),
+                          )
+                        : GestureDetector(
+                            onTap: () => _showAddressSelectionBottomSheet(context),
+                            child: Container(
+                              height: 140,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: AppColors.cardColor,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: AppColors.accentColor.withValues(alpha: 0.3),
+                                  width: 1,
                                 ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  _dummyAddress['phone']!,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.accentColor.withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Icon(Icons.location_on_rounded,
+                                        color: AppColors.accentColor, size: 22),
                                   ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  '${_dummyAddress['address']!}\n${_dummyAddress['city']!}',
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ],
+                                  const SizedBox(width: 16),
+                                  _currentAddress == null
+                                      ? Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: const [
+                                                  Text(
+                                                    'Belum ada alamat pengiriman',
+                                                    style: TextStyle(
+                                                      color: AppColors.textPrimary,
+                                                      fontWeight: FontWeight.bold,
+                                                      fontSize: 15,
+                                                    ),
+                                                  ),
+                                                  Text(
+                                                    'Tambah',
+                                                    style: TextStyle(
+                                                      color: AppColors.accentColor,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 6),
+                                              const Text(
+                                                'Ketuk kartu ini untuk menambahkan alamat baru.',
+                                                style: TextStyle(
+                                                  color: AppColors.textSecondary,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        )
+                                      : Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Text(
+                                                        _currentAddress!['name']!,
+                                                        style: const TextStyle(
+                                                          color: AppColors.textPrimary,
+                                                          fontWeight: FontWeight.bold,
+                                                          fontSize: 15,
+                                                        ),
+                                                      ),
+                                                      if (_currentAddress!['isDefault'] == 'true') ...[
+                                                        const SizedBox(width: 8),
+                                                        Container(
+                                                          padding: const EdgeInsets.symmetric(
+                                                              horizontal: 6, vertical: 2),
+                                                          decoration: BoxDecoration(
+                                                            color: AppColors.accentColor
+                                                                .withValues(alpha: 0.15),
+                                                            borderRadius: BorderRadius.circular(6),
+                                                            border: Border.all(
+                                                                color: AppColors.accentColor,
+                                                                width: 1),
+                                                          ),
+                                                          child: const Text(
+                                                            'Utama',
+                                                            style: TextStyle(
+                                                              color: AppColors.accentColor,
+                                                              fontSize: 10,
+                                                              fontWeight: FontWeight.bold,
+                                                            ),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ],
+                                                  ),
+                                                  const Text(
+                                                    'Ubah',
+                                                    style: TextStyle(
+                                                      color: AppColors.accentColor,
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Text(
+                                                _currentAddress!['phone']!,
+                                                style: const TextStyle(
+                                                  color: AppColors.textSecondary,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 6),
+                                              Text(
+                                                '${_currentAddress!['address']!}\n${_currentAddress!['city']!}, ${_currentAddress!['postalCode']!}',
+                                                style: const TextStyle(
+                                                  color: AppColors.textSecondary,
+                                                  fontSize: 13,
+                                                  height: 1.5,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                ],
+                              ),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
 
                     const SizedBox(height: 24),
 
