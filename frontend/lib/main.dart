@@ -3,11 +3,14 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/supplement_provider.dart';
 import 'providers/exercise_upload_provider.dart';
+import 'providers/cart_provider.dart';
+import 'providers/wishlist_provider.dart';
+import 'providers/admin_voucher_provider.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
 import 'screens/auth/homepage_screens.dart';
-import 'screens/E-commerce/catalog_ecommerce.dart';
+import 'screens/marketplace/marketplace_page.dart';
 import 'screens/auth/onboarding_page.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'screens/admin/admin_dashboard_screen.dart';
@@ -22,6 +25,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => SupplementProvider()),
         ChangeNotifierProvider(create: (_) => ExerciseUploadProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => AdminVoucherProvider()),
       ],
       child: const GymbroApp(),
     ),
@@ -44,7 +50,7 @@ class GymbroApp extends StatelessWidget {
         '/onboarding': (_) => const OnboardingPage(),
         '/home': (_) => const HomeScreen(),
         '/admin-dashboard': (_) => const AdminDashboardScreen(),
-        '/shop': (_) => const ShopPage(),
+        '/shop': (_) => const MarketplacePage(),
       },
     );
   }

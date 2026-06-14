@@ -4,6 +4,7 @@ import 'manage_users_screen.dart';
 import 'manage_workouts_screen.dart';
 import 'manage_exercises_screen.dart';
 import 'manage_supplements_screen.dart';
+import 'manage_vouchers_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -94,6 +95,27 @@ class AdminDashboardScreen extends StatelessWidget {
                       Navigator.push(
                         context,
                         MaterialPageRoute(builder: (context) => const ManageSupplementsScreen()),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+
+            // Third Row (Vouchers)
+            Row(
+              children: [
+                Expanded(
+                  child: _buildDashboardCard(
+                    context,
+                    title: 'Vouchers',
+                    icon: Icons.confirmation_number_outlined,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ManageVouchersScreen()),
                       );
                     },
                   ),

@@ -10,7 +10,7 @@ import '../history/history_page.dart';
 import '../profile/profile_page.dart';
 import '../../widgets/weight_dialog_helper.dart';
 import '../catalogue/exercise_selection_page.dart';
-import '../E-commerce/catalog_ecommerce.dart';
+import '../marketplace/marketplace_page.dart';
 
 // ─── Root shell – owns the bottom nav ────────────────────────────────────────
 class HomeScreen extends StatefulWidget {
@@ -26,7 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static const List<Widget> _pages = [
     _HomePage(),
     CataloguePage(),
-    ShopPage(),
+    MarketplacePage(),
     HistoryPage(),
     ProfilePage(),
   ];
@@ -424,8 +424,8 @@ class _DailyStatsRow extends StatelessWidget {
             value: isLoading
                 ? '...'
                 : (targetCalories > 0
-                      ? '$calories / $targetCalories'
-                      : calories.toString()),
+                    ? '$calories / $targetCalories'
+                    : calories.toString()),
             unit: 'kcal',
             icon: Icons.local_fire_department,
           ),
@@ -807,15 +807,15 @@ class _DayBadge extends StatelessWidget {
             child: isCompleted
                 ? const Icon(Icons.check_circle, color: kAccent, size: 12)
                 : (isActive
-                      ? Container(
-                          width: 4,
-                          height: 4,
-                          decoration: const BoxDecoration(
-                            color: kTextMuted,
-                            shape: BoxShape.circle,
-                          ),
-                        )
-                      : null),
+                    ? Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: kTextMuted,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    : null),
           ),
         ],
       ),
@@ -1158,17 +1158,3 @@ class _WorkoutCard extends StatelessWidget {
     );
   }
 }
-
-// ─── Placeholder tabs ─────────────────────────────────────────────────────────
-// class _PlaceholderPage extends StatelessWidget {
-//   const _PlaceholderPage({required this.label});
-//   final String label;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//       child: Text(label,
-//           style: const TextStyle(color: kTextMuted, fontSize: 18)),
-//     );
-//   }
-// }
