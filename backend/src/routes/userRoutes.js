@@ -18,7 +18,7 @@ router.get('/profile', verifyToken, async (req, res) => {
     console.log('Getting profile for user ID:', req.user.id);
     
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created, photo_url FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, height, role, gender, fitness_goal, target_weight, onboarding_completed, weekly_workout_goal, date_created, photo_url FROM users WHERE id = ?',
       [req.user.id]
     );
     
@@ -62,7 +62,7 @@ router.put('/profile', verifyToken, async (req, res) => {
     }
 
     const [result] = await pool.execute(
-      `UPDATE users 
+      `UPDATE users
        SET gender = ?, fitness_goal = ?, weight = ?, target_weight = ?, onboarding_completed = 1
        WHERE id = ?`,
       [
@@ -80,7 +80,7 @@ router.put('/profile', verifyToken, async (req, res) => {
 
     // Get updated user data
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, weight, role, gender, fitness_goal, target_weight, onboarding_completed, date_created FROM users WHERE id = ?',
+      'SELECT id, full_name, email, weight, height, role, gender, fitness_goal, target_weight, onboarding_completed, date_created FROM users WHERE id = ?',
       [userId]
     );
 
@@ -91,13 +91,47 @@ router.put('/profile', verifyToken, async (req, res) => {
       updatedUser.goals = [];
     }
 
-    return res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       data: updatedUser,
       message: 'Profil berhasil diperbarui'
     });
   } catch (err) {
     console.error('Update profile error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+});
+
+// PUT /users/height
+router.put('/height', verifyToken, async (req, res) => {
+  try {
+    const { height } = req.body;
+    const userId = req.user.id;
+
+    if (height === undefined || height === null) {
+      return res.status(400).json({ success: false, message: 'Tinggi badan wajib diisi' });
+    }
+
+    const parsedHeight = parseFloat(height);
+    if (isNaN(parsedHeight) || parsedHeight < 50 || parsedHeight > 250) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tinggi badan harus antara 50 - 250 cm'
+      });
+    }
+
+    await pool.execute(
+      'UPDATE users SET height = ? WHERE id = ?',
+      [parsedHeight, userId]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Tinggi badan berhasil diperbarui',
+      data: { height: parsedHeight }
+    });
+  } catch (err) {
+    console.error('Update height error:', err);
     return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
   }
 });
