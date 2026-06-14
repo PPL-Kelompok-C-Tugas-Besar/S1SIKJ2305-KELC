@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/provider.dart';
+import 'package:gymbro/providers/wishlist_provider.dart';
 import 'package:gymbro/screens/E-commerce/detailcatalog_ecommerce.dart';
 
 /// =====================================================
@@ -22,14 +24,19 @@ import 'package:gymbro/screens/E-commerce/detailcatalog_ecommerce.dart';
 void main() {
   /// Helper: Bungkus ProductDetailPage dengan MaterialApp agar widget bisa dirender
   Widget buildPage({required int stock}) {
-    return MaterialApp(
-      home: ProductDetailPage(
-        productId: 1,
-        productName: 'Test Whey Protein',
-        imagePath: 'assets/whey.png',
-        price: 'Rp 850.000',
-        stock: stock,
-        weightGrams: 2000,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+      ],
+      child: MaterialApp(
+        home: ProductDetailPage(
+          productId: 1,
+          productName: 'Test Whey Protein',
+          imagePath: 'assets/whey.png',
+          price: 'Rp 850.000',
+          stock: stock,
+          weightGrams: 2000,
+        ),
       ),
     );
   }

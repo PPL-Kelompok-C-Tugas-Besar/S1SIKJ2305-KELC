@@ -17,6 +17,10 @@ const {
   getAllExercises,
   createExercise,
   updateExerciseMedia,
+  getAllVouchers,
+  createVoucher,
+  updateVoucher,
+  deleteVoucher,
 } = require('../controllers/adminController');
 
 // Multer Config
@@ -66,5 +70,11 @@ router.post('/exercises/:id/media', verifyToken, upload.single('media_file'), as
     res.status(500).json({ success: false, message: 'Gagal upload ke Cloudinary' });
   }
 }, updateExerciseMedia);
+
+// ─── Vouchers ─────────────────────────────────────────────────────────────────
+router.get('/vouchers', verifyToken, getAllVouchers);
+router.post('/vouchers', verifyToken, createVoucher);
+router.put('/vouchers/:id', verifyToken, updateVoucher);
+router.delete('/vouchers/:id', verifyToken, deleteVoucher);
 
 module.exports = router;
