@@ -30,12 +30,20 @@ class _VoucherSelectionSheetState extends State<VoucherSelectionSheet> {
   }
 
   Future<void> _loadVouchers() async {
+    print('VoucherSelectionSheet: _loadVouchers called with subtotal: ${widget.currentSubtotal}');
     setState(() {
       _isLoading = true;
       _error = null;
     });
 
     final result = await _supplementService.getVouchers();
+    print('VoucherSelectionSheet: getVouchers result success=${result['success']}');
+    if (!result['success']) {
+      print('VoucherSelectionSheet: getVouchers error message: ${result['message']}');
+    } else {
+      print('VoucherSelectionSheet: getVouchers found ${result['data']?.length} vouchers');
+    }
+
     if (mounted) {
       if (result['success']) {
         setState(() {

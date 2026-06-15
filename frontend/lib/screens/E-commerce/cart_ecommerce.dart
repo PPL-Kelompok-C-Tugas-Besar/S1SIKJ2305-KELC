@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../services/auth_service.dart';
+import '../../services/api_constants.dart';
 import 'checkout_ecommerce.dart';
+import '../marketplace/voucher_selection_sheet.dart';
+import '../../models/voucher_model.dart';
 
 class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
@@ -26,6 +29,17 @@ class _CartPageState extends State<CartPage> {
   bool isLoading = true;
   List<Map<String, dynamic>> cartItems = [];
 
+  String get _baseUrl {
+    final uri = Uri.parse(ApiConstants.baseUrl);
+    return '${uri.scheme}://${uri.host}:${uri.port}';
+  }
+
+  // Voucher state
+  final TextEditingController _voucherController = TextEditingController();
+  bool _isApplyingVoucher = false;
+  Map<String, dynamic>? _appliedVoucher;
+  String _voucherError = '';
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +51,12 @@ class _CartPageState extends State<CartPage> {
     }
   }
 
+  @override
+  void dispose() {
+    _voucherController.dispose();
+    super.dispose();
+  }
+
   Future<void> fetchCart() async {
     setState(() => isLoading = true);
     try {
@@ -44,7 +64,7 @@ class _CartPageState extends State<CartPage> {
       if (token == null) return;
       
       final response = await http.get(
-        Uri.parse('http://localhost:3000/cart'),
+        Uri.parse('$_baseUrl/cart'),
         headers: {'Authorization': 'Bearer $token'},
       );
       final data = jsonDecode(response.body);
@@ -78,17 +98,29 @@ class _CartPageState extends State<CartPage> {
     int total = 0;
     for (var item in cartItems) {
       if (item['selected'] == true) {
-        total += (item['price'] as int) * (item['quantity'] as int);
+        final price = num.tryParse(item['price']?.toString() ?? '0')?.toInt() ?? 0;
+        final qty = num.tryParse(item['quantity']?.toString() ?? '1')?.toInt() ?? 1;
+        total += price * qty;
       }
     }
     return total;
   }
 
   int get shippingCost {
-    return subtotal > 0 ? 50000 : 0; // Flat rate shipping for dummy data
+    return subtotal > 0 ? 50000 : 0;
   }
 
-  int get totalCost => subtotal + shippingCost;
+  int get discountAmount {
+    if (_appliedVoucher == null || subtotal == 0) return 0;
+    final discountValue = double.tryParse(_appliedVoucher!['discount_value'].toString()) ?? 0.0;
+    final discountType = _appliedVoucher!['discount_type']?.toString() ?? 'fixed';
+    if (discountType == 'percentage') {
+      return (subtotal * discountValue / 100).round();
+    }
+    return discountValue.round();
+  }
+
+  int get totalCost => (subtotal - discountAmount) + shippingCost;
 
   void toggleSelection(int index, bool? value) {
     setState(() {
@@ -133,7 +165,7 @@ class _CartPageState extends State<CartPage> {
     try {
       final token = await AuthService().getToken();
       final response = await http.put(
-        Uri.parse('http://localhost:3000/cart/${cartItems[index]['id']}'),
+        Uri.parse('$_baseUrl/cart/${cartItems[index]['id']}'),
         headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
         body: jsonEncode({'quantity': newQty}),
       );
@@ -157,7 +189,7 @@ class _CartPageState extends State<CartPage> {
     try {
       final token = await AuthService().getToken();
       final response = await http.delete(
-        Uri.parse('http://localhost:3000/cart/${item['id']}'),
+        Uri.parse('$_baseUrl/cart/${item['id']}'),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode != 200) {
@@ -166,6 +198,63 @@ class _CartPageState extends State<CartPage> {
     } catch (e) {
       if (mounted) setState(() => cartItems.insert(index, item));
     }
+  }
+
+  Future<void> _applyVoucher() async {
+    final code = _voucherController.text.trim().toUpperCase();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isApplyingVoucher = true;
+      _voucherError = '';
+      _appliedVoucher = null;
+    });
+
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.post(
+        Uri.parse('$_baseUrl/vouchers/validate'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'code': code, 'subtotal': subtotal}),
+      );
+      final data = jsonDecode(response.body);
+      if (mounted) {
+        if (response.statusCode == 200 && data['success'] == true) {
+          setState(() {
+            _appliedVoucher = data['voucher'] ?? data['data'];
+            _voucherError = '';
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Voucher berhasil diterapkan!'), backgroundColor: Colors.green),
+          );
+        } else {
+          setState(() {
+            _voucherError = data['message'] ?? 'Voucher tidak valid atau sudah kadaluarsa';
+            _appliedVoucher = null;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _voucherError = 'Gagal menghubungi server';
+          _appliedVoucher = null;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isApplyingVoucher = false);
+    }
+  }
+
+  void _removeVoucher() {
+    setState(() {
+      _appliedVoucher = null;
+      _voucherController.clear();
+      _voucherError = '';
+    });
   }
 
   void _goToCheckout() {
@@ -199,6 +288,8 @@ class _CartPageState extends State<CartPage> {
         builder: (context) => CheckoutPage(
           selectedItems: selectedItems,
           subtotal: subtotal,
+          discount: discountAmount,
+          voucherCode: _appliedVoucher?['code']?.toString(),
           shippingCost: shippingCost,
         ),
       ),
@@ -287,6 +378,112 @@ class _CartPageState extends State<CartPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // ── Voucher Input ──────────────────────────────────
+                  if (_appliedVoucher == null) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _voucherController,
+                            style: const TextStyle(color: AppColors.textPrimary),
+                            textCapitalization: TextCapitalization.characters,
+                            decoration: InputDecoration(
+                              hintText: 'Kode Voucher',
+                              hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                              prefixIcon: const Icon(Icons.local_offer_outlined, color: AppColors.textSecondary, size: 20),
+                              filled: true,
+                              fillColor: AppColors.bgColor,
+                              contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppColors.accentColor, width: 1.5),
+                              ),
+                              errorText: _voucherError.isNotEmpty ? _voucherError : null,
+                              errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _isApplyingVoucher ? null : _applyVoucher,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accentColor,
+                            foregroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 0,
+                          ),
+                          child: _isApplyingVoucher
+                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                              : const Text('PAKAI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: () async {
+                          final selected = await showModalBottomSheet<Voucher?>(
+                            context: context,
+                            isScrollControlled: true,
+                            builder: (context) => VoucherSelectionSheet(
+                              currentSubtotal: subtotal.toDouble(),
+                            ),
+                          );
+                          if (selected != null) {
+                            _voucherController.text = selected.code;
+                            _applyVoucher();
+                          }
+                        },
+                        icon: const Icon(Icons.confirmation_number_outlined, color: AppColors.accentColor, size: 16),
+                        label: const Text(
+                          'Lihat Voucher Tersedia',
+                          style: TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ] else ...[
+                    // Applied voucher chip
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.accentColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.accentColor.withValues(alpha: 0.4)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: AppColors.accentColor, size: 18),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Voucher "${_appliedVoucher!['code'] ?? _voucherController.text}" diterapkan',
+                              style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold, fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: _removeVoucher,
+                            child: const Icon(Icons.close, color: AppColors.accentColor, size: 18),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+
                   // Subtotal
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -295,6 +492,17 @@ class _CartPageState extends State<CartPage> {
                       Text(formatRupiah(subtotal), style: const TextStyle(color: AppColors.textPrimary, fontSize: 16, fontWeight: FontWeight.bold)),
                     ],
                   ),
+                  // Discount (if voucher applied)
+                  if (_appliedVoucher != null && discountAmount > 0) ...[
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Diskon', style: TextStyle(color: Colors.greenAccent, fontSize: 14)),
+                        Text('- ${formatRupiah(discountAmount)}', style: const TextStyle(color: Colors.greenAccent, fontSize: 14, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                  ],
                   const SizedBox(height: 12),
                   // Shipping
                   Row(
@@ -435,13 +643,14 @@ class _CartPageState extends State<CartPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
-                Text(
-                  item['variant'],
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
+                if (item['variant'] != null)
+                  Text(
+                    item['variant'],
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                    ),
                   ),
-                ),
                 const SizedBox(height: 12),
                 
                 // Price & Quantity
@@ -503,7 +712,7 @@ class _CartPageState extends State<CartPage> {
                 icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
                 onPressed: () => removeItem(index),
                 constraints: const BoxConstraints(),
-                padding: const EdgeInsets.only(bottom: 40, left: 8), // Push to top right
+                padding: const EdgeInsets.only(bottom: 40, left: 8),
               ),
             ],
           ),

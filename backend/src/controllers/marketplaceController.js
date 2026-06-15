@@ -62,7 +62,7 @@ const getProductReviews = async (req, res) => {
   try {
     const { id } = req.params;
     const [rows] = await pool.execute(`
-      SELECT r.id, r.product_id, r.user_id, r.rating, r.review_text, r.created_at, u.full_name AS user_name
+      SELECT r.id, r.product_id, r.user_id, r.rating, r.review_text, r.review_text AS comment, r.created_at, u.full_name AS user_name
       FROM product_reviews r
       JOIN users u ON r.user_id = u.id
       WHERE r.product_id = ?
@@ -80,7 +80,8 @@ const getProductReviews = async (req, res) => {
 const submitReview = async (req, res) => {
   try {
     const { id } = req.params;
-    const { rating, review_text } = req.body;
+    const { rating, review_text, comment } = req.body;
+    const finalReviewText = review_text || comment;
     const userId = req.user.id;
 
     if (!rating || rating < 1 || rating > 5) {
@@ -95,7 +96,7 @@ const submitReview = async (req, res) => {
     await pool.execute(`
       INSERT INTO product_reviews (product_id, user_id, rating, review_text)
       VALUES (?, ?, ?, ?)
-    `, [id, userId, rating, review_text || null]);
+    `, [id, userId, rating, finalReviewText || null]);
 
     return res.status(201).json({ success: true, message: 'Ulasan berhasil dikirim' });
   } catch (err) {
@@ -282,7 +283,7 @@ const getWishlist = async (req, res) => {
       LEFT JOIN product_reviews r ON p.id = r.product_id
       WHERE w.user_id = ?
       GROUP BY p.id
-      ORDER BY w.created_at DESC
+      ORDER BY MAX(w.created_at) DESC
     `, [userId]);
 
     const products = rows.map(p => ({
@@ -337,6 +338,52 @@ const removeFromWishlist = async (req, res) => {
   }
 };
 
+// POST /vouchers/validate
+const validateVoucher = async (req, res) => {
+  try {
+    const { code, subtotal } = req.body;
+
+    if (!code) {
+      return res.status(400).json({ success: false, message: 'Kode voucher wajib diisi' });
+    }
+
+    const [[voucher]] = await pool.execute(
+      `SELECT * FROM vouchers WHERE code = ? AND is_active = 1 
+       AND (start_date IS NULL OR start_date <= CURRENT_TIMESTAMP)
+       AND (end_date IS NULL OR end_date >= CURRENT_TIMESTAMP)`,
+      [code]
+    );
+
+    if (!voucher) {
+      return res.status(400).json({ success: false, message: 'Voucher tidak valid atau sudah tidak aktif' });
+    }
+
+    if (subtotal !== undefined && parseFloat(subtotal) < parseFloat(voucher.minimum_purchase)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Minimal pembelian Rp${parseFloat(voucher.minimum_purchase).toFixed(0)} tidak terpenuhi` 
+      });
+    }
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Voucher valid',
+      voucher: {
+        id: voucher.id,
+        code: voucher.code,
+        name: voucher.name,
+        discount_type: voucher.discount_type,
+        discount_value: parseFloat(voucher.discount_value),
+        minimum_purchase: parseFloat(voucher.minimum_purchase),
+        max_discount: parseFloat(voucher.max_discount)
+      }
+    });
+  } catch (err) {
+    console.error('Validate voucher error:', err);
+    return res.status(500).json({ success: false, message: 'Terjadi kesalahan server' });
+  }
+};
+
 module.exports = {
   getAllProducts,
   getProductById,
@@ -349,4 +396,5 @@ module.exports = {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
+  validateVoucher,
 };
