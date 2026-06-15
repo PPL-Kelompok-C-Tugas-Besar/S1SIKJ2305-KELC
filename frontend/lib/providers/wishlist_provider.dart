@@ -64,6 +64,17 @@ class WishlistProvider with ChangeNotifier {
     }
   }
 
+  Future<void> addToWishlist(int productId) async {
+    if (_items.containsKey(productId)) return; // already wishlisted
+    try {
+      await _supplementService.addToWishlist(productId);
+      // Reload to get the full product data
+      await loadWishlist();
+    } catch (e) {
+      debugPrint('Error adding to wishlist: $e');
+    }
+  }
+
   Future<void> removeFromWishlist(int productId) async {
     if (_items.containsKey(productId)) {
       final product = _items[productId];

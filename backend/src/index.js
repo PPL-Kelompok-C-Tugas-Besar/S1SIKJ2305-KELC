@@ -15,6 +15,7 @@ const cartRoutes = require('./routes/cartRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
 const workoutRoutes = require('./routes/workoutRoutes');
 const calorieRoutes = require('./routes/calorieRoutes'); // PBI-1 [Subtask 2]
+const voucherRoutes = require('./routes/voucherRoutes');
 
 // 2. Media Tools
 const cloudinary = require('cloudinary').v2;
@@ -39,6 +40,7 @@ app.use(express.json({ limit: '5mb' }));
 app.use('/products', productRoutes);
 app.use('/checkout', checkoutRoutes);
 app.use('/cart', cartRoutes);
+app.use('/vouchers', voucherRoutes);
 const adminRoutes = require('./routes/adminRoutes');
 
 app.use('/api/auth', authRoutes);
@@ -96,6 +98,30 @@ const start = async () => {
 
     const { runReviewsMigration } = require('./config/migrate_reviews');
     await runReviewsMigration();
+
+    // Seed/verify default admin user
+    const bcrypt = require('bcrypt');
+    const crypto = require('crypto');
+    const adminEmail = 'admin@gymbro.com';
+    const adminPassword = 'admin123';
+    try {
+      const [existingAdmin] = await db.execute('SELECT id FROM users WHERE email = ?', [adminEmail]);
+      if (existingAdmin.length > 0) {
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        await db.execute('UPDATE users SET role = \'admin\', password = ? WHERE email = ?', [hashedPassword, adminEmail]);
+        console.log('✅ Admin user verified & password updated.');
+      } else {
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        const adminId = crypto.randomUUID();
+        await db.execute(
+          'INSERT INTO users (id, full_name, email, password, role) VALUES (?, ?, ?, ?, ?)',
+          [adminId, 'Gymbro Admin', adminEmail, hashedPassword, 'admin']
+        );
+        console.log('✅ Admin user created successfully.');
+      }
+    } catch (adminErr) {
+      console.error('❌ Error seeding/verifying admin user:', adminErr.message);
+    }
 
     app.listen(PORT, () => {
       console.log(`✅ Server running on http://localhost:${PORT}`);

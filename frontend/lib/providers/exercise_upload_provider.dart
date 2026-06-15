@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/admin_service.dart';
@@ -13,6 +15,8 @@ class ExerciseUploadProvider with ChangeNotifier {
   String _targetOtot = 'Upper body';
   String _deskripsiTeknis = '';
   File? _selectedMedia;
+  XFile? _selectedXFile;
+  Uint8List? _webImageBytes;
   bool _isLoading = false;
 
   // Getters
@@ -21,6 +25,8 @@ class ExerciseUploadProvider with ChangeNotifier {
   String get targetOtot => _targetOtot;
   String get deskripsiTeknis => _deskripsiTeknis;
   File? get selectedMedia => _selectedMedia;
+  XFile? get selectedXFile => _selectedXFile;
+  Uint8List? get webImageBytes => _webImageBytes;
   bool get isLoading => _isLoading;
 
   // Setters
@@ -36,15 +42,22 @@ class ExerciseUploadProvider with ChangeNotifier {
   void setDeskripsi(String val) => _deskripsiTeknis = val;
 
   Future<void> pickMedia(ImageSource source) async {
-    final XFile? file = await _picker.pickImage(source: source); // or pickVideo
+    final XFile? file = await _picker.pickImage(source: source);
     if (file != null) {
-      _selectedMedia = File(file.path);
+      _selectedXFile = file;
+      if (kIsWeb) {
+        _webImageBytes = await file.readAsBytes();
+      } else {
+        _selectedMedia = File(file.path);
+      }
       notifyListeners();
     }
   }
 
   void clearMedia() {
     _selectedMedia = null;
+    _selectedXFile = null;
+    _webImageBytes = null;
     notifyListeners();
   }
 
@@ -55,10 +68,10 @@ class ExerciseUploadProvider with ChangeNotifier {
     try {
       // 1. Create Exercise Record
       final exerciseData = {
-        'nama_latihan': _namaLatihan,
-        'tipe': _tipe,
-        'target_otot': _targetOtot,
-        'deskripsi_teknis': _deskripsiTeknis,
+        'name': _namaLatihan,
+        'instructions': _deskripsiTeknis,
+        'equipment_required': '$_tipe - $_targetOtot',
+        'base_calories_burn': 100,
       };
 
       final createResult = await _adminService.createExercise(exerciseData);
@@ -71,8 +84,14 @@ class ExerciseUploadProvider with ChangeNotifier {
       final MasterExercise newExercise = MasterExercise.fromJson(createResult['data']);
 
       // 2. If media is selected, upload it
-      if (_selectedMedia != null) {
-        final uploadResult = await _adminService.uploadExerciseMedia(newExercise.id, _selectedMedia!.path);
+      final hasMedia = kIsWeb ? _webImageBytes != null : _selectedMedia != null;
+      if (hasMedia) {
+        final uploadResult = await _adminService.uploadExerciseMedia(
+          newExercise.id,
+          _selectedMedia?.path ?? '',
+          bytes: _webImageBytes,
+          filename: _selectedXFile?.name,
+        );
         if (!uploadResult['success']) {
           _isLoading = false;
           notifyListeners();
@@ -97,6 +116,8 @@ class ExerciseUploadProvider with ChangeNotifier {
     _targetOtot = 'Upper body';
     _deskripsiTeknis = '';
     _selectedMedia = null;
+    _selectedXFile = null;
+    _webImageBytes = null;
     _isLoading = false;
   }
 }

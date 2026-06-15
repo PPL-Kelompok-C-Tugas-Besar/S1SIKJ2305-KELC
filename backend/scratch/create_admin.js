@@ -11,9 +11,10 @@ async function createAdmin() {
     const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       console.log('Admin user already exists:', email);
-      // Update role just in case
-      await pool.execute('UPDATE users SET role = "admin" WHERE email = ?', [email]);
-      console.log('Role updated to admin for:', email);
+      const hashedPassword = await bcrypt.hash(password, 10);
+      // Update role and password just in case
+      await pool.execute('UPDATE users SET role = \'admin\', password = ? WHERE email = ?', [hashedPassword, email]);
+      console.log('Role and password updated for:', email);
     } else {
       const hashedPassword = await bcrypt.hash(password, 10);
       const userId = crypto.randomUUID();
