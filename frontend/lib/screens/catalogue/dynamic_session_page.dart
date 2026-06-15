@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
+import 'workout_summary_screen.dart';
 
 // ══════════════════════════════════════════════
 //  MODEL DATA
@@ -25,6 +26,12 @@ class ExerciseModel {
   /// Ikon fallback untuk preview.
   final IconData icon;
 
+  /// Deskripsi gerakan.
+  final String? description;
+
+  /// Estimasi kalori yang terbakar.
+  final double? kcal;
+
   const ExerciseModel({
     required this.name,
     required this.durationOrReps,
@@ -32,6 +39,8 @@ class ExerciseModel {
     required this.isTimer,
     required this.imagePath,
     this.icon = Icons.fitness_center_rounded,
+    this.description,
+    this.kcal,
   });
 }
 
@@ -269,6 +278,8 @@ class WorkoutPackage {
           isTimer: true,
           imagePath: 'lib/assets/gifs/arm-circles.gif',
           icon: Icons.accessibility_new_rounded,
+          description: 'Extend arms laterally and make small continuous circles.',
+          kcal: 3.8,
         ),
         ExerciseModel(
           name: 'Torso Twists',
@@ -277,6 +288,8 @@ class WorkoutPackage {
           isTimer: true,
           imagePath: 'lib/assets/gifs/Torso-Twist.gif',
           icon: Icons.accessibility_new_rounded,
+          description: 'Stand with feet shoulder-width apart and twist torso side to side.',
+          kcal: 3.3,
         ),
       ],
     );
@@ -1204,7 +1217,30 @@ class _DynamicSessionPageState extends State<DynamicSessionPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: () {
+                  int durationMinutes = 0;
+                  double caloriesBurned = 0.0;
+                  
+                  for (var ex in widget.package.exercises) {
+                    if (ex.isTimer) {
+                      durationMinutes += (ex.value / 60).ceil();
+                    } else {
+                      durationMinutes += 1; // Estimasi 1 menit untuk gerakan repetisi
+                    }
+                    caloriesBurned += ex.kcal ?? 15.0; // Fallback 15 kcal per gerakan
+                  }
+                  
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => WorkoutSummaryScreen(
+                        workoutName: widget.package.title,
+                        durationMinutes: durationMinutes == 0 ? 1 : durationMinutes,
+                        caloriesBurned: caloriesBurned,
+                      ),
+                    ),
+                  );
+                },
                 child: const Text(
                   'Selanjutnya',
                   style: TextStyle(
