@@ -54,12 +54,9 @@ class AdminDashboardScreen extends StatelessWidget {
             ListTile(
               leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
               title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
-              onTap: () async {
+              onTap: () {
                 Navigator.pop(context); // Close drawer
-                await context.read<AuthProvider>().logout();
-                if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-                }
+                _showAdminLogoutDialog(context);
               },
             ),
             const SizedBox(height: 16),
@@ -210,6 +207,56 @@ class AdminDashboardScreen extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  void _showAdminLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AdminColors.cardColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Keamanan Sesi',
+            style: TextStyle(
+              color: AdminColors.textPrimary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: const Text(
+            'Apakah Anda yakin ingin mengakhiri sesi administratif ini? Pastikan semua perubahan data telah tersimpan.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: Colors.white54)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context); // Tutup dialog
+                print('Admin Logout Successful'); // Placeholder
+                // Tetap panggil fungsi logout agar aplikasinya benar-benar logout
+                await context.read<AuthProvider>().logout();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text('Ya, Keluar'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
