@@ -24,6 +24,7 @@ class HistoryResult {
 class TodayStats {
   final int todayCalories;
   final int todayMinutes;
+  final int dailyCalorieTarget;
   final int streak;
   final bool hasWorkedOutToday;
   final int weeklyGoal;
@@ -32,6 +33,7 @@ class TodayStats {
   const TodayStats({
     required this.todayCalories,
     required this.todayMinutes,
+    required this.dailyCalorieTarget,
     required this.streak,
     required this.hasWorkedOutToday,
     required this.weeklyGoal,
@@ -42,6 +44,7 @@ class TodayStats {
     return TodayStats(
       todayCalories: json['todayCalories'] ?? 0,
       todayMinutes: json['todayMinutes'] ?? 0,
+      dailyCalorieTarget: json['dailyCalorieTarget'] ?? 0,
       streak: json['streak'] ?? 0,
       hasWorkedOutToday: json['hasWorkedOutToday'] ?? false,
       weeklyGoal: json['weeklyGoal'] ?? 3,
