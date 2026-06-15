@@ -6,6 +6,11 @@ import 'package:gymbro/screens/E-commerce/cart_ecommerce.dart';
 import 'package:gymbro/screens/E-commerce/detailcatalog_ecommerce.dart';
 import 'package:provider/provider.dart';
 import 'package:gymbro/providers/auth_provider.dart';
+import 'package:gymbro/providers/supplement_provider.dart';
+import 'package:gymbro/providers/exercise_upload_provider.dart';
+import 'package:gymbro/providers/cart_provider.dart';
+import 'package:gymbro/providers/wishlist_provider.dart';
+import 'package:gymbro/providers/admin_voucher_provider.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -89,8 +94,15 @@ void main() {
   ];
 
   Widget buildApp(Widget home) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => SupplementProvider()),
+        ChangeNotifierProvider(create: (_) => ExerciseUploadProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => AdminVoucherProvider()),
+      ],
       child: MaterialApp(
         home: home,
       ),
