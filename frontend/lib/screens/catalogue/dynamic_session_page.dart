@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../utils/palette.dart';
-import 'workout_summary_screen.dart';
 
 // ══════════════════════════════════════════════
 //  MODEL DATA
@@ -1218,28 +1217,7 @@ class _DynamicSessionPageState extends State<DynamicSessionPage> {
               height: 56,
               child: ElevatedButton(
                 onPressed: () {
-                  int durationMinutes = 0;
-                  double caloriesBurned = 0.0;
-                  
-                  for (var ex in widget.package.exercises) {
-                    if (ex.isTimer) {
-                      durationMinutes += (ex.value / 60).ceil();
-                    } else {
-                      durationMinutes += 1; // Estimasi 1 menit untuk gerakan repetisi
-                    }
-                    caloriesBurned += ex.kcal ?? 15.0; // Fallback 15 kcal per gerakan
-                  }
-                  
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => WorkoutSummaryScreen(
-                        workoutName: widget.package.title,
-                        durationMinutes: durationMinutes == 0 ? 1 : durationMinutes,
-                        caloriesBurned: caloriesBurned,
-                      ),
-                    ),
-                  );
+                  Navigator.pop(context, true);
                 },
                 child: const Text(
                   'Selanjutnya',

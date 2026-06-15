@@ -163,22 +163,39 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
       _isLoading = true;
     });
 
+    // 2. Hitung estimasi kalori (PBI-1 Subtask 5)
+    // Gunakan durasi dari model atau hitung dari package jika model 0
+    int finalDuration = duration;
+    if (finalDuration == 0) {
+      for (var ex in sessionPackage.exercises) {
+        finalDuration += ex.isTimer ? (ex.value / 60).ceil() : 1;
+      }
+    }
+    if (finalDuration == 0) finalDuration = 1;
+
     try {
-      // 2. Hitung estimasi kalori aktual memanggil API Backend (PBI-1 Subtask 5)
-      final calculatedCalories = await _calorieService.calculateCalories(
+      double? calculatedCalories = await _calorieService.calculateCalories(
         workoutId: widget.workoutId!,
-        durationMinutes: duration,
+        durationMinutes: finalDuration,
       );
 
+      // Fallback jika API gagal (misal: workout_id tidak ada di DB / hardcoded)
       if (calculatedCalories == null) {
-        throw Exception('Gagal menghitung kalori. Pastikan profil berat badan Anda sudah diisi.');
+        calculatedCalories = 0.0;
+        for (var ex in sessionPackage.exercises) {
+          calculatedCalories = calculatedCalories! + (ex.kcal ?? 15.0);
+        }
+        // Jika masih 0, gunakan estimasi kasar 10 kcal per menit
+        if (calculatedCalories == 0) {
+          calculatedCalories = finalDuration * 10.0;
+        }
       }
 
       // 3. Simpan ke history menggunakan kalori yang sudah dihitung
       final success = await _historyService.addHistory(
         workoutName: widget.workoutType,
-        durationMinutes: duration,
-        caloriesBurned: calculatedCalories.round(),
+        durationMinutes: finalDuration,
+        caloriesBurned: calculatedCalories!.round(),
       );
       
       if (success) {
@@ -189,8 +206,8 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
             MaterialPageRoute(
               builder: (context) => WorkoutSummaryScreen(
                 workoutName: widget.workoutType,
-                durationMinutes: duration,
-                caloriesBurned: calculatedCalories,
+                durationMinutes: finalDuration,
+                caloriesBurned: calculatedCalories!,
               ),
             ),
           );
