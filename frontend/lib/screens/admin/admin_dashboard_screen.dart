@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../utils/admin_colors.dart';
 import 'manage_users_screen.dart';
 import 'manage_workouts_screen.dart';
 import 'manage_exercises_screen.dart';
 import 'manage_supplements_screen.dart';
 import 'manage_vouchers_screen.dart';
+import 'admin_profile_screen.dart';
 
 class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
@@ -18,6 +21,50 @@ class AdminDashboardScreen extends StatelessWidget {
         backgroundColor: AdminColors.cardColor,
         iconTheme: const IconThemeData(color: AdminColors.textPrimary),
         elevation: 0,
+      ),
+      drawer: Drawer(
+        backgroundColor: AdminColors.bgColor,
+        child: Column(
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: AdminColors.cardColor),
+              child: Center(
+                child: Text(
+                  'Admin Menu',
+                  style: TextStyle(
+                    color: AdminColors.textPrimary,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person_rounded, color: AdminColors.textPrimary),
+              title: const Text('Profil Admin', style: TextStyle(color: AdminColors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AdminProfileScreen()),
+                );
+              },
+            ),
+            const Spacer(),
+            ListTile(
+              leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+              title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+              onTap: () async {
+                Navigator.pop(context); // Close drawer
+                await context.read<AuthProvider>().logout();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+                }
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
