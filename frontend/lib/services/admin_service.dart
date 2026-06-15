@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/workout_model.dart';
@@ -236,15 +238,24 @@ class AdminService {
     }
   }
 
-  Future<Map<String, dynamic>> uploadExerciseMedia(int id, String filePath) async {
+  Future<Map<String, dynamic>> uploadExerciseMedia(int id, String filePath, {Uint8List? bytes, String? filename}) async {
     try {
       final token = await _getToken();
       if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
 
       final uri = Uri.parse('${ApiConstants.adminExercises}/$id/media');
       final request = http.MultipartRequest('POST', uri)
-        ..headers['Authorization'] = 'Bearer $token'
-        ..files.add(await http.MultipartFile.fromPath('media_file', filePath));
+        ..headers['Authorization'] = 'Bearer $token';
+
+      if (kIsWeb && bytes != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'media_file',
+          bytes,
+          filename: filename ?? 'upload.jpg',
+        ));
+      } else {
+        request.files.add(await http.MultipartFile.fromPath('media_file', filePath));
+      }
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);

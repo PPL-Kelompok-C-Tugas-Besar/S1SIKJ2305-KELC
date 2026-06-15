@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../services/auth_service.dart';
+import '../../services/api_constants.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../marketplace/voucher_selection_sheet.dart';
+import '../../models/voucher_model.dart';
 
 class AppColors {
   static const Color bgColor = Color(0xFF1A1A1A);
@@ -16,12 +19,16 @@ class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> selectedItems;
   final int subtotal;
   final int shippingCost;
+  final int discount;
+  final String? voucherCode;
 
   const CheckoutPage({
     super.key,
     required this.selectedItems,
     required this.subtotal,
     required this.shippingCost,
+    this.discount = 0,
+    this.voucherCode,
   });
 
   @override
@@ -34,7 +41,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
   int _selectedAddressIndex = 0;
   bool _isLoadingAddresses = true;
+
+  String get _baseUrl {
+    final uri = Uri.parse(ApiConstants.baseUrl);
+    return '${uri.scheme}://${uri.host}:${uri.port}';
+  }
   bool _isManagingAddresses = false;
+
+  final TextEditingController _voucherController = TextEditingController();
+  bool _isApplyingVoucher = false;
+  Map<String, dynamic>? _appliedVoucher;
+  String _voucherError = '';
+  int _appliedDiscount = 0;
 
   final List<Map<String, String>> _addresses = [];
 
@@ -51,6 +69,85 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
     _fetchAddresses();
+    _appliedDiscount = widget.discount;
+    if (widget.voucherCode != null) {
+      _appliedVoucher = {'code': widget.voucherCode};
+    }
+  }
+
+  Future<void> _applyVoucher() async {
+    final code = _voucherController.text.trim().toUpperCase();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isApplyingVoucher = true;
+      _voucherError = '';
+      _appliedVoucher = null;
+    });
+
+    try {
+      final token = await AuthService().getToken();
+      final response = await http.post(
+        Uri.parse('$_baseUrl/vouchers/validate'),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'code': code, 'subtotal': widget.subtotal}),
+      );
+      final data = jsonDecode(response.body);
+      if (mounted) {
+        if (response.statusCode == 200 && data['success'] == true) {
+          setState(() {
+            _appliedVoucher = data['voucher'] ?? data['data'];
+            _voucherError = '';
+            _calculateDiscount();
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Voucher berhasil diterapkan!'), backgroundColor: Colors.green),
+          );
+        } else {
+          setState(() {
+            _voucherError = data['message'] ?? 'Voucher tidak valid atau sudah kadaluarsa';
+            _appliedVoucher = null;
+            _appliedDiscount = 0;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _voucherError = 'Gagal menghubungi server';
+          _appliedVoucher = null;
+          _appliedDiscount = 0;
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _isApplyingVoucher = false);
+    }
+  }
+
+  void _calculateDiscount() {
+    if (_appliedVoucher == null || widget.subtotal == 0) {
+      _appliedDiscount = 0;
+      return;
+    }
+    final discountValue = double.tryParse(_appliedVoucher!['discount_value']?.toString() ?? '0') ?? 0.0;
+    final discountType = _appliedVoucher!['discount_type']?.toString() ?? 'fixed';
+    if (discountType == 'percentage') {
+      _appliedDiscount = (widget.subtotal * discountValue / 100).round();
+    } else {
+      _appliedDiscount = discountValue.round();
+    }
+  }
+
+  void _removeVoucher() {
+    setState(() {
+      _appliedVoucher = null;
+      _voucherController.clear();
+      _voucherError = '';
+      _appliedDiscount = 0;
+    });
   }
 
   Future<void> _fetchAddresses() async {
@@ -58,7 +155,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final token = await AuthService().getToken();
       final response = await http.get(
-        Uri.parse('http://localhost:3000/api/users/addresses'),
+        Uri.parse('${ApiConstants.baseUrl}/users/addresses'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -106,7 +203,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final token = await AuthService().getToken();
       final response = await http.post(
-        Uri.parse('http://localhost:3000/api/users/addresses'),
+        Uri.parse('${ApiConstants.baseUrl}/users/addresses'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -151,7 +248,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final token = await AuthService().getToken();
       final response = await http.put(
-        Uri.parse('http://localhost:3000/api/users/addresses/$addressId'),
+        Uri.parse('${ApiConstants.baseUrl}/users/addresses/$addressId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -185,7 +282,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final token = await AuthService().getToken();
       final response = await http.delete(
-        Uri.parse('http://localhost:3000/api/users/addresses/$addressId'),
+        Uri.parse('${ApiConstants.baseUrl}/users/addresses/$addressId'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -206,7 +303,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     }
   }
 
-  int get totalCost => widget.subtotal + widget.shippingCost;
+  int get totalCost => widget.subtotal - _appliedDiscount + widget.shippingCost;
 
   String formatRupiah(int number) {
     String numStr = number.toString();
@@ -231,7 +328,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     try {
       final token = await AuthService().getToken();
       final response = await http.post(
-        Uri.parse('http://localhost:3000/checkout/order'),
+        Uri.parse('$_baseUrl/checkout/order'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -245,6 +342,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
           }).toList(),
           'payment_method': _selectedPayment,
           'shipping_address': '${_currentAddress!['address']!}, ${_currentAddress!['city']!}, ${_currentAddress!['postalCode']!}',
+          'subtotal': widget.subtotal,
+          'voucher_code': _appliedVoucher?['code']?.toString() ?? widget.voucherCode,
+          'discount': _appliedDiscount,
           'total': totalCost,
         }),
       );
@@ -1000,6 +1100,114 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
                     const SizedBox(height: 24),
 
+                    const SizedBox(height: 24),
+
+                    // ── Voucher Input ──────────────────────────────────
+                    if (_appliedVoucher == null) ...[
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _voucherController,
+                              style: const TextStyle(color: AppColors.textPrimary),
+                              textCapitalization: TextCapitalization.characters,
+                              decoration: InputDecoration(
+                                hintText: 'Kode Voucher',
+                                hintStyle: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                                prefixIcon: const Icon(Icons.local_offer_outlined, color: AppColors.textSecondary, size: 20),
+                                filled: true,
+                                fillColor: AppColors.cardColor,
+                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.accentColor, width: 1.5),
+                                ),
+                                errorText: _voucherError.isNotEmpty ? _voucherError : null,
+                                errorStyle: const TextStyle(color: Colors.redAccent, fontSize: 11),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: _isApplyingVoucher ? null : _applyVoucher,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accentColor,
+                              foregroundColor: Colors.black,
+                              padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              elevation: 0,
+                            ),
+                            child: _isApplyingVoucher
+                                ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(color: Colors.black, strokeWidth: 2))
+                                : const Text('PAKAI', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () async {
+                            final selected = await showModalBottomSheet<Voucher?>(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (context) => VoucherSelectionSheet(
+                                currentSubtotal: widget.subtotal.toDouble(),
+                              ),
+                            );
+                            if (selected != null) {
+                              _voucherController.text = selected.code;
+                              _applyVoucher();
+                            }
+                          },
+                          icon: const Icon(Icons.confirmation_number_outlined, color: AppColors.accentColor, size: 16),
+                          label: const Text(
+                            'Lihat Voucher Tersedia',
+                            style: TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold, fontSize: 12),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ] else ...[
+                      // Applied voucher chip
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: AppColors.accentColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.accentColor.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check_circle, color: AppColors.accentColor, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Voucher "${_appliedVoucher!['code'] ?? _voucherController.text}" diterapkan',
+                                style: const TextStyle(color: AppColors.accentColor, fontWeight: FontWeight.bold, fontSize: 13),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: _removeVoucher,
+                              child: const Icon(Icons.close, color: AppColors.accentColor, size: 18),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     // ── Price Breakdown ──────────────────────────
                     _buildSectionLabel('PRICE BREAKDOWN'),
                     const SizedBox(height: 12),
@@ -1012,6 +1220,10 @@ class _CheckoutPageState extends State<CheckoutPage> {
                       child: Column(
                         children: [
                           _buildPriceRow('Subtotal', formatRupiah(widget.subtotal), isTotal: false),
+                          if (_appliedDiscount > 0) ...[
+                            const SizedBox(height: 10),
+                            _buildPriceRow('Diskon', '- ${formatRupiah(_appliedDiscount)}', isTotal: false, valueColor: Colors.green),
+                          ],
                           const SizedBox(height: 10),
                           _buildPriceRow('Shipping', formatRupiah(widget.shippingCost), isTotal: false),
                           const Padding(
@@ -1394,8 +1606,8 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   String _formatItemPrice(Map<String, dynamic> item) {
-    final price = item['price'] as int? ?? 0;
-    final qty = item['quantity'] as int? ?? 1;
+    final price = num.tryParse(item['price']?.toString() ?? '0')?.toInt() ?? 0;
+    final qty = num.tryParse(item['quantity']?.toString() ?? '1')?.toInt() ?? 1;
     final total = price * qty;
     String numStr = total.toString();
     String result = '';
@@ -1406,7 +1618,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     return 'Rp $result';
   }
 
-  Widget _buildPriceRow(String label, String value, {required bool isTotal}) {
+  Widget _buildPriceRow(String label, String value, {required bool isTotal, Color? valueColor}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -1421,7 +1633,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
         Text(
           value,
           style: TextStyle(
-            color: isTotal ? AppColors.accentColor : AppColors.textPrimary,
+            color: valueColor ?? (isTotal ? AppColors.accentColor : AppColors.textPrimary),
             fontSize: isTotal ? 20 : 15,
             fontWeight: isTotal ? FontWeight.w900 : FontWeight.bold,
           ),

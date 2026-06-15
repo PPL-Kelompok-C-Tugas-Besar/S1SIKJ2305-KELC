@@ -6,13 +6,14 @@ import '../models/review_model.dart';
 import '../models/voucher_model.dart';
 import '../models/order_model.dart';
 import 'api_constants.dart';
+import 'auth_service.dart';
 
 class SupplementService {
   static const _storage = FlutterSecureStorage();
   static const _tokenKey = 'auth_token';
 
   Future<String?> _getToken() async {
-    return await _storage.read(key: _tokenKey);
+    return await AuthService().getToken();
   }
 
   Map<String, String> _authHeaders(String token) => {
@@ -117,21 +118,28 @@ class SupplementService {
   Future<Map<String, dynamic>> getVouchers() async {
     try {
       final token = await _getToken();
+      print('SupplementService: token exists? ${token != null}');
       if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
 
+      final url = '${ApiConstants.baseUrl}/marketplace/vouchers';
+      print('SupplementService: GET request to $url');
       final response = await http.get(
-        Uri.parse('${ApiConstants.baseUrl}/marketplace/vouchers'),
+        Uri.parse(url),
         headers: _authHeaders(token),
       );
 
+      print('SupplementService: response status code = ${response.statusCode}');
+      print('SupplementService: response body = ${response.body}');
       final data = json.decode(response.body);
       if (response.statusCode == 200) {
         final List<dynamic> raw = data['data'] ?? [];
         final vouchers = raw.map((e) => Voucher.fromJson(e)).toList();
+        print('SupplementService: parsed ${vouchers.length} vouchers successfully');
         return {'success': true, 'data': vouchers};
       }
       return {'success': false, 'message': data['message'] ?? 'Gagal mengambil data voucher'};
-    } catch (e) {
+    } catch (e, stack) {
+      print('SupplementService: exception in getVouchers: $e\n$stack');
       return {'success': false, 'message': 'Kesalahan jaringan: $e'};
     }
   }
