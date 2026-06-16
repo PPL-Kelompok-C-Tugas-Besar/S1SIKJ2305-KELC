@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class UserModel {
   final String id;
   final String fullName;
@@ -36,18 +38,31 @@ class UserModel {
   });
 
   double? get bmi {
-    if (weight == null || height == null || height! <= 0) return null;
+    if (weight == null || height == null || height! <= 0) {
+      debugPrint('UserModel - BMI: data tidak lengkap (weight=$weight, height=$height)');
+      return null;
+    }
     final heightInMeters = height! / 100;
-    return weight! / (heightInMeters * heightInMeters);
+    final result = weight! / (heightInMeters * heightInMeters);
+    debugPrint('UserModel - BMI calculated: ${result.toStringAsFixed(1)} (weight=$weight, height=$height)');
+    return result;
   }
 
   String get bmiCategory {
     final b = bmi;
     if (b == null) return '--';
-    if (b < 18.5) return 'Kekurangan Berat Badan';
-    if (b < 25.0) return 'Normal';
-    if (b < 30.0) return 'Kelebihan Berat Badan';
-    return 'Obesitas';
+    String category;
+    if (b < 18.5) {
+      category = 'Kekurangan Berat Badan';
+    } else if (b < 25.0) {
+      category = 'Normal';
+    } else if (b < 30.0) {
+      category = 'Kelebihan Berat Badan';
+    } else {
+      category = 'Obesitas';
+    }
+    debugPrint('UserModel - BMI category: $category (bmi=${b.toStringAsFixed(1)})');
+    return category;
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
