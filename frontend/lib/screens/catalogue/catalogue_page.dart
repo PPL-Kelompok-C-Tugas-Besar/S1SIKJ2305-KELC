@@ -503,6 +503,8 @@ class _WorkoutCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   GestureDetector(
+                    key: Key('bookmark_icon_${workout.id}'),
+                    behavior: HitTestBehavior.opaque,
                     onTap: onToggleSaved,
                     child: Container(
                       padding: const EdgeInsets.all(8),
