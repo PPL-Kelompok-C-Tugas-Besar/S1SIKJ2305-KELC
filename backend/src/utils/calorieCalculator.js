@@ -96,14 +96,54 @@ const recalculateUserCalorieTarget = async (userId, pool) => {
       return null;
     }
 
+    // Hitung jumlah latihan dalam 7 hari terakhir
+    const [[{ workoutCount }]] = await pool.execute(
+      'SELECT COUNT(*) as workoutCount FROM workout_history WHERE user_id = ? AND date >= DATE_SUB(NOW(), INTERVAL 7 DAY)',
+      [userId]
+    );
+
+    let newActivityLevel = user.activity_level;
+    
+    // Tentukan activity level baru berdasarkan frekuensi latihan
+    if (workoutCount === 0) {
+      // Jika tidak ada latihan, pertahankan activity_level awal atau set default
+      // Biarkan activity_level yang ada jika user baru join dan belum pernah latihan
+    } else if (workoutCount >= 1 && workoutCount <= 3) {
+      newActivityLevel = 'light';
+    } else if (workoutCount >= 4 && workoutCount <= 5) {
+      newActivityLevel = 'moderate';
+    } else if (workoutCount >= 6 && workoutCount <= 7) {
+      newActivityLevel = 'active';
+    } else if (workoutCount > 7) {
+      newActivityLevel = 'very_active';
+    }
+
+    // Jika activity_level berubah, update tabel users
+    if (newActivityLevel !== user.activity_level && workoutCount > 0) {
+      await pool.execute('UPDATE users SET activity_level = ? WHERE id = ?', [newActivityLevel, userId]);
+      console.log(`[Calorie Service] Activity level user ${userId} diperbarui menjadi ${newActivityLevel} karena memiliki ${workoutCount} latihan dalam 7 hari terakhir.`);
+    }
+
     const bmr = calculateBMR(user.weight, user.height, user.age, user.gender);
-    const tdee = calculateTDEE(bmr, user.activity_level);
+    const tdee = calculateTDEE(bmr, newActivityLevel);
     
     let newTarget = tdee;
     if (user.diet_goal === 'cutting') {
       newTarget -= 500;
     } else if (user.diet_goal === 'bulking') {
       newTarget += 500;
+    }
+
+    // SANITY CHECK: Pastikan kalori tidak berada di batas berbahaya (Starvation / Overfeeding ekstrem)
+    const genderStr = user.gender ? user.gender.toLowerCase() : '';
+    const minAllowed = (genderStr === 'female' || genderStr === 'wanita' || genderStr === 'perempuan') ? 1200 : 1500;
+
+    if (newTarget < minAllowed) {
+      console.log(`[Calorie Service] Target kalori ${newTarget} terlalu rendah, dibatasi ke minimum aman: ${minAllowed} kcal.`);
+      newTarget = minAllowed;
+    } else if (newTarget > 5000) {
+      console.log(`[Calorie Service] Target kalori ${newTarget} terlalu tinggi, dibatasi ke maksimum: 5000 kcal.`);
+      newTarget = 5000;
     }
 
     await pool.execute(

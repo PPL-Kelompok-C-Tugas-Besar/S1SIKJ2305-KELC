@@ -82,6 +82,18 @@ router.put('/profile', verifyToken, async (req, res) => {
         } else if (dietGoal === 'bulking') {
           dailyCalorieTarget += 500;
         }
+
+        // SANITY CHECK: Pastikan kalori tidak berada di batas berbahaya (Starvation / Overfeeding ekstrem)
+        const genderStr = gender ? gender.toLowerCase() : '';
+        const minAllowed = (genderStr === 'female' || genderStr === 'wanita' || genderStr === 'perempuan') ? 1200 : 1500;
+
+        if (dailyCalorieTarget < minAllowed) {
+          console.log(`[User Route] Target kalori ${dailyCalorieTarget} dibatasi ke minimum aman: ${minAllowed} kcal.`);
+          dailyCalorieTarget = minAllowed;
+        } else if (dailyCalorieTarget > 5000) {
+          console.log(`[User Route] Target kalori ${dailyCalorieTarget} dibatasi ke maksimum: 5000 kcal.`);
+          dailyCalorieTarget = 5000;
+        }
       } catch (calcErr) {
         console.error('Error calculating calorie target:', calcErr.message);
       }
