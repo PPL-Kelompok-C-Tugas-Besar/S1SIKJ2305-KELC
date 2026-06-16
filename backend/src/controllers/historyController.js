@@ -140,21 +140,47 @@ const getTodayStats = async (req, res) => {
 
 // POST /users/history
 const addHistory = async (req, res) => {
+    let connection;
     try {
         const userId = req.user.id;
-        const { workout_name, duration_minutes, calories_burned } = req.body;
+        const { workout_name, duration_minutes } = req.body;
+        let calories_burned = req.body.calories_burned;
 
-        if (!workout_name || !duration_minutes || !calories_burned) {
-            return res.status(400).json({ success: false, message: 'Nama latihan, durasi, dan kalori wajib diisi' });
+        if (!workout_name || duration_minutes === undefined || duration_minutes === null || duration_minutes === '') {
+            return res.status(400).json({ success: false, message: 'Nama latihan dan durasi wajib diisi' });
         }
 
-        const [result] = await pool.execute(
+        connection = await pool.getConnection();
+
+        if (!calories_burned) {
+            // Hitung otomatis kalori
+            // 1. Dapatkan berat badan user
+            const [[user]] = await connection.execute('SELECT weight FROM users WHERE id = ?', [userId]);
+            const weightKg = user?.weight || 70; // default 70kg jika tidak ada
+
+            // 2. Dapatkan met_value dari tabel exercises berdasarkan nama yang mirip
+            const [exercises] = await connection.execute(
+                'SELECT met_value FROM exercises WHERE LOWER(name) LIKE LOWER(?) ORDER BY met_value DESC LIMIT 1',
+                [`%${workout_name}%`]
+            );
+            
+            let metValue = 5.0; // default met value jika tidak ditemukan
+            if (exercises.length > 0) {
+                metValue = parseFloat(exercises[0].met_value);
+            }
+
+            // 3. Hitung kalori
+            // Kalori = Durasi (menit) × (MET × 3.5 × Berat Badan kg) / 200
+            calories_burned = Math.round(duration_minutes * (metValue * 3.5 * weightKg) / 200);
+        }
+
+        const [result] = await connection.execute(
             'INSERT INTO workout_history (user_id, workout_name, duration_minutes, calories_burned) VALUES (?, ?, ?, ?)',
             [userId, workout_name, duration_minutes, calories_burned]
         );
 
-        // Kalkulasi ulang target kalori (contoh: jika adapter ini menyesuaikan target kalori harian saat latihan selesai)
-        await recalculateUserCalorieTarget(userId, pool);
+        // Kalkulasi ulang target kalori
+        await recalculateUserCalorieTarget(userId, connection);
 
         return res.status(201).json({ 
             success: true, 
@@ -171,6 +197,8 @@ const addHistory = async (req, res) => {
     } catch (err) {
         console.error('Add history error:', err);
         return res.status(500).json({ success: false, message: 'Terjadi kesalahan saat menyimpan riwayat' });
+    } finally {
+        if (connection) connection.release();
     }
 };
 

@@ -131,7 +131,6 @@ class _HistoryPageState extends State<HistoryPage> {
     final formKey = GlobalKey<FormState>();
     String workoutName = '';
     String durationStr = '';
-    String caloriesStr = '';
 
     showModalBottomSheet(
       context: context,
@@ -180,30 +179,13 @@ class _HistoryPageState extends State<HistoryPage> {
                       (v == null || v.isEmpty) ? 'Nama latihan wajib diisi' : null,
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Durasi (menit)',
-                        icon: Icons.timer_outlined,
-                        keyboardType: TextInputType.number,
-                        onSaved: (v) => durationStr = v!,
-                        validator: (v) =>
-                            (v == null || v.isEmpty) ? 'Wajib diisi' : null,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _buildInputField(
-                        label: 'Kalori (kkal)',
-                        icon: Icons.local_fire_department_outlined,
-                        keyboardType: TextInputType.number,
-                        onSaved: (v) => caloriesStr = v!,
-                        validator: (v) =>
-                            (v == null || v.isEmpty) ? 'Wajib diisi' : null,
-                      ),
-                    ),
-                  ],
+                _buildInputField(
+                  label: 'Durasi (menit)',
+                  icon: Icons.timer_outlined,
+                  keyboardType: TextInputType.number,
+                  onSaved: (v) => durationStr = v!,
+                  validator: (v) =>
+                      (v == null || v.isEmpty) ? 'Wajib diisi' : null,
                 ),
                 const SizedBox(height: 28),
                 SizedBox(
@@ -223,7 +205,7 @@ class _HistoryPageState extends State<HistoryPage> {
                         final ok = await _historyService.addHistory(
                           workoutName: workoutName,
                           durationMinutes: int.tryParse(durationStr) ?? 0,
-                          caloriesBurned: int.tryParse(caloriesStr) ?? 0,
+                          caloriesBurned: 0,
                         );
                         if (ok) {
                           _loadInitial(); // refresh dari awal
