@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 class UserModel {
   final String id;
   final String fullName;
@@ -11,7 +13,6 @@ class UserModel {
   final bool onboardingCompleted;
   final int weeklyWorkoutGoal;
   final String? photoUrl;
-  final double? height;
   final int? age;
   final String? activityLevel;
   final String? dietGoal;
@@ -30,7 +31,6 @@ class UserModel {
     this.onboardingCompleted = false,
     this.weeklyWorkoutGoal = 3,
     this.photoUrl,
-    this.height,
     this.age,
     this.activityLevel,
     this.dietGoal,
@@ -38,18 +38,31 @@ class UserModel {
   });
 
   double? get bmi {
-    if (weight == null || height == null || height! <= 0) return null;
+    if (weight == null || height == null || height! <= 0) {
+      debugPrint('UserModel - BMI: data tidak lengkap (weight=$weight, height=$height)');
+      return null;
+    }
     final heightInMeters = height! / 100;
-    return weight! / (heightInMeters * heightInMeters);
+    final result = weight! / (heightInMeters * heightInMeters);
+    debugPrint('UserModel - BMI calculated: ${result.toStringAsFixed(1)} (weight=$weight, height=$height)');
+    return result;
   }
 
   String get bmiCategory {
     final b = bmi;
     if (b == null) return '--';
-    if (b < 18.5) return 'Kekurangan Berat Badan';
-    if (b < 25.0) return 'Normal';
-    if (b < 30.0) return 'Kelebihan Berat Badan';
-    return 'Obesitas';
+    String category;
+    if (b < 18.5) {
+      category = 'Kekurangan Berat Badan';
+    } else if (b < 25.0) {
+      category = 'Normal';
+    } else if (b < 30.0) {
+      category = 'Kelebihan Berat Badan';
+    } else {
+      category = 'Obesitas';
+    }
+    debugPrint('UserModel - BMI category: $category (bmi=${b.toStringAsFixed(1)})');
+    return category;
   }
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -66,7 +79,6 @@ class UserModel {
       onboardingCompleted: json['onboarding_completed'] == 1 || json['onboarding_completed'] == true,
       weeklyWorkoutGoal: json['weekly_workout_goal'] ?? 3,
       photoUrl: json['photo_url'],
-      height: _parseDouble(json['height']),
       age: json['age'] is int ? json['age'] : int.tryParse(json['age']?.toString() ?? ''),
       activityLevel: json['activity_level'],
       dietGoal: json['diet_goal'],
@@ -87,7 +99,6 @@ class UserModel {
     bool? onboardingCompleted,
     int? weeklyWorkoutGoal,
     String? photoUrl,
-    double? height,
     int? age,
     String? activityLevel,
     String? dietGoal,
@@ -106,7 +117,6 @@ class UserModel {
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
       weeklyWorkoutGoal: weeklyWorkoutGoal ?? this.weeklyWorkoutGoal,
       photoUrl: photoUrl ?? this.photoUrl,
-      height: height ?? this.height,
       age: age ?? this.age,
       activityLevel: activityLevel ?? this.activityLevel,
       dietGoal: dietGoal ?? this.dietGoal,

@@ -118,10 +118,15 @@ class AuthProvider extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> uploadPhoto(String base64Photo) async {
+    debugPrint('AuthProvider - Attempting upload photo...');
     final result = await _authService.uploadPhoto(base64Photo);
+    debugPrint('AuthProvider - Upload photo result: $result');
     if (result['success'] == true) {
       _user = _user?.copyWith(photoUrl: base64Photo);
+      debugPrint('AuthProvider - Photo updated successfully');
       notifyListeners();
+    } else {
+      debugPrint('AuthProvider - Upload photo failed: ${result['message']}');
     }
     return result;
   }
@@ -131,11 +136,19 @@ class AuthProvider extends ChangeNotifier {
     required String newPassword,
     required String confirmPassword,
   }) async {
-    return await _authService.changePassword(
+    debugPrint('AuthProvider - Attempting change password...');
+    final result = await _authService.changePassword(
       oldPassword: oldPassword,
       newPassword: newPassword,
       confirmPassword: confirmPassword,
     );
+    debugPrint('AuthProvider - Change password result: $result');
+    if (result['success'] == true) {
+      debugPrint('AuthProvider - Password changed successfully');
+    } else {
+      debugPrint('AuthProvider - Change password failed: ${result['message']}');
+    }
+    return result;
   }
 
   Future<bool> completeOnboarding(Map<String, dynamic> onboardingData) async {
