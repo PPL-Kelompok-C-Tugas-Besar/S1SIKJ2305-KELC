@@ -52,6 +52,30 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
     super.dispose();
   }
 
+  WorkoutPackage _getWorkoutPackage() {
+    final workoutTitle = widget.workoutType.toLowerCase();
+
+    if (workoutTitle.contains('powerlifting')) {
+      return powerliftingBasicsPackage;
+    } else if (workoutTitle.contains('yoga')) {
+      return yogaFlowPackage;
+    } else if (workoutTitle.contains('abs')) {
+      return WorkoutPackage.getAbsBeginnerPackage();
+    } else if (workoutTitle.contains('full body strength') || workoutTitle.contains('full')) {
+      return WorkoutPackage.getFullBodyStrengthPackage();
+    } else if (workoutTitle.contains('leg day primer') || workoutTitle.contains('leg')) {
+      return WorkoutPackage.getLegDayPrimerPackage();
+    } else if (workoutTitle.contains('office desk stretch') || workoutTitle.contains('office')) {
+      return WorkoutPackage.getOfficeDeskStretchPackage();
+    } else if (workoutTitle.contains('morning mobility') || workoutTitle.contains('morning')) {
+      return WorkoutPackage.getMorningMobilityPackage();
+    } else if (workoutTitle.contains('pre-workout stretch') || workoutTitle.contains('pre-workout')) {
+      return WorkoutPackage.getPreWorkoutStretchPackage();
+    } else {
+      return WorkoutPackage.getHomeHiitBlastPackage();
+    }
+  }
+
   Future<void> _loadExercises() async {
     setState(() {
       _isLoading = true;
@@ -59,11 +83,38 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
     });
 
     try {
-      final exercises = await _exerciseService.getExercises(
+      List<Exercise> exercises = [];
+      
+      // Jika workout memiliki local package (hardcoded), langsung mapping dari sana
+      final sessionPackage = _getWorkoutPackage();
+      
+      // Khusus untuk hardcoded workout dari catalogue, kita pakai package lokal
+      // Untuk memastikan kita tidak salah menimpa backend valid, kita cek apakah 
+      // id-nya mengindikasikan hardcoded atau backend mengembalikan kosong
+      final backendExercises = await _exerciseService.getExercises(
         workoutId: widget.workoutId,
         location: widget.location,
         workoutType: widget.workoutType,
       );
+
+      if (backendExercises.isNotEmpty) {
+        exercises = backendExercises;
+      } else {
+        // Fallback ke local mapping
+        exercises = sessionPackage.exercises.map((model) => Exercise(
+          id: model.name,
+          name: model.name,
+          instructions: model.description ?? 'Ikuti gerakan sesuai animasi.',
+          equipmentRequired: 'Sesuai animasi',
+          baseCaloriesBurn: model.kcal,
+          repsOrDuration: model.durationOrReps,
+          workoutId: widget.workoutId ?? 'hardcoded',
+          workoutTitle: sessionPackage.title,
+          location: widget.location,
+          difficulty: widget.workout?.difficulty ?? 'Beginner',
+          category: widget.workout?.category ?? 'workout',
+        )).toList();
+      }
 
       if (!mounted) return;
       setState(() {
@@ -96,28 +147,7 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
 
     // 1. Navigasi ke halaman sesi latihan yang sesuai
     //    Routing berdasarkan tipe workout yang dipilih
-    WorkoutPackage sessionPackage;
-    final workoutTitle = widget.workoutType.toLowerCase();
-
-    if (workoutTitle.contains('powerlifting')) {
-      sessionPackage = powerliftingBasicsPackage;
-    } else if (workoutTitle.contains('yoga')) {
-      sessionPackage = yogaFlowPackage;
-    } else if (workoutTitle.contains('abs')) {
-      sessionPackage = WorkoutPackage.getAbsBeginnerPackage();
-    } else if (workoutTitle.contains('full body strength') || workoutTitle.contains('full')) {
-      sessionPackage = WorkoutPackage.getFullBodyStrengthPackage();
-    } else if (workoutTitle.contains('leg day primer') || workoutTitle.contains('leg')) {
-      sessionPackage = WorkoutPackage.getLegDayPrimerPackage();
-    } else if (workoutTitle.contains('office desk stretch') || workoutTitle.contains('office')) {
-      sessionPackage = WorkoutPackage.getOfficeDeskStretchPackage();
-    } else if (workoutTitle.contains('morning mobility') || workoutTitle.contains('morning')) {
-      sessionPackage = WorkoutPackage.getMorningMobilityPackage();
-    } else if (workoutTitle.contains('pre-workout stretch') || workoutTitle.contains('pre-workout')) {
-      sessionPackage = WorkoutPackage.getPreWorkoutStretchPackage();
-    } else {
-      sessionPackage = WorkoutPackage.getHomeHiitBlastPackage();
-    }
+    final sessionPackage = _getWorkoutPackage();
 
     final sessionCompleted = await Navigator.push<bool>(
       context,
@@ -133,22 +163,39 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
       _isLoading = true;
     });
 
+    // 2. Hitung estimasi kalori (PBI-1 Subtask 5)
+    // Gunakan durasi dari model atau hitung dari package jika model 0
+    int finalDuration = duration;
+    if (finalDuration == 0) {
+      for (var ex in sessionPackage.exercises) {
+        finalDuration += ex.isTimer ? (ex.value / 60).ceil() : 1;
+      }
+    }
+    if (finalDuration == 0) finalDuration = 1;
+
     try {
-      // 2. Hitung estimasi kalori aktual memanggil API Backend (PBI-1 Subtask 5)
-      final calculatedCalories = await _calorieService.calculateCalories(
+      double? calculatedCalories = await _calorieService.calculateCalories(
         workoutId: widget.workoutId!,
-        durationMinutes: duration,
+        durationMinutes: finalDuration,
       );
 
+      // Fallback jika API gagal (misal: workout_id tidak ada di DB / hardcoded)
       if (calculatedCalories == null) {
-        throw Exception('Gagal menghitung kalori. Pastikan profil berat badan Anda sudah diisi.');
+        calculatedCalories = 0.0;
+        for (var ex in sessionPackage.exercises) {
+          calculatedCalories = calculatedCalories! + (ex.kcal ?? 15.0);
+        }
+        // Jika masih 0, gunakan estimasi kasar 10 kcal per menit
+        if (calculatedCalories == 0) {
+          calculatedCalories = finalDuration * 10.0;
+        }
       }
 
       // 3. Simpan ke history menggunakan kalori yang sudah dihitung
       final success = await _historyService.addHistory(
         workoutName: widget.workoutType,
-        durationMinutes: duration,
-        caloriesBurned: calculatedCalories.round(),
+        durationMinutes: finalDuration,
+        caloriesBurned: calculatedCalories!.round(),
       );
       
       if (success) {
@@ -159,8 +206,8 @@ class _ExerciseSelectionPageState extends State<ExerciseSelectionPage> {
             MaterialPageRoute(
               builder: (context) => WorkoutSummaryScreen(
                 workoutName: widget.workoutType,
-                durationMinutes: duration,
-                caloriesBurned: calculatedCalories,
+                durationMinutes: finalDuration,
+                caloriesBurned: calculatedCalories!,
               ),
             ),
           );

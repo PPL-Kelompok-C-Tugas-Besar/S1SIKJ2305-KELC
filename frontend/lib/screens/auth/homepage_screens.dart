@@ -112,11 +112,15 @@ class _HomePageState extends State<_HomePage> {
   }
 
   Future<void> _loadData() async {
+    // Cegah pemuatan ganda jika sedang loading
+    if (!mounted) return;
+    
     try {
       final stats = await _historyService.getTodayStats();
       debugPrint(
-        'Loaded TodayStats: streak=${stats?.streak}, hasWorkedOutToday=${stats?.hasWorkedOutToday}, completedDays=${stats?.completedDays}',
+        'Loaded TodayStats: todayCalories=${stats?.todayCalories}, target=${stats?.dailyCalorieTarget}',
       );
+      
       if (mounted) {
         setState(() {
           _todayStats = stats;
@@ -135,7 +139,8 @@ class _HomePageState extends State<_HomePage> {
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().user;
     final firstName = user?.fullName.split(' ').first ?? 'User';
-    final targetCalories = user?.dailyCalorieTarget ?? 0;
+    // Gunakan target kalori dari stats jika ada, sebagai fallback gunakan dari profile
+    final targetCalories = _todayStats?.dailyCalorieTarget ?? user?.dailyCalorieTarget ?? 0;
 
     return SafeArea(
       child: RefreshIndicator(
@@ -424,8 +429,8 @@ class _DailyStatsRow extends StatelessWidget {
             value: isLoading
                 ? '...'
                 : (targetCalories > 0
-                      ? '$calories / $targetCalories'
-                      : calories.toString()),
+                    ? '$calories / $targetCalories'
+                    : calories.toString()),
             unit: 'kcal',
             icon: Icons.local_fire_department,
           ),
@@ -534,10 +539,22 @@ class _WeeklyGoalCard extends StatelessWidget {
     );
   }
 
-  String _getMotivationalText(int completed, int goal) {
-    if (completed == 0) return "Let's get moving this week!";
+  String _getMotivationalText(int completed, int goal, int dayOfWeek) {
     if (completed >= goal) return "Goal Crushed! You're unstoppable 🔥";
+    
+    if (dayOfWeek == 7) {
+      // Hari Minggu
+      return "It's the last day! Don't give up on your goal! 💪";
+    }
+    
+    if (dayOfWeek >= 5 && completed < goal / 2) {
+      // Jumat atau Sabtu tapi latihan masih sedikit
+      return "Time is running out! Let's get those gains! ⚡";
+    }
+
+    if (completed == 0) return "Let's get moving this week!";
     if (completed >= goal / 2) return "Halfway there, keep it up!";
+    
     return "Great start, keep the momentum!";
   }
 
@@ -559,6 +576,8 @@ class _WeeklyGoalCard extends StatelessWidget {
       'Sun',
     ];
     final completedDays = todayStats?.completedDays ?? [];
+    
+    // Gunakan data murni dari backend agar sinkron dengan zona waktu database
     final int goal = todayStats?.weeklyGoal ?? 3;
     final int completedCount = completedDays.length;
 
@@ -626,7 +645,7 @@ class _WeeklyGoalCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  _getMotivationalText(completedCount, goal),
+                  _getMotivationalText(completedCount, goal, currentWeekday),
                   style: const TextStyle(color: kTextMuted, fontSize: 13),
                 ),
               ],
@@ -807,15 +826,15 @@ class _DayBadge extends StatelessWidget {
             child: isCompleted
                 ? const Icon(Icons.check_circle, color: kAccent, size: 12)
                 : (isActive
-                      ? Container(
-                          width: 4,
-                          height: 4,
-                          decoration: const BoxDecoration(
-                            color: kTextMuted,
-                            shape: BoxShape.circle,
-                          ),
-                        )
-                      : null),
+                    ? Container(
+                        width: 4,
+                        height: 4,
+                        decoration: const BoxDecoration(
+                          color: kTextMuted,
+                          shape: BoxShape.circle,
+                        ),
+                      )
+                    : null),
           ),
         ],
       ),
@@ -1158,17 +1177,3 @@ class _WorkoutCard extends StatelessWidget {
     );
   }
 }
-
-// ─── Placeholder tabs ─────────────────────────────────────────────────────────
-// class _PlaceholderPage extends StatelessWidget {
-//   const _PlaceholderPage({required this.label});
-//   final String label;
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Center(
-//       child: Text(label,
-//           style: const TextStyle(color: kTextMuted, fontSize: 18)),
-//     );
-//   }
-// }

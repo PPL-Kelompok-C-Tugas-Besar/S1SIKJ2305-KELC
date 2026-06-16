@@ -25,6 +25,12 @@ class ExerciseModel {
   /// Ikon fallback untuk preview.
   final IconData icon;
 
+  /// Deskripsi gerakan.
+  final String? description;
+
+  /// Estimasi kalori yang terbakar.
+  final double? kcal;
+
   const ExerciseModel({
     required this.name,
     required this.durationOrReps,
@@ -32,6 +38,8 @@ class ExerciseModel {
     required this.isTimer,
     required this.imagePath,
     this.icon = Icons.fitness_center_rounded,
+    this.description,
+    this.kcal,
   });
 }
 
@@ -269,6 +277,8 @@ class WorkoutPackage {
           isTimer: true,
           imagePath: 'lib/assets/gifs/arm-circles.gif',
           icon: Icons.accessibility_new_rounded,
+          description: 'Extend arms laterally and make small continuous circles.',
+          kcal: 3.8,
         ),
         ExerciseModel(
           name: 'Torso Twists',
@@ -277,6 +287,8 @@ class WorkoutPackage {
           isTimer: true,
           imagePath: 'lib/assets/gifs/Torso-Twist.gif',
           icon: Icons.accessibility_new_rounded,
+          description: 'Stand with feet shoulder-width apart and twist torso side to side.',
+          kcal: 3.3,
         ),
       ],
     );
@@ -1204,7 +1216,9 @@ class _DynamicSessionPageState extends State<DynamicSessionPage> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(true),
+                onPressed: () {
+                  Navigator.pop(context, true);
+                },
                 child: const Text(
                   'Selanjutnya',
                   style: TextStyle(

@@ -19,7 +19,7 @@ const register = async (req, res) => {
   }
 
   try {
-    const [existing] = await pool.execute('SELECT id FROM gymbro_db.users WHERE email = ?', [email]);
+    const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [email]);
     if (existing.length > 0) {
       return res.status(409).json({ success: false, message: 'Email sudah terdaftar' });
     }
@@ -28,7 +28,7 @@ const register = async (req, res) => {
     const userId = generateId();
 
     await pool.execute(
-      'INSERT INTO gymbro_db.users (id, full_name, email, password, role) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO users (id, full_name, email, password, role) VALUES (?, ?, ?, ?, ?)',
       [userId, full_name, email, hashedPassword, 'user']
     );
 
@@ -49,7 +49,7 @@ const login = async (req, res) => {
 
   try {
     const [rows] = await pool.execute(
-      'SELECT id, full_name, email, password, weight, role FROM gymbro_db.users WHERE email = ?',
+      'SELECT id, full_name, email, password, weight, role FROM users WHERE email = ?',
       [email]
     );
 

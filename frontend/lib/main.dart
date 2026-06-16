@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/supplement_provider.dart';
 import 'providers/exercise_upload_provider.dart';
+import 'providers/cart_provider.dart';
+import 'providers/wishlist_provider.dart';
+import 'providers/admin_voucher_provider.dart';
 import 'screens/auth/splash_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/register_screen.dart';
@@ -22,6 +25,9 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => SupplementProvider()),
         ChangeNotifierProvider(create: (_) => ExerciseUploadProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => AdminVoucherProvider()),
       ],
       child: const GymbroApp(),
     ),

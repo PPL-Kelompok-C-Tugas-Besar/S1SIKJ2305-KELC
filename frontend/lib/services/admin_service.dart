@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../models/workout_model.dart';
+import '../models/voucher_model.dart';
 import 'api_constants.dart';
 
 class AdminService {
@@ -235,15 +238,24 @@ class AdminService {
     }
   }
 
-  Future<Map<String, dynamic>> uploadExerciseMedia(int id, String filePath) async {
+  Future<Map<String, dynamic>> uploadExerciseMedia(int id, String filePath, {Uint8List? bytes, String? filename}) async {
     try {
       final token = await _getToken();
       if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
 
       final uri = Uri.parse('${ApiConstants.adminExercises}/$id/media');
       final request = http.MultipartRequest('POST', uri)
-        ..headers['Authorization'] = 'Bearer $token'
-        ..files.add(await http.MultipartFile.fromPath('media_file', filePath));
+        ..headers['Authorization'] = 'Bearer $token';
+
+      if (kIsWeb && bytes != null) {
+        request.files.add(http.MultipartFile.fromBytes(
+          'media_file',
+          bytes,
+          filename: filename ?? 'upload.jpg',
+        ));
+      } else {
+        request.files.add(await http.MultipartFile.fromPath('media_file', filePath));
+      }
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -253,6 +265,95 @@ class AdminService {
       return {'success': false, 'message': data['message']};
     } catch (e) {
       return {'success': false, 'message': 'Kesalahan upload: $e'};
+    }
+  }
+
+  // ─── Vouchers ──────────────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>> getAdminVouchers({String? search, String? isActive}) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      String url = ApiConstants.adminVouchers;
+      final params = <String>[];
+      if (search != null && search.isNotEmpty) {
+        params.add('search=${Uri.encodeComponent(search)}');
+      }
+      if (isActive != null && isActive.isNotEmpty) {
+        params.add('is_active=$isActive');
+      }
+      if (params.isNotEmpty) {
+        url += '?${params.join('&')}';
+      }
+
+      final response = await http.get(Uri.parse(url), headers: _authHeaders(token));
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        final List<dynamic> raw = data['data'] ?? [];
+        final vouchers = raw.whereType<Map<String, dynamic>>().map(Voucher.fromJson).toList();
+        return {'success': true, 'data': vouchers};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal mengambil data voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> createVoucher(Map<String, dynamic> body) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.post(
+        Uri.parse(ApiConstants.adminVouchers),
+        headers: _authHeaders(token),
+        body: json.encode(body),
+      );
+      final data = json.decode(response.body);
+      if (response.statusCode == 201) {
+        return {'success': true, 'data': Voucher.fromJson(data['data'] as Map<String, dynamic>)};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal membuat voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> updateVoucher(int id, Map<String, dynamic> body) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.put(
+        Uri.parse('${ApiConstants.adminVouchers}/$id'),
+        headers: _authHeaders(token),
+        body: json.encode(body),
+      );
+      final data = json.decode(response.body);
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': Voucher.fromJson(data['data'] as Map<String, dynamic>)};
+      }
+      return {'success': false, 'message': data['message'] ?? 'Gagal memperbarui voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
+    }
+  }
+
+  Future<Map<String, dynamic>> deleteVoucher(int id) async {
+    try {
+      final token = await _getToken();
+      if (token == null) return {'success': false, 'message': 'Token tidak ditemukan'};
+
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.adminVouchers}/$id'),
+        headers: _authHeaders(token),
+      );
+      if (response.statusCode == 200) return {'success': true};
+      final data = json.decode(response.body);
+      return {'success': false, 'message': data['message'] ?? 'Gagal menghapus voucher'};
+    } catch (e) {
+      return {'success': false, 'message': 'Kesalahan jaringan: $e'};
     }
   }
 }

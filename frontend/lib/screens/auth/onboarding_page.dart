@@ -13,6 +13,7 @@ class OnboardingPage extends StatefulWidget {
 class _OnboardingPageState extends State<OnboardingPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  String? _errorMessage;
   
   // Form data
   String _selectedGender = '';
@@ -55,12 +56,73 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   bool _canProceed() {
-    if (_currentPage == 0) return _selectedGender.isNotEmpty;
-    if (_currentPage == 1) return _age > 0;
-    if (_currentPage == 2) return _height > 0;
-    if (_currentPage == 3) return _currentWeight > 0;
-    if (_currentPage == 4) return _activityLevel.isNotEmpty;
-    if (_currentPage == 5) return _dietGoal.isNotEmpty;
+    setState(() => _errorMessage = null);
+
+    if (_currentPage == 0) {
+      if (_selectedGender.isEmpty) {
+        setState(() => _errorMessage = 'Mohon pilih jenis kelamin Anda');
+        return false;
+      }
+      return true;
+    }
+    
+    if (_currentPage == 1) {
+      final val = int.tryParse(_ageController.text);
+      if (val == null) {
+        setState(() => _errorMessage = 'Mohon masukkan angka yang valid');
+        return false;
+      }
+      if (val < 10 || val > 100) {
+        setState(() => _errorMessage = 'Umur harus antara 10 sampai 100 tahun');
+        return false;
+      }
+      _age = val;
+      return true;
+    }
+    
+    if (_currentPage == 2) {
+      final val = double.tryParse(_heightController.text);
+      if (val == null) {
+        setState(() => _errorMessage = 'Mohon masukkan angka yang valid');
+        return false;
+      }
+      if (val < 100 || val > 250) {
+        setState(() => _errorMessage = 'Tinggi harus antara 100 sampai 250 cm');
+        return false;
+      }
+      _height = val;
+      return true;
+    }
+    
+    if (_currentPage == 3) {
+      final val = double.tryParse(_weightController.text);
+      if (val == null) {
+        setState(() => _errorMessage = 'Mohon masukkan angka yang valid');
+        return false;
+      }
+      if (val < 30 || val > 200) {
+        setState(() => _errorMessage = 'Berat harus antara 30 sampai 200 kg');
+        return false;
+      }
+      _currentWeight = val;
+      return true;
+    }
+    
+    if (_currentPage == 4) {
+      if (_activityLevel.isEmpty) {
+        setState(() => _errorMessage = 'Mohon pilih tingkat aktivitas Anda');
+        return false;
+      }
+      return true;
+    }
+
+    if (_currentPage == 5) {
+      if (_dietGoal.isEmpty) {
+        setState(() => _errorMessage = 'Mohon pilih tujuan diet Anda');
+        return false;
+      }
+      return true;
+    }
     return true;
   }
 
@@ -93,7 +155,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       'targetWeight': _targetWeight,
       'activityLevel': _activityLevel,
       'dietGoal': _dietGoal,
-      // For backward compatibility with the API if needed
       'goals': [_dietGoal], 
       'onboardingCompleted': true,
     };
@@ -101,11 +162,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
     final success = await authProvider.completeOnboarding(onboardingData);
     
     if (success && mounted) {
-      // Ambil nilai target kalori dari model user yang sudah diupdate
       final calorieTarget = authProvider.user?.dailyCalorieTarget;
       
       if (calorieTarget != null) {
-        // Tampilkan dialog berisi notifikasi angka rekomendasi kalori harian
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -120,8 +179,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
             actions: [
               ElevatedButton(
                 onPressed: () {
-                  Navigator.pop(context); // Tutup dialog
-                  Navigator.pushReplacementNamed(context, '/home'); // Navigasi ke home
+                  Navigator.pop(context); 
+                  Navigator.pushReplacementNamed(context, '/home'); 
                 },
                 style: ElevatedButton.styleFrom(backgroundColor: kAccent, foregroundColor: kBg),
                 child: const Text('Lanjut ke Beranda'),
@@ -142,7 +201,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Column(
           children: [
-            // Progress indicator
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -163,12 +221,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
             
-            // Page content
             Expanded(
               child: PageView(
                 controller: _pageController,
                 onPageChanged: (index) {
-                  setState(() => _currentPage = index);
+                  setState(() {
+                    _currentPage = index;
+                    _errorMessage = null;
+                  });
                 },
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
@@ -183,7 +243,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
             
-            // Navigation buttons
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -247,9 +306,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
               label: gender[0].toUpperCase() + gender.substring(1),
               icon: Icons.person,
               isSelected: _selectedGender == gender,
-              onTap: () => setState(() => _selectedGender = gender),
+              onTap: () {
+                setState(() {
+                  _selectedGender = gender;
+                  _errorMessage = null;
+                });
+              },
             ),
           )),
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Center(
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -279,12 +353,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               setState(() {
                 _age = val.toInt();
                 _ageController.text = _age.toString();
+                _errorMessage = null;
               });
             },
             onTextChanged: (val) {
               final valInt = int.tryParse(val);
-              if (valInt != null && valInt >= 10 && valInt <= 100) {
-                setState(() => _age = valInt);
+              if (valInt != null) {
+                setState(() {
+                  _age = valInt.clamp(10, 100);
+                  _errorMessage = null;
+                });
               }
             },
           ),
@@ -317,12 +395,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               setState(() {
                 _height = val;
                 _heightController.text = _height.toStringAsFixed(1);
+                _errorMessage = null;
               });
             },
             onTextChanged: (val) {
               final valDouble = double.tryParse(val);
-              if (valDouble != null && valDouble >= 100 && valDouble <= 250) {
-                setState(() => _height = valDouble);
+              if (valDouble != null) {
+                setState(() {
+                  _height = valDouble.clamp(100, 250);
+                  _errorMessage = null;
+                });
               }
             },
           ),
@@ -355,12 +437,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
               setState(() {
                 _currentWeight = val;
                 _weightController.text = _currentWeight.toStringAsFixed(1);
+                _errorMessage = null;
               });
             },
             onTextChanged: (val) {
               final weight = double.tryParse(val);
-              if (weight != null && weight >= 30 && weight <= 200) {
-                setState(() => _currentWeight = weight);
+              if (weight != null) {
+                setState(() {
+                  _currentWeight = weight.clamp(30, 200);
+                  _errorMessage = null;
+                });
               }
             },
           ),
@@ -384,7 +470,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       decoration: BoxDecoration(
         color: kCard,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white10),
+        border: Border.all(color: _errorMessage != null ? Colors.red.withOpacity(0.5) : Colors.white10),
       ),
       child: Column(
         children: [
@@ -393,7 +479,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             decoration: BoxDecoration(
               color: kBg,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white10),
+              border: Border.all(color: _errorMessage != null ? Colors.red.withOpacity(0.5) : Colors.white10),
             ),
             child: Row(
               children: [
@@ -407,7 +493,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       hintText: 'Enter value',
                       hintStyle: TextStyle(color: kTextMuted),
                     ),
-                    onChanged: onTextChanged,
+                    onChanged: (val) {
+                      setState(() => _errorMessage = null);
+                      onTextChanged(val);
+                    },
                   ),
                 ),
                 Text(
@@ -417,6 +506,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ],
             ),
           ),
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 12),
+              child: Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 14),
+              ),
+            ),
           const SizedBox(height: 20),
           Slider(
             value: currentValue,
@@ -425,7 +522,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
             divisions: divisions,
             activeColor: kAccent,
             inactiveColor: kCard,
-            onChanged: onSliderChanged,
+            onChanged: (val) {
+              setState(() => _errorMessage = null);
+              onSliderChanged(val);
+            },
           ),
           const SizedBox(height: 8),
           Row(
@@ -464,12 +564,27 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     label: activity['label']!,
                     icon: Icons.directions_run,
                     isSelected: _activityLevel == activity['value'],
-                    onTap: () => setState(() => _activityLevel = activity['value']!),
+                    onTap: () {
+                      setState(() {
+                        _activityLevel = activity['value']!;
+                        _errorMessage = null;
+                      });
+                    },
                   ),
                 );
               },
             ),
           ),
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 16, bottom: 8),
+              child: Center(
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -494,9 +609,24 @@ class _OnboardingPageState extends State<OnboardingPage> {
               label: goal.toUpperCase(),
               icon: Icons.flag,
               isSelected: _dietGoal == goal,
-              onTap: () => setState(() => _dietGoal = goal),
+              onTap: () {
+                setState(() {
+                  _dietGoal = goal;
+                  _errorMessage = null;
+                });
+              },
             ),
           )),
+          if (_errorMessage != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Center(
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red, fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
         ],
       ),
     );

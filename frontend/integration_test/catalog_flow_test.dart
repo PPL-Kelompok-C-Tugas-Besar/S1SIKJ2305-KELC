@@ -5,6 +5,11 @@ import 'package:gymbro/screens/E-commerce/catalog_ecommerce.dart';
 import 'package:gymbro/screens/E-commerce/detailcatalog_ecommerce.dart';
 import 'package:provider/provider.dart';
 import 'package:gymbro/providers/auth_provider.dart';
+import 'package:gymbro/providers/supplement_provider.dart';
+import 'package:gymbro/providers/exercise_upload_provider.dart';
+import 'package:gymbro/providers/cart_provider.dart';
+import 'package:gymbro/providers/wishlist_provider.dart';
+import 'package:gymbro/providers/admin_voucher_provider.dart';
 import 'package:gymbro/services/auth_service.dart';
 
 void main() {
@@ -13,8 +18,15 @@ void main() {
   const String mockToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2MGYxZmIxLTI4MjUtNDAyOC1hNTAyLTQxZDVjODJlMDA3NSIsImVtYWlsIjoibmNhQGdtYWlsLmNvbSIsInR5cGUiOiJ1c2VyIiwiaWF0IjoxNzc3OTg2OTk3LCJleHAiOjE3ODY2MjY5OTd9.mUwTAnX16Dh7s6zzjU-1o34IAfEOJl2KpUYzThV98FE';
 
   Widget buildApp(Widget home) {
-    return ChangeNotifierProvider(
-      create: (_) => AuthProvider(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => SupplementProvider()),
+        ChangeNotifierProvider(create: (_) => ExerciseUploadProvider()),
+        ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => WishlistProvider()),
+        ChangeNotifierProvider(create: (_) => AdminVoucherProvider()),
+      ],
       child: MaterialApp(
         home: home,
         onGenerateRoute: (settings) {

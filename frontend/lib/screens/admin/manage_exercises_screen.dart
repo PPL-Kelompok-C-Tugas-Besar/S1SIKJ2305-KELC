@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -92,7 +93,21 @@ class _ManageExercisesScreenState extends State<ManageExercisesScreen> {
     );
   }
 
+  Widget _buildMediaPreview(ExerciseUploadProvider provider) {
+    if (kIsWeb) {
+      if (provider.webImageBytes != null) {
+        return Image.memory(provider.webImageBytes!, fit: BoxFit.cover);
+      }
+    } else {
+      // if (provider.selectedMedia != null) {
+      //   return Image.file(provider.selectedMedia!, fit: BoxFit.cover);
+      // }
+    }
+    return const SizedBox.shrink();
+  }
+
   Widget _buildMediaSection(ExerciseUploadProvider provider) {
+    final hasMedia = kIsWeb ? provider.webImageBytes != null : provider.selectedMedia != null;
     return Container(
       height: 200,
       decoration: BoxDecoration(
@@ -100,13 +115,13 @@ class _ManageExercisesScreenState extends State<ManageExercisesScreen> {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: const Color(0xFF9E9E9E).withValues(alpha: 0.3)),
       ),
-      child: provider.selectedMedia != null
+      child: hasMedia
           ? Stack(
               fit: StackFit.expand,
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.file(provider.selectedMedia!, fit: BoxFit.cover),
+                  child: _buildMediaPreview(provider),
                 ),
                 Positioned(
                   top: 8,
