@@ -2,11 +2,6 @@ const { pool } = require('./db');
 
 async function runMarketplaceFeaturesMigration() {
     try {
-        // Drop existing tables if they are conflicting to align columns
-        await pool.query(`DROP TABLE IF EXISTS order_tracking`);
-        await pool.query(`DROP TABLE IF EXISTS order_items`);
-        await pool.query(`DROP TABLE IF EXISTS orders`);
-        
         // 1. Create vouchers table
         await pool.query(`
             CREATE TABLE IF NOT EXISTS vouchers (
