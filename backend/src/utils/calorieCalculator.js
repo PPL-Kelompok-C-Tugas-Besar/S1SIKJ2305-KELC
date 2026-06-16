@@ -127,23 +127,23 @@ const recalculateUserCalorieTarget = async (userId, pool) => {
     const bmr = calculateBMR(user.weight, user.height, user.age, user.gender);
     const tdee = calculateTDEE(bmr, newActivityLevel);
     
-    let newTarget = tdee;
+    // Target kalori di sini berarti Active Calories (Kalori yang HARUS DIBAKAR)
+    // Kalori yang dibakar = Total Daily Energy Expenditure - Basal Metabolic Rate
+    let newTarget = tdee - bmr;
+    
     if (user.diet_goal === 'cutting') {
-      newTarget -= 500;
+      newTarget += 200; // Bakar lebih banyak kalori
     } else if (user.diet_goal === 'bulking') {
-      newTarget += 500;
+      newTarget -= 100; // Fokus surplus, kurangi target bakar
     }
 
-    // SANITY CHECK: Pastikan kalori tidak berada di batas berbahaya (Starvation / Overfeeding ekstrem)
-    const genderStr = user.gender ? user.gender.toLowerCase() : '';
-    const minAllowed = (genderStr === 'female' || genderStr === 'wanita' || genderStr === 'perempuan') ? 1200 : 1500;
-
-    if (newTarget < minAllowed) {
-      console.log(`[Calorie Service] Target kalori ${newTarget} terlalu rendah, dibatasi ke minimum aman: ${minAllowed} kcal.`);
-      newTarget = minAllowed;
-    } else if (newTarget > 5000) {
-      console.log(`[Calorie Service] Target kalori ${newTarget} terlalu tinggi, dibatasi ke maksimum: 5000 kcal.`);
-      newTarget = 5000;
+    // SANITY CHECK: Pastikan kalori tidak berada di batas ekstrem untuk Active Burn
+    if (newTarget < 150) {
+      console.log(`[Calorie Service] Target pembakaran ${newTarget} terlalu rendah, dibatasi ke minimum: 150 kcal.`);
+      newTarget = 150;
+    } else if (newTarget > 2000) {
+      console.log(`[Calorie Service] Target pembakaran ${newTarget} terlalu tinggi, dibatasi ke maksimum: 2000 kcal.`);
+      newTarget = 2000;
     }
 
     await pool.execute(
