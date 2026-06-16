@@ -200,6 +200,155 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  void _showDietGoalDialog(BuildContext context) {
+    final user = context.read<AuthProvider>().user;
+    if (user == null) return;
+    String selectedGoal = user.dietGoal ?? 'maintenance';
+    
+    final List<Map<String, String>> dietGoals = [
+      {'value': 'cutting', 'label': 'Cutting (Turun Berat Badan)'},
+      {'value': 'maintenance', 'label': 'Maintenance (Jaga Berat Badan)'},
+      {'value': 'bulking', 'label': 'Bulking (Naik Berat Badan)'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: kCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+                left: 24,
+                right: 24,
+                top: 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Ubah Tujuan Diet',
+                    style: TextStyle(
+                      color: kTextPrimary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  ...dietGoals.map((goal) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: GestureDetector(
+                      onTap: () => setModalState(() => selectedGoal = goal['value']!),
+                      child: Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: selectedGoal == goal['value'] ? kAccent.withAlpha(31) : kCard,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: selectedGoal == goal['value'] ? kAccent : Colors.white10,
+                            width: selectedGoal == goal['value'] ? 2 : 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.flag, color: selectedGoal == goal['value'] ? kAccent : kTextMuted, size: 24),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                goal['label']!,
+                                style: TextStyle(
+                                  color: selectedGoal == goal['value'] ? kAccent : kTextPrimary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            if (selectedGoal == goal['value']) const Icon(Icons.check_circle, color: kAccent),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting
+                          ? null
+                          : () async {
+                              setModalState(() => _isSubmitting = true);
+                              
+                              final payload = {
+                                'gender': user.gender,
+                                'age': user.age,
+                                'height': user.height,
+                                'currentWeight': user.weight,
+                                'targetWeight': user.targetWeight,
+                                'activityLevel': user.activityLevel,
+                                'dietGoal': selectedGoal,
+                                'goals': [selectedGoal], 
+                              };
+                              
+                              final result = await _authService.updateProfile(payload);
+                              
+                              setModalState(() => _isSubmitting = false);
+                              
+                              if (context.mounted) {
+                                Navigator.pop(context);
+                                if (result['success'] == true) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Tujuan diet berhasil diperbarui'),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                  context.read<AuthProvider>().checkAuthStatus();
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(result['message'] ?? 'Gagal menyimpan data'),
+                                      backgroundColor: Colors.redAccent,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kAccent,
+                        foregroundColor: kBg,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(color: kBg, strokeWidth: 2),
+                            )
+                          : const Text(
+                              'Simpan',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Color _bmiColor(double? bmi) {
     if (bmi == null) return kTextMuted;
     if (bmi < 18.5) return Colors.blue;
@@ -508,7 +657,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             const SizedBox(height: 12),
 
-            // Tombol Riwayat Pembelian
+            // Tombol Lihat Riwayat Pembelian
             SizedBox(
               width: double.infinity,
               height: 56,
@@ -524,6 +673,25 @@ class _ProfilePageState extends State<ProfilePage> {
                 label: const Text(
                   'Lihat Riwayat Pembelian',
                   style: TextStyle(color: kTextMuted),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Tombol Ubah Tujuan Diet
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: () => _showDietGoalDialog(context),
+                icon: const Icon(Icons.flag_circle_outlined),
+                label: const Text('Ubah Tujuan Diet'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kTextPrimary,
+                  side: const BorderSide(color: Colors.white24),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                 ),
               ),
             ),
